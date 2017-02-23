@@ -1,0 +1,13 @@
+# macOS
+.DS_Store
+
+# IntelliJ 
+.idea/
+*.iml
+
+# Pants
+.cache
+.pants.d
+dist
+.pids
+.pants.workdir.file_lock

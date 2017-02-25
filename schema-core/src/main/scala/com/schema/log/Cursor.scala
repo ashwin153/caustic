@@ -58,6 +58,7 @@ trait Cursor[T] { self =>
       }
     }
 
+
   /**
    * Applies the specified function to each record until the first pending entry is found. Returns
    * a future which completes when the function has been successfully applied to each record.

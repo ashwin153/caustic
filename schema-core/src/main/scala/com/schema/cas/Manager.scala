@@ -8,6 +8,7 @@ import scala.collection.mutable
 import scala.concurrent.{Future, Promise}
 import scala.concurrent.duration.{Deadline, FiniteDuration}
 import scala.util.control.NonFatal
+import scala.concurrent.ExecutionContext.Implicits.global
 
 /**
  * An asynchronous, eventually consistent, transactional snapshot manager. Managers guarantee that

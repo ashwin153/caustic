@@ -6,8 +6,8 @@ import scala.collection.concurrent.TrieMap
 
 /**
  * An in-memory snapshot. Local snapshots delegate accesses and modifications to an underlying
- * mutable map implementation. Because local snapshots are stored on-heap, they are only useful in
- * situations with smaller data storage requirements.
+ * mutable map implementation. Because local snapshots are stored on-heap, they are useful for
+ * programs with smaller snapshot storage requirements.
  *
  * @param underlying Underlying mutable map.
  */

@@ -4,5 +4,6 @@ scala_library(
   dependencies=[
     'schema-core/src/main/scala',
     '3rdparty/jvm:rediscala',
+    '3rdparty/jvm:chill',
   ]
 )

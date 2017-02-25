@@ -3,7 +3,6 @@ scala_library(
   sources=rglobs('*.scala'),
   dependencies=[
     'schema-core/src/main/scala',
-    '3rdparty/jvm:shade',
-    '3rdparty/jvm:chill',
+    '3rdparty/jvm:kafka',
   ]
 )

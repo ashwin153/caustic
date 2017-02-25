@@ -72,7 +72,7 @@ case class Schema(snapshot: Snapshot) {
     require(!id.contains(FieldDelimiter), "Identifier may not contain field delimiter.")
 
     // Extract the fields of the object
-    val fields = extract(gen.to(obj)).map { case (sym: Symbol, value) => sym.name -> value }
+    val fields = extract(gen.to(obj)) collect { case (sym: Symbol, value) => sym.name -> value }
 
     // Insert a mapping between the object's id and the names of its various fields as well as a
     // mapping between each field and its value.
@@ -93,7 +93,7 @@ case class Schema(snapshot: Snapshot) {
     require(!id.contains(FieldDelimiter), "Identifier may not contain field delimiter.")
 
     // Extract the names of the object's various fields from its id.
-    val fieds = this.snapshot.get(id) match {
+    val fields = this.snapshot.get(id) match {
       case Some(n) => n.asInstanceOf[Iterable[String]]
       case _ => Seq.empty
     }

@@ -33,8 +33,8 @@ A variety of common ```Snapshot``` and ```Log``` implementations are provided.
 - [x] ```schema-core/```: Core library
 - [x] ```schema-local/```: ```LocalLog``` and ```LocalSnapshot```; in-memory
 - [ ] ```schema-kafka/```: ```KafkaLog```
-- [ ] ```schema-redis/```: ```RedisSnapshot```
-- [ ] ```schema-memcached/```: ```MemcachedSnapshot```
+- [x] ```schema-redis/```: ```RedisSnapshot```
+- [x] ```schema-memcached/```: ```MemcachedSnapshot```
 
 ## Thanks
 - [Tango](http://www.cs.cornell.edu/~taozou/sosp13/tangososp.pdf)

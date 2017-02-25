@@ -10,7 +10,7 @@ jar_library(name='kafka', jars=[
 
 # Rediscala (Redis)
 jar_library(name='rediscala', jars=[
-  jar(org='com.github.etaty', name='rediscala_2.12', rev='1.8')
+  jar(org='com.github.etaty', name='rediscala_2.12', rev='1.8.0')
 ])
 
 # Shade (Memcached)
@@ -21,7 +21,7 @@ jar_library(name='shade', jars=[
 # JUnit
 jar_library(name='junit', jars=[
   jar(org='junit', name='junit', rev='4.12'),
-  jar(org='org.pantsbuild', name='junit-runner-annotations', rev='0.0.11')
+  jar(org='org.pantsbuild', name='junit-runner-annotations', rev='0.0.17')
 ])
 
 # Scalatest
@@ -32,5 +32,10 @@ jar_library(name='scalatest',
 
 # Mockito
 jar_library(name='mockito', jars=[
-  jar(org='org.mockito', name='mockito-all', rev='1.10.19')
+  jar(org='org.mockito', name='mockito-core', rev='2.7.11')
+])
+
+# Scalameter
+jar_library(name='scalameter', jars=[
+  jar(org='com.storm-enroute', name='scalameter_2.12', rev='0.8.2')
 ])

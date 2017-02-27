@@ -2,7 +2,7 @@ package com.schema.core
 
 import shapeless.{HList, LabelledGeneric, Witness}
 import shapeless.labelled.FieldType
-import shapeless.ops.record.{Selector, ToMap, Updater}
+import shapeless.ops.record.{Selector, Updater}
 
 /**
  * A statically-typed, dynamic proxy object. Proxies delegate field-level accesses and modifications

@@ -1,7 +1,7 @@
-package com.schema.cas
+package com.schema.core
 
 /**
- * A desired result of applying a [[Transaction]]. Transactions that result in [[Rollback]] do not
+ * A desired result of applying a Transaction. Transactions that result in [[Rollback]] do not
  * wish to be attempted and transactions that result in [[Commit]] do.
  *
  * @tparam T Type of result.

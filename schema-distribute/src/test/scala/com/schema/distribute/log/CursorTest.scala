@@ -1,5 +1,6 @@
-package com.schema.log
+package com.schema.distribute
 
+import com.schema.distribute
 import org.scalatest.{AsyncFunSuite, BeforeAndAfter}
 import org.scalatest.mockito.MockitoSugar
 import scala.concurrent.Future
@@ -7,16 +8,16 @@ import org.mockito.Mockito._
 
 class CursorTest extends AsyncFunSuite with MockitoSugar with BeforeAndAfter {
 
-  var cursor: Cursor[Int] = _
+  var cursor: distribute.Cursor[Int] = _
 
   before {
-    this.cursor = spy(classOf[Cursor[Int]])
+    this.cursor = spy(classOf[distribute.Cursor[Int]])
     when(this.cursor.next())
-      .thenReturn(Future(Record(0, 0)))
-      .thenReturn(Future(Record(1, 1)))
-      .thenReturn(Future(Pending[Int](2)))
-      .thenReturn(Future(Record(2, 2)))
-      .thenReturn(Future(Pending[Int](3)))
+      .thenReturn(Future(distribute.Record(0, 0)))
+      .thenReturn(Future(distribute.Record(1, 1)))
+      .thenReturn(Future(distribute.Pending[Int](2)))
+      .thenReturn(Future(distribute.Record(2, 2)))
+      .thenReturn(Future(distribute.Pending[Int](3)))
   }
 
   test("Advance should return n records.") {

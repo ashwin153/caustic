@@ -1,4 +1,6 @@
-package com.schema.cas
+package com.schema.distribute
+
+import com.schema.transactions.Instruction
 
 /**
  * An attempted transaction.

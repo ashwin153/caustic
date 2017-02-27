@@ -1,4 +1,4 @@
-package com.schema.log
+package com.schema.distribute
 
 import org.junit.runner.RunWith
 import org.scalatest.{Matchers, fixture}

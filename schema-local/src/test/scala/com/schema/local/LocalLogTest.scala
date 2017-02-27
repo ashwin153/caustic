@@ -1,6 +1,5 @@
 package com.schema.local
 
-import com.schema.log.LogTest
 import org.junit.runner.RunWith
 import org.scalatest.FutureOutcome
 import org.scalatest.junit.JUnitRunner

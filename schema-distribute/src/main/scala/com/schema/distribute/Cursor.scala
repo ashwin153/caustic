@@ -1,8 +1,8 @@
-package com.schema.log
+package com.schema.distribute
 
+import com.schema.log.{Pending, Record}
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
-import scala.concurrent.ExecutionContext.Implicits.global
 
 /**
  * An asynchronous, uni-directional log cursor. Cursors are not thread-safe.

@@ -1,9 +1,10 @@
-scala_library(
+junit_tests(
   name='scala',
   sources=rglobs('*.scala'),
   dependencies=[
-    'schema-core/src/main/scala',
     'schema-distribute/src/main/scala',
-    '3rdparty/jvm:kafka',
+    '3rdparty/jvm:junit',
+    '3rdparty/jvm:scalatest',
+    '3rdparty/jvm:mockito',
   ]
 )

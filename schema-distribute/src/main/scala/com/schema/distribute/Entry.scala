@@ -1,4 +1,4 @@
-package com.schema.log
+package com.schema.distribute
 
 /**
  * A log entry. Log entries are associated with a monotonically increasing log sequence number (lsn)
@@ -8,5 +8,5 @@ package com.schema.log
  * [[Pending]], which indicates that no more records currently remain in the log.
  */
 sealed trait Entry[T] { val lsn: Long }
-case class Record[T](lsn: Long, payload: T) extends Entry[T]
 case class Pending[T](lsn: Long) extends Entry[T]
+case class Record[T](lsn: Long, payload: T) extends Entry[T]

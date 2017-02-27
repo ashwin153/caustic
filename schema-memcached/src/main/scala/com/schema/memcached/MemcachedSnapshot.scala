@@ -1,8 +1,10 @@
 package com.schema.memcached
 
 import com.schema.core.Snapshot
+import com.schema.memcached.MemcachedSnapshot.ChillCodec
+import com.schema.transactions.Instruction
 import com.twitter.chill.{KryoPool, ScalaKryoInstantiator}
-import scala.concurrent.Await
+import scala.concurrent.{Await, Future}
 import scala.concurrent.duration.Duration
 import shade.memcached.{Codec, Memcached}
 
@@ -19,7 +21,7 @@ import shade.memcached.{Codec, Memcached}
 class MemcachedSnapshot(
   memcached: Memcached,
   timeout: Duration,
-  codec: Codec[Any]
+  codec: Codec[Any] = new ChillCodec(ScalaKryoInstantiator.defaultPool)
 ) extends Snapshot {
 
   override def get(key: String): Option[Any] =
@@ -35,17 +37,6 @@ class MemcachedSnapshot(
 
 
 object MemcachedSnapshot {
-
-  /**
-   * Constructs an empty snapshot that utilizes the default [[ChillCodec]] to format objects to and
-   * from a representation that is consumable by Memcached.
-   *
-   * @param memcached Memcached client.
-   * @param timeout Memcached request timeout duration.
-   * @return Empty memcached snapshot.
-   */
-  def empty(memcached: Memcached, timeout: Duration): MemcachedSnapshot =
-    new MemcachedSnapshot(memcached, timeout, new ChillCodec(ScalaKryoInstantiator.defaultPool))
 
   /**
    * A Memcached [[Codec]] backed by Twitter's Chill, a thin Scala wrapper over the Kryo

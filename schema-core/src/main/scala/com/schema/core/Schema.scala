@@ -3,7 +3,7 @@ package com.schema.core
 import shapeless._
 import shapeless.labelled._
 import shapeless.ops.record._
-import com.schema.core.Schema._
+import Schema._
 
 /**
  * A strongly-typed, object-oriented interface over a snapshot. Schemas store objects and their

@@ -1,4 +1,4 @@
-package com.schema.cas
+package com.schema.distribute
 
 /**
  *

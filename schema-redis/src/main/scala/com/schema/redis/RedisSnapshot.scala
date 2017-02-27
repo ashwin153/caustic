@@ -2,8 +2,10 @@ package com.schema.redis
 
 import akka.util.ByteString
 import com.schema.core.Snapshot
+import com.schema.redis.RedisSnapshot.ChillFormatter
+import com.schema.transactions.{Delete, Instruction, Read, Upsert}
 import redis.{ByteStringFormatter, RedisClient}
-import scala.concurrent.Await
+import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
 import com.twitter.chill.{KryoPool, ScalaKryoInstantiator}
 
@@ -17,10 +19,10 @@ import com.twitter.chill.{KryoPool, ScalaKryoInstantiator}
  * @param timeout Redis request timeout duration.
  * @param formatter Redis data formatter.
  */
-class RedisSnapshot(
+case class RedisSnapshot(
   redis: RedisClient,
   timeout: Duration,
-  formatter: ByteStringFormatter[Any]
+  formatter: ByteStringFormatter[Any] = ChillFormatter(ScalaKryoInstantiator.defaultPool)
 ) extends Snapshot {
 
   override def get(key: String): Option[Any] =
@@ -35,17 +37,6 @@ class RedisSnapshot(
 }
 
 object RedisSnapshot {
-
-  /**
-   * Constructs an empty snapshot that utilizes a default [[ChillFormatter]] to format objects to
-   * and from a representation that is consumable by Redis.
-   *
-   * @param redis Redis client.
-   * @param timeout Redis request timeout duration.
-   * @return Empty redis snapshot.
-   */
-  def empty(redis: RedisClient, timeout: Duration): RedisSnapshot =
-    new RedisSnapshot(redis, timeout, ChillFormatter(ScalaKryoInstantiator.defaultPool))
 
   /**
    * A Redis [[ByteStringFormatter]] backed by Twitter's Chill, a thin Scala wrapper over the Kryo

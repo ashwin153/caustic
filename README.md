@@ -11,7 +11,7 @@ Traditionally, distributed systems rely on complicated protocols such as [Two-Ph
 Suppose you have the following data model that is distributed across some number of machines.
 
 ```scala
-case class Foo(bar: String)
+case class Foo(bar: String)=
 ```
 
 On each machine, construct a ```Manager``` that is backed by a shared ```Log```. That's it!
@@ -30,13 +30,16 @@ this.manager.txn { schema =>
 ```
 
 ## Overview
-A variety of common ```Snapshot``` and ```Log``` implementations are provided.
+The main libraries are:
+- [x] ```schema-core/```: Static typing of objects whose fields are independently stored in a ```Snapshot```. Because fields are stored as separate key-value pairs, different fields of the same object may be concurrently modified which significantly improves the write throughput of the system.
+- [x] ```schema-distribute/```: Transactional modification of any distributed ```Snapshot```. Transactions performed on the ```Snapshot``` are serialized as compare-and-swap instructions to an underlying shared ```Log``` to resolve write conflicts. Transactional modifications are lock-free and highly scalable.
 
-- [x] ```schema-core/```: Core library
+A variety of ```Snapshot```, ```Log```, and ```Manager``` implementations are also provided:
 - [x] ```schema-local/```: ```LocalLog``` and ```LocalSnapshot```; in-memory
-- [ ] ```schema-kafka/```: ```KafkaLog```
-- [x] ```schema-redis/```: ```RedisSnapshot```
 - [x] ```schema-memcached/```: ```MemcachedSnapshot```
+- [ ] ```schema-kafka/```: ```KafkaLog```
+- [x] ```schema-redis/```: ```RedisSnapshot``` and ```RedisManager```
+- [ ] ```schema-cassandra/```: ```CassandraSnapshot``` and ```CassandraManager```
 
 ## Thanks
 - [Tango](http://www.cs.cornell.edu/~taozou/sosp13/tangososp.pdf)

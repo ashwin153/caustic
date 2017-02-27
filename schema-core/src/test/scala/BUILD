@@ -2,7 +2,7 @@ junit_tests(
   name='scala',
   sources=rglobs('*.scala'),
   dependencies=[
-    'schema-objects/src/main/scala',
+    'schema-core/src/main/scala',
     'schema-local/src/main/scala',
     '3rdparty/jvm:junit',
     '3rdparty/jvm:scalatest',

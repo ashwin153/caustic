@@ -1,7 +1,7 @@
 package com.schema.redis
 
-import com.schema.objects.Schema
-import com.schema.objects.transactions._
+import com.schema.core.Schema
+import com.schema.core.transactions.{Delete, Instruction, Manager, Read, _}
 import scala.concurrent.Future
 
 /**

@@ -1,9 +1,9 @@
 package com.schema.redis
 
 import akka.util.ByteString
-import com.schema.objects.Snapshot
+import com.schema.core.Snapshot
 import com.schema.redis.RedisSnapshot.ChillFormatter
-import com.schema.objects.transactions.{Delete, Instruction, Read, Upsert}
+import com.schema.core.transactions.{Delete, Instruction, Read, Upsert}
 import redis.{ByteStringFormatter, RedisClient}
 import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._

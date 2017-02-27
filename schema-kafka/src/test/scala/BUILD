@@ -3,7 +3,7 @@ junit_tests(
   sources=rglobs('*.scala'),
   dependencies=[
     'schema-kafka/src/main/scala',
-    'schema-objects/src/test/scala',
+    'schema-core/src/test/scala',
     '3rdparty/jvm:junit',
     '3rdparty/jvm:scalatest',
     '3rdparty/jvm:mockito',

@@ -1,8 +1,8 @@
 package com.schema.memcached
 
 import com.schema.memcached.MemcachedSnapshot.ChillCodec
-import com.schema.objects.Snapshot
-import com.schema.objects.transactions.Instruction
+import com.schema.core.Snapshot
+import com.schema.core.transactions.Instruction
 import com.twitter.chill.{KryoPool, ScalaKryoInstantiator}
 import scala.concurrent.{Await, Future}
 import scala.concurrent.duration.Duration

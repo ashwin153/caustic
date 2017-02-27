@@ -1,8 +1,7 @@
-package com.schema.objects.transactions
+package com.schema.core.transactions
 
 import Manager._
-import com.schema.objects.{Schema, Snapshot, _}
-import com.schema.log.{Cursor, Log, Record}
+import com.schema.core.{Schema, _}
 import java.util.concurrent.{RejectedExecutionException, ScheduledExecutorService}
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global

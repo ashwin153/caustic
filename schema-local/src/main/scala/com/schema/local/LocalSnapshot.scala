@@ -1,6 +1,6 @@
 package com.schema.local
 
-import com.schema.objects.Snapshot
+import com.schema.core.Snapshot
 import scala.collection.mutable
 import scala.collection.concurrent.TrieMap
 

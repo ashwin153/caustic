@@ -1,9 +1,9 @@
 package com.schema.distribute
 
-import com.schema.objects.{Schema, Snapshot, _}
+import com.schema.core.{Failed, Outcome, Result, Schema, Snapshot, _}
 import com.schema.distribute
 import com.schema.log.{Transaction, TransactionRejectedException}
-import com.schema.objects.transactions._
+import com.schema.core.transactions.{Change, Delete, Instruction, Manager, Mutation, _}
 import scala.concurrent.Future
 import scala.concurrent.duration.{Deadline, FiniteDuration}
 

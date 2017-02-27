@@ -1,4 +1,4 @@
-package com.schema.objects
+package com.schema.core
 
 import shapeless.{HList, LabelledGeneric, Witness}
 import shapeless.labelled.FieldType

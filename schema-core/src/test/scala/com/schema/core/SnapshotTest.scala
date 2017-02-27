@@ -1,4 +1,4 @@
-package com.schema.objects
+package com.schema.core
 
 import org.junit.runner.RunWith
 import org.scalatest.fixture

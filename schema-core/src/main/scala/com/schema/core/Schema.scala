@@ -1,4 +1,4 @@
-package com.schema.objects
+package com.schema.core
 
 import shapeless._
 import shapeless.labelled._

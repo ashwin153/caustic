@@ -1,6 +1,6 @@
-package com.schema.objects
+package com.schema.core
 
-import com.schema.objects.transactions.Instruction
+import com.schema.core.transactions.Instruction
 import scala.concurrent.Future
 
 /**

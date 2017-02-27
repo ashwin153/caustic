@@ -1,4 +1,4 @@
-package com.schema.objects
+package com.schema.core
 
 import com.schema.local.LocalSnapshot
 import org.junit.runner.RunWith

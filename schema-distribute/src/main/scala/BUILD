@@ -2,6 +2,6 @@ scala_library(
   name='scala',
   sources=rglobs('*.scala'),
   dependencies=[
-    'schema-objects/src/main/scala',
+    'schema-core/src/main/scala',
   ]
 )

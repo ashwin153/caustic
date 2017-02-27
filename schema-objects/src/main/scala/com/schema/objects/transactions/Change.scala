@@ -1,4 +1,4 @@
-package com.schema.transactions
+package com.schema.objects.transactions
 
 /**
  * A successfully applied transaction.

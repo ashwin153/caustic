@@ -1,6 +1,6 @@
 package com.schema.distribute
 
-import com.schema.transactions.Instruction
+import com.schema.objects.transactions.Instruction
 
 /**
  * An attempted transaction.

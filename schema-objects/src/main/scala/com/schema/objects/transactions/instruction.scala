@@ -1,4 +1,4 @@
-package com.schema.transactions
+package com.schema.objects.transactions
 
 /**
  * An instruction. Instructions are the set of permissible operations used to record accesses and

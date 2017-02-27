@@ -1,11 +1,12 @@
 package com.schema.redis
 
-import com.schema.transactions._
+import com.schema.objects.Schema
+import com.schema.objects.transactions._
 import scala.concurrent.Future
 
 /**
  * A transactionally modifiable Redis snapshot. Enables the convenient syntactic sugar of
- * [[com.schema.core.Schema]] transactions for any Redis snapshot.
+ * [[Schema]] transactions for any Redis snapshot.
  *
  * @param snapshot Underlying redis snapshot.
  */

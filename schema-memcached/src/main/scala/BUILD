@@ -2,7 +2,7 @@ scala_library(
   name='scala',
   sources=rglobs('*.scala'),
   dependencies=[
-    'schema-core/src/main/scala',
+    'schema-objects/src/main/scala',
     '3rdparty/jvm:shade',
     '3rdparty/jvm:chill',
   ]

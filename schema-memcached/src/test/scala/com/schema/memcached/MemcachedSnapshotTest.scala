@@ -1,6 +1,5 @@
 package com.schema.memcached
 
-import com.schema.core.SnapshotTest
 import org.junit.runner.RunWith
 import org.scalatest.Outcome
 import org.scalatest.junit.JUnitRunner

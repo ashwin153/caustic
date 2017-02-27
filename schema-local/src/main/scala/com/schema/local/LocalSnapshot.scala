@@ -1,10 +1,8 @@
 package com.schema.local
 
-import com.schema.core.Snapshot
-import com.schema.transactions.Instruction
+import com.schema.objects.Snapshot
 import scala.collection.mutable
 import scala.collection.concurrent.TrieMap
-import scala.concurrent.Future
 
 /**
  * An in-memory snapshot. Local snapshots delegate accesses and modifications to an underlying
@@ -21,7 +19,6 @@ class LocalSnapshot(underlying: mutable.Map[String, Any]) extends Snapshot {
 
   override def -=(key: String): Unit = this.underlying -= key
 
-  override def transaction(instructions: Map[String, Instruction]): Future[Unit] = ???
 }
 
 object LocalSnapshot {

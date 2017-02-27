@@ -42,7 +42,7 @@ this.manager.txn { schema =>
 
 ## Overview
 The main libraries are:
-- [x] ```schema-core/```: Static typing of objects whose fields are independently stored in a ```Snapshot```. Because fields are stored as separate key-value pairs, different fields of the same object may be concurrently modified which significantly improves the write throughput of the system.
+- [x] ```schema-objects/```: Static typing of objects whose fields are independently stored in a ```Snapshot```. Because fields are stored as separate key-value pairs, different fields of the same object may be concurrently modified which significantly improves the write throughput of the system.
 - [x] ```schema-distribute/```: Transactional modification of any distributed ```Snapshot```. Transactions performed on the ```Snapshot``` are serialized as compare-and-swap instructions to an underlying shared ```Log``` to resolve write conflicts. Transactional modifications are lock-free and highly scalable.
 
 A variety of ```Snapshot```, ```Log```, and ```Manager``` implementations are also provided:

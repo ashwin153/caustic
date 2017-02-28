@@ -1,5 +1,5 @@
 # Schema
-A distributed system is a collection of independent machines that concurrently operate on some shared data model. Transactional key-value store are useful primitives for building distributed systems, because they ensures that these simultaneous operations are transactionally consistent. However, transactional key-value stores come with a few limitations:
+A distributed system is a collection of independent actors that concurrently operate on some shared data model. Transactional key-value store are useful primitives for building distributed systems, because they ensures that these simultaneous operations are transactionally consistent. However, transactional key-value stores come with a few limitations:
 
 1. Transactional key-value stores allow two machines to concurrently modify different key-value pairs. However, it is often the case that multiple machines would like to modify different fields of the same value. No key-value store currently supports this.
 2. Because key-value stores may contain values of arbitrary type, it is impossible to know at compile-time the type of the value for a particular key. This vastly complicates the syntax of programs that use them (requires casting), and can potentially lead to fatal errors at runtime when values are not of the type they were expected to be.
@@ -22,24 +22,25 @@ We may generalize this compare-and-swap operator to arbitrarily many variables. 
 We may further generalize this procedure of safely incrementing a set of variables, to performing safe modifications to a key-value store. Like ```x``` in the previous example which could be read and written, there are a set of permissible instructions that may be performed on a key-value store. Namely, key-value pairs may be read, inserted, updated, and deleted. By serializing these multi-word compare-and-set operations containing these instructions over a shared log, we can determine which operations succeed by reading the log and performing each operation in order.
 
 ## Examples
-Suppose you have the following data model that is distributed across some number of machines.
+For example, consider the safe increment problem from above. First, we would need to define our data model and construct a transaction manager backed by the key-value store of our choice. For this example, let's use Redis.
 
 ```scala
-case class Foo(bar: String)
+case class Variable(value: Int)
+val manager = RedisManager(RedisSnapshot.empty)
 ```
 
-On each machine, construct a ```Manager``` that is backed by a shared ```Log```. That's it!
+Then, we'll use this transaction manager to perform safe increments to our variable.
 
 ```scala
-this.manager.txn { schema =>
-  schema.select[Foo]("myid") match {
+manager.txn { schema =>
+  schema.select[Variable]("x") match {
     case Some(x) =>
-      x('bar) = "update"
+      x('value) = x('value) + 1
       Commit()
-    case None => 
-      schema.insert("myid", Foo("test"))
+    case None =>
+      schema.insert("x", Variable(0))
       Commit()
-  }
+  }  
 }
 ```
 

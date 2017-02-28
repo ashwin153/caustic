@@ -1,11 +1,11 @@
 package com.schema.distribute
 
-import com.schema.core.{Failed, Outcome, Result, Schema, Snapshot, _}
-import com.schema.distribute
-import com.schema.log.{Transaction, TransactionRejectedException}
-import com.schema.core.transactions.{Change, Delete, Instruction, Manager, Mutation, _}
+import com.schema.core.{Schema, Snapshot}
+import com.schema.core.transactions._
+import com.twitter.concurrent.AsyncMutex
 import scala.concurrent.Future
 import scala.concurrent.duration.{Deadline, FiniteDuration}
+import scala.concurrent.ExecutionContext.Implicits.global
 
 /**
  * An asynchronous, eventually consistent, manager that performs conflict resolution by serializing
@@ -32,6 +32,9 @@ class LogManager(
   // Last time the snapshot was modified.
   private[this] var modified: Deadline = Deadline.now
 
+  // Asynchronous mutex for guarding the change cursor.
+  private[this] val mutex: AsyncMutex = new AsyncMutex
+
   /**
    * Synchronously refreshes the underlying snapshot by reading all the latest change records from
    * the underlying shared log. Implementation also updates the version number and modified
@@ -47,26 +50,27 @@ class LogManager(
     })
   }
 
-  override def commit(instructions: Map[String, Instruction]): Future[Unit] = {
-    this.transactions.append(distribute.Transaction(this.version, instructions)) flatMap { t =>
-      this.changes.advance(_.lsn >= t.lsn) flatMap { records =>
-        // Refresh the snapshot with all records read from the log.
-        refresh(records)
+  override def commit(instructions: Map[String, Instruction]): Future[Unit] =
+    this.mutex.acquireAndRun {
+      this.transactions.append(Transaction(this.version, instructions)) flatMap { t =>
+        this.changes.advance(_.lsn >= t.lsn) flatMap { records =>
+          // Refresh the snapshot with all records read from the log.
+          refresh(records)
 
-        // Check that the appended transaction was successfully applied.
-        if (this.version == t.lsn)
-          Future.unit
-        else
-          Future.failed(distribute.TransactionRejectedException("Transaction conflicts."))
-      }
-    } recover { case e => Failed(e) }
-  }
+          // Check that the appended transaction was successfully applied.
+          if (this.version == t.lsn)
+            Future.unit
+          else
+            Future.failed(TransactionRejectedException("Transaction conflicts."))
+        }
+      } recover { case e => Failed(e) }
+    }
 
-  override def txn[T](f: (Schema) => Result[T]): Future[Outcome[T]] = {
+  override def txn[T](f: Schema => Result[T]): Future[Outcome[T]] = {
     Future.unit flatMap { _ =>
       // If the snapshot is stale, then refresh it with all new entries.
       if ((this.modified + this.expires).isOverdue)
-        changes.advance().map(refresh)
+        this.mutex.acquireAndRun(changes.advance().map(refresh))
       else
         Future.unit
     } flatMap { _ => super.txn(f) }

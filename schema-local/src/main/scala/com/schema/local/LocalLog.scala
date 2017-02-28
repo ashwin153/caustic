@@ -1,6 +1,6 @@
 package com.schema.local
 
-import com.schema.log.{Cursor, Entry, Log, Pending, Record}
+import com.schema.distribute._
 import scala.collection.mutable
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global

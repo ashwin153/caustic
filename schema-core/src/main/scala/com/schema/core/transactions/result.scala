@@ -1,4 +1,4 @@
-package com.schema.core
+package com.schema.core.transactions
 
 /**
  * A desired result of applying a Transaction. Transactions that result in [[Rollback]] do not

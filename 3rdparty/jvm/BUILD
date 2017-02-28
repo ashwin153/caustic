@@ -23,6 +23,16 @@ jar_library(name='shade', jars=[
   jar(org='io.monix', name='shade_2.12', rev='1.9.1')
 ])
 
+# Akka
+jar_library(name='akka', jars=[
+  jar(org='com.typesafe.akka', name='akka-actor_2.12', rev='2.4.17')
+])
+
+# Twitter Util Core
+jar_library(name='util-core', jars=[
+  jar(org='com.twitter', name='util-core_2.12', rev='6.41.0')
+])
+
 # JUnit
 jar_library(name='junit', jars=[
   jar(org='junit', name='junit', rev='4.12'),

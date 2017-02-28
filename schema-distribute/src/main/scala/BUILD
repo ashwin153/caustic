@@ -3,5 +3,6 @@ scala_library(
   sources=rglobs('*.scala'),
   dependencies=[
     'schema-core/src/main/scala',
+    '3rdparty/jvm:util-core',
   ]
 )

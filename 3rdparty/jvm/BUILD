@@ -33,6 +33,11 @@ jar_library(name='util-core', jars=[
   jar(org='com.twitter', name='util-core_2.12', rev='6.41.0')
 ])
 
+# Google Guava
+jar_library(name='guava', jars=[
+  jar(org='com.google.guava', name='guava', rev='21.0')
+])
+
 # JUnit
 jar_library(name='junit', jars=[
   jar(org='junit', name='junit', rev='4.12'),

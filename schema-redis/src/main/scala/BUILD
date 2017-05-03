@@ -1,9 +1,0 @@
-scala_library(
-  name='scala',
-  sources=rglobs('*.scala'),
-  dependencies=[
-    'schema-distribute/src/main/scala',
-    '3rdparty/jvm:rediscala',
-    '3rdparty/jvm:chill',
-  ]
-)

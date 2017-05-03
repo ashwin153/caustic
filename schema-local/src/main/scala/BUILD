@@ -1,7 +1,0 @@
-scala_library(
-  name='scala',
-  sources=rglobs('*.scala'),
-  dependencies=[
-    'schema-distribute/src/main/scala',
-  ]
-)

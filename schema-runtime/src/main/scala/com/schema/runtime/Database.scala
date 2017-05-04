@@ -1,9 +1,9 @@
 package com.schema.runtime
 
+import com.schema.runtime.Transaction._
+import com.schema.runtime.Transaction.Operation._
 import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future}
-import Transaction._
-import Transaction.Operation._
 
 /**
  * An asynchronous, key-value store.
@@ -19,11 +19,11 @@ trait Database {
    */
   def get(keys: Set[Key])(
     implicit ec: ExecutionContext
-  ): Future[Map[Key, (Long, Value)]]
+  ): Future[Map[Key, (Revision, Value)]]
 
   /**
-   * Asynchronously applies the specified changes if and only if the versions of the specified
-   * dependent keys remain their expected value and returns an exception on conflict. The
+   * Asynchronously applies the specified changes if and only if the revisions of the specified
+   * dependent keys remain their expected values and returns an exception on conflict. The
    * consistency, durability, and availability of the system depends on the implementation of this
    * conditional put operator.
    *
@@ -32,7 +32,7 @@ trait Database {
    * @param ec Implicit execution context.
    * @return Future that completes when successful, or an exception otherwise.
    */
-  def put(depends: Map[Key, Long], changes: Map[Key, (Long, Value)])(
+  def put(depends: Map[Key, Revision], changes: Map[Key, (Revision, Value)])(
     implicit ec: ExecutionContext
   ): Future[Unit]
 
@@ -50,9 +50,9 @@ trait Database {
   final def execute(txn: Transaction)(
     implicit ec: ExecutionContext
   ): Future[Value] = {
-    val snapshot = mutable.Map.empty[Key, (Long, Value)].withDefaultValue((Long.MinValue, ""))
-    val changes  = mutable.Map.empty[Key, (Long, Value)]
-    val depends  = mutable.Map.empty[Key, Long]
+    val snapshot = mutable.Map.empty[Key, (Revision, Value)].withDefaultValue((0L, ""))
+    val changes  = mutable.Map.empty[Key, (Revision, Value)]
+    val depends  = mutable.Map.empty[Key,  Revision]
 
     // Replaces all read operations on literal keys with the most up-to-date value associated with
     // the key, and saves all write operations to a literal key and value in the change buffer and
@@ -61,22 +61,28 @@ trait Database {
       case l: Literal => l
       case o: Operation => o match {
         case Operation(Read, Literal(key) :: Nil) =>
-          // Reads to a key are first attempted on the local changes and then on the local
-          // snapshot in order to guarantee that all reads return the latest known version for
-          // any particular key. If a key was modified within a transaction, the result of
-          // read should reflect these modifications.
+          // Reads to a key are first attempted on the local changes and then on the local snapshot
+          // in order to guarantee that all reads return the latest known version for any particular
+          // key. If a key was modified within a transaction, the result of read should reflect
+          // these modifications.
           val (_, value) = changes.getOrElse(key, snapshot(key))
           val (version, _) = snapshot(key)
           depends += key -> version
           Literal(value)
         case Operation(Write, Literal(key) :: Literal(value) :: Nil) =>
-          // Writes to a key do not immediately take effect; instead, they are stored in the
-          // local change buffer and are committed at the end of execution. Writes operators
-          // return the value that was written to the key.
+          // Writes to a key do not immediately take effect; instead, they are stored in the local
+          // change buffer and are committed at the end of execution. Writes operators return the
+          // value that was written to the key.
           val (version, _) = snapshot(key)
           changes += key -> (version + 1, value)
           Literal(value)
-        case _ => o.copy(operands = o.operands.map(evaluate))
+        case Operation(Branch, cmp :: pass :: fail :: Nil) =>
+          // Branches are only evaluated on their comparison condition to ensure that only the
+          // branch that is taken is ever evaluated.
+          branch(evaluate(cmp), pass, fail)
+        case _ =>
+          // Otherwise, recursively evaluate the operands of the operation.
+          o.copy(operands = o.operands.map(evaluate))
       }
     }
 
@@ -86,98 +92,55 @@ trait Database {
     def fold(txn: Transaction): Transaction = txn match {
       case l: Literal => l
       case o: Operation => o.copy(operands = o.operands.map(fold)) match {
+        case Operation(Cons, Literal(_) :: Literal(y) :: Nil) =>
+          literal(y)
+        case Operation(Add, Literal(x) :: Literal(y) :: Nil) =>
+          literal(x.toDouble + y.toDouble)
+        case Operation(Sub, Literal(x) :: Literal(y) :: Nil) =>
+          literal(x.toDouble - y.toDouble)
+        case Operation(Mul, Literal(x) :: Literal(y) :: Nil) =>
+          literal(x.toDouble * y.toDouble)
+        case Operation(Div, Literal(x) :: Literal(y) :: Nil) =>
+          literal(x.toDouble / y.toDouble)
+        case Operation(Mod, Literal(x) :: Literal(y) :: Nil) =>
+          literal(x.toDouble % y.toDouble)
+        case Operation(Pow, Literal(x) :: Literal(y) :: Nil) =>
+          literal(math.pow(x.toDouble, y.toDouble))
+        case Operation(Log, Literal(x) :: Nil) =>
+          literal(math.log(x.toDouble))
+        case Operation(Sin, Literal(x) :: Nil) =>
+          literal(math.sin(x.toDouble))
+        case Operation(Cos, Literal(x) :: Nil) =>
+          literal(math.cos(x.toDouble))
+        case Operation(Floor, Literal(x) :: Nil) =>
+          literal(math.floor(x.toDouble))
+        case Operation(Length, Literal(x) :: Nil) =>
+          literal(x.length)
+        case Operation(Slice, Literal(x) :: Literal(l) :: Literal(h) :: Nil) =>
+          literal(x.substring(l.toInt, h.toInt))
+        case Operation(Concat, Literal(x) :: Literal(y) :: Nil) =>
+          literal(x + y)
+        case Operation(Branch, Literal(cmp) :: pass :: fail :: Nil) =>
+          if (cmp != Literal.False.value) pass else fail
+        case Operation(Equal, Literal(x) :: Literal(y) :: Nil) =>
+          if (x == y) Literal.True else Literal.False
+        case Operation(Matches, Literal(x) :: Literal(y) :: Nil) =>
+          if (x.matches(y)) Literal.True else Literal.False
+        case Operation(And, Literal(x) :: Literal(y) :: Nil) =>
+          if (x.nonEmpty && y.nonEmpty) Literal.True else Literal.False
+        case Operation(Or, Literal(x) :: Literal(y) :: Nil) =>
+          if (x.nonEmpty || y.nonEmpty) Literal.True else Literal.False
+        case Operation(Not, Literal(x) :: Nil) =>
+          if (x.nonEmpty) Literal.False else Literal.True
+        case Operation(Less, Literal(x) :: Literal(y) :: Nil) =>
+          if (x < y) Literal.True else Literal.False
         case Operation(Purge, Literal(list) :: Nil) =>
-          // Purge is an incredibly specialized operator that deletes a sequence of list
-          // delimited keys and enables deletion of dynamic objects. For example, purging the
-          // string "key,foo,bar" would delete key, key$foo, and key$bar. Purge is a dangerous
-          // operator and its use should be restricted to the core runtime library.
           list.split(ListDelimiter.value)
             .filter(_.nonEmpty)
             .map(key => write(key, Literal.Empty))
             .reduceLeftOption((a, b) => cons(a, b))
             .getOrElse(Literal.Empty)
-        case Operation(Cons, Literal(_) :: Literal(y) :: Nil) =>
-          // Cons is the building block for chaining operations together, because it enables
-          // operations to be "glued" together into arbitrary length sequences of operations.
-          literal(y)
-        case Operation(Add, Literal(x) :: Literal(y) :: Nil) =>
-          // Returns the floating point sum of the literals interpreted as numbers. May throw
-          // a NumberFormatException if the arguments cannot be converted to numbers.
-          literal(x.toDouble + y.toDouble)
-        case Operation(Sub, Literal(x) :: Literal(y) :: Nil) =>
-          // Returns the floating point difference of the literals interpreted as numbers. May
-          // throw a NumberFormatException if the arguments cannot be converted to numbers.
-          literal(x.toDouble - y.toDouble)
-        case Operation(Mul, Literal(x) :: Literal(y) :: Nil) =>
-          // Returns the product point difference of the literals interpreted as numbers. May
-          // throw a NumberFormatException if the arguments cannot be converted to numbers.
-          literal(x.toDouble * y.toDouble)
-        case Operation(Div, Literal(x) :: Literal(y) :: Nil) =>
-          // Returns the floating point quotient of the literals interpreted as numbers. May
-          // throw a NumberFormatException if the arguments cannot be converted to numbers.
-          literal(x.toDouble / y.toDouble)
-        case Operation(Mod, Literal(x) :: Literal(y) :: Nil) =>
-          // Returns the floating point modulo of the literals interpreted as numbers. May throw
-          // a NumberFormatException if the arguments cannot be converted to numbers.
-          literal(x.toDouble % y.toDouble)
-        case Operation(Pow, Literal(x) :: Literal(y) :: Nil) =>
-          // Returns the floating point power of the literals interpreted as numbers. May throw
-          // a NumberFormatException if the arguments cannot be converted to numbers.
-          literal(math.pow(x.toDouble, y.toDouble))
-        case Operation(Log, Literal(x) :: Nil) =>
-          // Returns the floating point natural log of the literal interpreted as a number. May
-          // throw a NumberFormatException if the argument cannot be converted to
-          // numbers or return NaN if the logarithm cannot be computed.
-          literal(math.log(x.toDouble))
-        case Operation(Sin, Literal(x) :: Nil) =>
-          // Returns the sin of the literal argument interpreted as a number. May throw a
-          // NumberFormatException if the argument cannot be converted to na umber.
-          literal(math.sin(x.toDouble))
-        case Operation(Cos, Literal(x) :: Nil) =>
-          // Returns the cosine of the literal argument interpreted as a number. May throw a
-          // NumberFormatException if the argument cannot be converted to a number.
-          literal(math.cos(x.toDouble))
-        case Operation(Floor, Literal(x) :: Nil) =>
-          // Returns the integer floor of the literal argument interpreted as a number. May
-          // throw a NumberFormatException if the argument cannot be converted to a number.
-          literal(math.floor(x.toDouble))
-        case Operation(Length, Literal(x) :: Nil) =>
-          // Returns the number of characters in the literal argument.
-          literal(x.length)
-        case Operation(Slice, Literal(x) :: Literal(l) :: Literal(h) :: Nil) =>
-          // Returns the substring of the first argument with the remaining literals interpreted
-          // as the lower and upper bounds respectively. Slice may throw a
-          // StringIndexOutOfBoundsException if the bounds are invalid.
-          literal(x.substring(l.toInt, h.toInt))
-        case Operation(Concat, Literal(x) :: Literal(y) :: Nil) =>
-          // Returns the concatenation of the literal arguments.
-          literal(x + y)
-        case Operation(Branch, Literal(cmp) :: pass :: fail :: Nil) =>
-          // Returns the third argument if the first literal is nonEmpty, or the second argument
-          // otherwise. Note: Literal.Empty == Literal.False.
-          if (cmp != Literal.False.value) pass else fail
-        case Operation(Equals, Literal(x) :: Literal(y) :: Nil) =>
-          // Returns True if the arguments are identical and False otherwise.
-          if (x == y) Literal.True else Literal.False
-        case Operation(Matches, Literal(x) :: Literal(y) :: Nil) =>
-          // Returns True if the first arguments matches the regular expression specified by the
-          // second argument and False otherwise.
-          if (x.matches(y)) Literal.True else Literal.False
-        case Operation(And, Literal(x) :: Literal(y) :: Nil) =>
-          // Returns True if both arguments are notEmpty, and False otherwise.
-          if (x.nonEmpty && y.nonEmpty) Literal.True else Literal.False
-        case Operation(Or, Literal(x) :: Literal(y) :: Nil) =>
-          // Returns True if either argument is notEmpty, and False otherwise.
-          if (x.nonEmpty || y.nonEmpty) Literal.True else Literal.False
-        case Operation(Not, Literal(x) :: Nil) =>
-          // Returns False if the argument is nonEmpty, and True otherwise.
-          if (x.nonEmpty) Literal.False else Literal.True
-        case Operation(Less, Literal(x) :: Literal(y) :: Nil) =>
-          // Returns True if the first argument is lexicographically less than the second
-          // argument, and False otherwise.
-          if (x < y) Literal.True else Literal.False
         case default =>
-          // All other transactions cannot be simplified yet.
           default
       }
     }

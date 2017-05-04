@@ -1,6 +1,6 @@
 package com.schema
 
-import com.schema.runtime.Transaction.{Literal, _}
+import com.schema.runtime.Transaction._
 import com.schema.runtime.Transaction.Operation._
 
 package object runtime {
@@ -9,13 +9,12 @@ package object runtime {
   implicit def num2literal[T](value: T)(implicit num: Numeric[T]): Literal = literal(value)
   implicit def str2literal(value: String): Literal = literal(value)
 
-  // All keys and values are strings. Other primitive types like booleans, integers, and arrays may
-  // be implemented using only strings. Fewer primitive types is beneficial, because it reduces the
-  // complexity of the Schema runtime. Programming languages support additional primitive types
-  // primarily for memory efficiency (why use integer and a byte will suffice) and performance (why
-  // use floating point arithmetic when integers will suffice). However, these are not concerns for
-  // I/O-bound database applications and so we will ignore types for now.
+  // All keys and values are Strings. Other primitive types like booleans, integers, and arrays may
+  // be implemented using only Strings. Fewer primitive types is beneficial, because it reduces the
+  // complexity of the Schema runtime. Each key and value are associated with a non-negative
+  // revision number that is used to track the sequence of modifications performed on a key.
   type Key = String
+  type Revision = Long
   type Value = String
 
   /**
@@ -48,7 +47,6 @@ package object runtime {
   def literal(value: String) = Literal(value)
   def read(key: Transaction) = Operation(Read, List(key))
   def write(key: Transaction, value: Transaction) = Operation(Write, List(key, value))
-  def purge(list: Transaction) = Operation(Purge, List(list))
   def cons(x: Transaction, y: Transaction) = Operation(Cons, List(x, y))
   def add(x: Transaction, y: Transaction) = Operation(Add, List(x, y))
   def sub(x: Transaction, y: Transaction) = Operation(Sub, List(x, y))
@@ -64,12 +62,14 @@ package object runtime {
   def slice(str: Transaction, low: Transaction, high: Transaction) = Operation(Slice, List(str, low, high))
   def concat(x: Transaction, y: Transaction) = Operation(Concat, List(x, y))
   def branch(cmp: Transaction, pass: Transaction, fail: Transaction) = Operation(Branch, List(cmp, pass, fail))
-  def equals(x: Transaction, y: Transaction) = Operation(Equals, List(x, y))
+  def equal(x: Transaction, y: Transaction) = Operation(Equal, List(x, y))
   def matches(str: Transaction, regex: Transaction) = Operation(Matches, List(str, regex))
   def and(x: Transaction, y: Transaction) = Operation(And, List(x, y))
   def not(x: Transaction) = Operation(Not, List(x))
   def or(x: Transaction, y: Transaction) = Operation(Or, List(x, y))
   def less(x: Transaction, y: Transaction) = Operation(Less, List(x, y))
+  def purge(list: Transaction) = Operation(Purge, List(list))
+  def exists(key: Transaction) = not(equal(read(key), Literal.Empty))
 
   // Transaction builders for additional math operations. These math functions are special cases or
   // compositions of the core operators defined above. Math operators that are used frequently ought
@@ -119,10 +119,10 @@ package object runtime {
     def startsWith(that: Transaction) = matches(txn, concat("^", that))
 
     def <(that: Transaction) = less(txn, that)
-    def >(that: Transaction) = not(or(equals(txn, that), less(txn, that)))
-    def ==(that: Transaction) = equals(txn, that)
-    def !=(that: Transaction) = not(equals(txn, that))
-    def <=(that: Transaction) = or(equals(txn, that), less(txn, that))
+    def >(that: Transaction) = not(or(equal(txn, that), less(txn, that)))
+    def ==(that: Transaction) = equal(txn, that)
+    def !=(that: Transaction) = not(equal(txn, that))
+    def <=(that: Transaction) = or(equal(txn, that), less(txn, that))
     def >=(that: Transaction) = not(less(txn, that))
     def max(that: Transaction) = branch(less(txn, that), that, txn)
     def min(that: Transaction) = branch(less(txn, that), txn, that)

@@ -1,58 +1,43 @@
 # Schema
-A distributed system is a collection of independent machines that concurrently operate on some shared data model. Transactional [key-value stores](https://en.wikipedia.org/wiki/Key-value_database) are useful for storing this shared data model, because they ensures that these simultaneous operations are [transactionally consistent](https://en.wikipedia.org/wiki/Data_consistency#Transaction_consistency) across all machines. However, transactional key-value stores come with a few limitations:
+Most backend architectures are composed of an *application cluster* and a *database cluster*. The stateless *application servers* in the cluster receive and respond to client requests by performing accesses and modifications to data stored in the underlying, stateful *database cluster*. Each *application server* has to be carefully designed to guarantee that its behavior is consistent across the cluster. For example, it is easy to see that a cluster of *application servers* that, say, retrieve data from the *database cluster*, check if the data matches some value, and then persist an update to the data to the *database cluster*, may lead to race conditions and inconsistent behavior. Traditional databases in use today have solved this problem by inventing transactions. However, it can be argued that database transactions today are fundamentally lacking for three reasons:
 
-1. Transactional key-value stores allow two machines to concurrently modify different key-value pairs. However, it is often the case that multiple machines would like to modify different fields of the same value. No key-value store currently supports this.
-2. Because key-value stores may contain values of arbitrary type, it is impossible to know at compile-time the type of the value for a particular key. This vastly complicates the syntax of programs that use them (requires casting), and can potentially lead to fatal errors at runtime when values are not of the type they were expected to be.
-3. Transactions are hard and many popular key-value stores either do not support them (Memcached) or do so poorly ([Cassandra](http://stackoverflow.com/a/3007465/1447029)).
+1. __Disparate Interfaces__: Every database has a different language for specifying transactions. Table 1 highlights the vastly different transaction interfaces for a few well-known databases. Thus, the design of an application server requires upfront knowledge of the choice of underlying database. Whenever a decision is made to change the database, all existing transactions must be rewritten to conform to the new specification. Indeed, the tremendous expense of rewriting transactions is a significant reason why large companies are locked into their existing database infrastructure and are unable to modernize them.
 
-The ```schema-core``` library addresses (1) by storing each field of any object as a separate entry in a key-value store to ensure that they are independently modifiable and addresses (2) by leveraging [Shapeless](https://github.com/milessabin/shapeless) to guarantee static type safety of objects stored in the key-value store. The ```schema-distribute``` library addresses (3) by providing a simple way to perform transactional modifications to any key-value store using a variation of multi-word compare-and-swap based on [Tango](http://www.cs.cornell.edu/~taozou/sosp13/tangososp.pdf).
+2. __Deficient Functionality__: In particular, there are two key areas where databases are typically lacking in functionality. First, databases generally do not support cross-shard transactions. Thus, the design of an application server requires upfront knowledge of data placement. This limits the kinds of transactions that may be performed, since transactions must operate on data within a single shard. Second, databases generally do not permit arbitrary computation and conditional branching within transactions. As a result, transactions are restricted to simple, linear control flow, and are hence limited in scope. 
 
-## Schema Core
-The ```schema-core``` library provides a simple, convenient syntax for transactionally modifying a key-value store. Suppose you have the following data model that is distributed across some number of machines.
+3. __Performance Penalties__: Most databases that support transactions do so at a significant cost. For example, Redis guarantees that “All the commands in a transaction are serialized and executed sequentially. It can never happen that a request issued by another client is served in the middle of the execution of a Redis transaction. This guarantees that the commands are executed as a single isolated operation.” This means that transactions may only be performed one-at-a-time, so the application server may be forced to sacrifice write performance for transactional safety.
 
-```scala
-case class Variable(value: Int)
-val manager = RedisManager(RedisSnapshot.empty)
-```
+The purpose of this library is to properly decouple the *application cluster* and the *database cluster* components of any backend architecture by providing a consistent, high-performance transactional interface over arbitrary key-value stores.
 
-Then, we'll use this transaction manager to perform safe increments to our variable.
+## User Guide
 
-```scala
-manager.txn { schema =>
-  schema.select[Variable]("x") match {
-    case Some(x) =>
-      x('value) = x('value) + 1
-      Commit()
-    case None =>
-      schema.insert("x", Variable(0))
-      Commit()
-  }  
-}
-```
+| Operator | Arity | Description                                            |
+|:---------|:-----:|:-------------------------------------------------------|
+| read     |   1   | Lookup the version and value of a key.                 |
+| write    |   2   | Update the version and value of a key.                 |
+| cons     |   2   | Sequentially evaluate arguments.                       |
+| purge    |   1   | Delete a list of keys delimited by ListDelimiter.      |
+| literal  |   1   | Converts the argument to a literal value.              |
+| add      |   2   | Sum of the two arguments.                              |
+| sub      |   2   | Difference of the two arguments.                       |
+| mul      |   2   | Product of the two arguments.                          |
+| div      |   2   | Quotient of the two arguments.                         |
+| mod      |   2   | Modulo of the two arguments.                           |
+| pow      |   2   | Power of the first argument to the second.             |
+| log      |   1   | Natural logarithm of the argument.                     |
+| sin      |   1   | Sine of the argument.                                  |
+| cos      |   1   | Cosine of the argument.                                |
+| floor    |   1   | Largest integer less than the argument.                |
+| length   |   1   | Number of characters in the argument.                  |
+| slice    |   3   | Substring of the first argument bounded by the others. |
+| concat   |   2   | Concatenation of the two arguments.                    |
+| branch   |   3   | Jump to third if first is empty, and second otherwise. |
+| equal    |   2   | Checks that the two arguments are equal.               |
+| matches  |   2   | Regular expression of second argument matches first.   |
+| and      |   2   | Checks that both arguments are non-empty.              |
+| not      |   1   | Opposite of the argument.                              |
+| or       |   2   | Checks that either argument is non-empty.              |
+| less     |   2   | Checks that the first argument is less than the other. |
+| exists   |   1   | Checks that the key exists.                            |
 
-## Schema Distribute
-The ```schema-distribute``` library allows transactional modifications to be made on any key-value store by serializing multi-word compare-and-set instructions over an underlying shared [log](https://en.wikipedia.org/wiki/Transaction_log)
-
-### Compare and Swap
-Suppose there exists some variable ```x = 0``` that is persisted in some shared storage between two machines. Each machine would like to read the value of ```x```, increment it, and then write the new value back to storage. For example, the first machine would read the value of ```x``` to be ```0```, increment it to ```1```, and then write ```x = 1``` back to storage. However, if the second machine reads the value of ```x``` before the first machine finished writing the new value, it also will read the value of ```x``` to be ```0```, increment it to ```1```, and then write ```x = 1``` back to storage. Clearly, two increments have been performed, but the effect of only one is recorded in storage.
-
-This behavior is incorrect and it is a specific example of a [race condition](https://en.wikipedia.org/wiki/Race_condition), or a situation in which the order of execution affects the outcome of a concurrent operation. In general, this kind of non-deterministic behavior is bad, because it means that a program will have unpredictable behavior. One technique for eliminating race conditions is [compare-and-swap](https://en.wikipedia.org/wiki/Compare-and-swap). According to Wikipedia, compare-and-swap "compares the contents of a memory location to a given value and, only if they are the same, modifies the contents of that memory location to a given new value." In the previous example, each machine would first compare the current value of ```x``` in storage to the value that they read. Only if these values match is the new value of ```x``` written. Clearly, the first increment in the previous example would succeed. However, the second increment would fail, because it is expecting ```x = 0``` but ```x = 1``` after the first increment. Therefore, the value of ```x``` in storage accurately reflects the number of increments that were performed and, consequently, compare-and-swap eliminates the race condition.
-
-### Multi-Word Compare and Swap
-We may generalize this compare-and-swap operator to arbitrarily many variables. For example, suppose that you now have two variables ```x``` and ```y``` and you would like to safely increment ```x``` if and only if both ```x``` and ```y``` are unchanged. Each machine first compares the current value of both ```x``` and ```y``` in storage to the value that they read. Only if *both* these values match is the new value of ```x``` written. This procedure is often referred to as multi-word compare-and-swap and it is useful for solving a broad class of problems in distributed systems.
-
-### Transactional Key-Value Store
-We may further generalize this procedure of safely incrementing a set of variables, to performing safe modifications to a key-value store. Like ```x``` in the previous example which could be read and written, there are a set of permissible instructions that may be performed on a key-value store. Namely, key-value pairs may be read, inserted, updated, and deleted. By serializing these multi-word compare-and-set operations containing these instructions over a shared log, we can determine which operations succeed by reading the log and performing each operation in order.
-
-## Overview
-- [x] ```schema-core/```: Core libraryies
-- [x] ```schema-distribute/```: Transactional support for any key-value store.
-- [x] ```schema-local/```: ```LocalLog``` and ```LocalSnapshot```; in-memory
-- [x] ```schema-memcached/```: ```MemcachedSnapshot```
-- [ ] ```schema-kafka/```: ```KafkaLog```
-- [x] ```schema-redis/```: ```RedisSnapshot``` and ```RedisManager```
-- [ ] ```schema-cassandra/```: ```CassandraSnapshot``` and ```CassandraManager```
-
-## Thanks
-- [Tango](http://www.cs.cornell.edu/~taozou/sosp13/tangososp.pdf)
-- [Shapeless](https://github.com/milessabin/shapeless)
+## Attribution

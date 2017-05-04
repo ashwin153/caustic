@@ -3,11 +3,6 @@ jar_library(name='shapeless', jars=[
   jar(org='com.chuusai', name='shapeless_2.12', rev='2.3.2')
 ])
 
-# Chill
-jar_library(name='chill', jars=[
-  jar(org='com.twitter', name='chill_2.12', rev='0.9.2')
-])
-
 # Apache Kafka
 jar_library(name='kafka', jars=[
   jar(org='org.apache.kafka', name='kafka_2.12', rev='0.10.1.1')

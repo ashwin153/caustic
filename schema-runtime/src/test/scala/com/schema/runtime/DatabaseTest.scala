@@ -1,6 +1,6 @@
 package com.schema.runtime
 
-import com.schema.runtime.local.LocalDatabase
+import com.schema.runtime.local.SynchronizedDatabase
 import java.util.concurrent.{CountDownLatch, TimeUnit}
 import org.junit.runner.RunWith
 import org.scalatest.{Matchers, Outcome, fixture}
@@ -18,7 +18,7 @@ class DatabaseTest extends fixture.FunSuite with ScalaFutures with MockitoSugar 
   type FixtureParam = Database
 
   def withFixture(test: OneArgTest): Outcome = {
-    test(LocalDatabase.empty)
+    test(SynchronizedDatabase.empty)
   }
 
   test("Execute is strongly consistent.") { db =>
@@ -38,9 +38,9 @@ class DatabaseTest extends fixture.FunSuite with ScalaFutures with MockitoSugar 
     // deterministic injection of race conditions into transaction execution.
     val ready = new CountDownLatch(1)
     val block = new CountDownLatch(1)
-    val fake  = spy(db)
+    val fake = spy(db)
 
-    when(fake.put(Map("x" -> 0), Map.empty)(global)).thenAnswer(new CallsRealMethods {
+    when(fake.put(Map("x" -> 0L), Map.empty)(global)).thenAnswer(new CallsRealMethods {
       override def answer(invocation: InvocationOnMock): Object = {
         ready.countDown()
         assert(block.await(10, TimeUnit.SECONDS))

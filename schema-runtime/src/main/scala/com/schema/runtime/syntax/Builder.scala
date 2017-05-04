@@ -1,22 +1,24 @@
 package com.schema.runtime.syntax
 
-import com.schema.runtime.Transaction.Literal
-import com.schema.runtime.{Transaction, cons}
+import com.schema.runtime._
+import com.schema.runtime.Transaction._
 
 /**
- * A transaction builder.
+ * A mutable, transaction builder.
  *
  * @param txn Underlying transaction.
  */
 case class Builder(var txn: Transaction) {
 
   /**
+   * Appends the specified transaction using a cons operation.
    *
-   * @param that
+   * @param that Transaction to append.
    */
-  def :+(that: Transaction): Unit = this.txn match {
-    case l: Literal if l == Literal.Empty => this.txn = that
-    case _ => this.txn = cons(this.txn, that)
+  def :+(that: Transaction): Unit = (this.txn, that) match {
+    case (_, v: Literal) if v == Literal.Empty =>
+    case (u: Literal, v) if u == Literal.Empty => this.txn = v
+    case (u, v) => this.txn = cons(u, v)
   }
 
 }

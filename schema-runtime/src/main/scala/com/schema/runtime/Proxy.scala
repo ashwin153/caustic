@@ -7,70 +7,51 @@ import scala.language.dynamics
  * its meaning is entirely dependent on the way that it is used. Implementation relies on the
  * scala.language.dynamics language feature to enable dynamic-typing.
  *
- * @param path Underlying object key.
+ * @param key Underlying object key.
  */
-class Proxy(path: Transaction) extends Dynamic {
+case class Proxy(key: Transaction, owner: Option[Transaction]) extends Dynamic {
 
-  /**
-   * Returns a proxy to the field or reference specified by name.
-   *
-   * @param name Field name.
-   * @return Proxy to named field.
-   */
-  def selectDynamic(name: String): Proxy =
-    new Proxy(read(this.path ++ FieldDelimiter ++ name))
+  def selectDynamic(name: String): Proxy = owner match {
+    case None =>
+      // Interpret key as an object and name as a field.
+      Proxy(this.key ++ FieldDelimiter ++ name, Some(this.key))
+    case Some(o) =>
+      // Interpret key as a reference and name as field on the referenced object.
+      Proxy(read(this.key) ++ FieldDelimiter ++ name, Some(read(this.key)))
+  }
 
-  /**
-   * Returns a proxy to the specified array index.
-   *
-   * @param index Array index.
-   * @return Proxy to array index.
-   */
-  def apply(index: Any): Proxy =
-    new Proxy(this.path ++ FieldDelimiter ++ index.toString)
+  def apply(index: Any): Proxy = {
+    // Interpret key as an array.
+    Proxy(this.key ++ FieldDelimiter ++ index.toString, Some(this.key))
+  }
 
-  /**
-   * Returns a proxy to the specified array index of the field.
-   *
-   * @param name
-   * @param index
-   * @return
-   */
-  def applyDynamics(name: String)(index: Any): Proxy =
-    this.selectDynamic(name)(index)
+  def applyDynamics(name: String)(index: Any): Proxy = {
+    // Interpret key as an object and name as an array field.
+    Proxy(this.key ++ FieldDelimiter ++ name ++ FieldDelimiter ++ index.toString, Some(this.key))
+  }
 
-  /**
-   * Updates the field or reference with the specified name to the specified value. Implementation
-   * also verifies that the field name exists in the list of fields for the corresponding object so
-   * that the field may be safely removed when the corresponding object is deleted.
-   *
-   * @param name Field name.
-   * @param value Updated value.
-   */
+  def update(index: Any, value: Transaction)(implicit ctx: Context): Unit =
+    updateDynamic(index.toString)(value)
+  
   def updateDynamic(name: String)(value: Transaction)(implicit ctx: Context): Unit = {
     val field = this.path ++ FieldDelimiter ++ name
 
-    ctx :+ branch(read(this.path).contains(field),
-      write(field, value),
-      cons(write(this.path, read(this.path) ++ field ++ ListDelimiter), write(field, value))
-    )
-  }
-
-  /**
-   * Updates the specified array index to the specified value. Implementation also verifies that the
-   * field name exists in the list of fields for the corresponding object so that the field may be
-   * safely removed when the corresponding object is deleted.
-   *
-   * @param index Array index.
-   * @param value Updated value.
-   */
-  def update(index: Any, value: Transaction)(implicit ctx: Context): Unit = {
-    val field = this.path ++ FieldDelimiter ++ index.toString
-
-    ctx :+ branch(read(this.path).contains(field),
-      write(field, value),
-      cons(write(this.path, read(this.path) ++ field ++ ListDelimiter), write(field, value))
-    )
+    // Check that the owning object contains the field name before modifying the field. This is
+    // necessary to ensure consistent, safe deletes to the system.
+    owner match {
+      case None =>
+        ctx :+ branch(
+          read(this.key) contains field,
+          write(field, value),
+          cons(write(this.key, read(this.key) ++ field ++ ListDelimiter), write(field, value))
+        )
+      case Some(o) =>
+        ctx :+ branch(
+          read(o) contains field,
+          write(field, value),
+          cons(write(this.key, read(this.key) ++ field ++ ListDelimiter), write(field, value))
+        )
+    }
   }
 
 }

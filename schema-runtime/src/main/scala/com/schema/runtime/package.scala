@@ -175,7 +175,7 @@ package object runtime {
   def Select(key: Key)(implicit ctx: Context): Proxy = {
     require(!key.contains(FieldDelimiter), "Key may not contain field delimiter.")
     require(!key.contains(ListDelimiter), "Key may not contain list delimiter.")
-    new Proxy(key)
+    Proxy(key, None)
   }
 
   /**

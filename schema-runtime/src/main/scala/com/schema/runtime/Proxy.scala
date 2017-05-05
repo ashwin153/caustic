@@ -32,7 +32,7 @@ case class Proxy(key: Transaction, owner: Option[Transaction]) extends Dynamic {
 
   def update(index: Any, value: Transaction)(implicit ctx: Context): Unit =
     updateDynamic(index.toString)(value)
-  
+
   def updateDynamic(name: String)(value: Transaction)(implicit ctx: Context): Unit = {
     val field = this.path ++ FieldDelimiter ++ name
 

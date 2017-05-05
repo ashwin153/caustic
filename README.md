@@ -3,15 +3,3 @@ Schema is a library for executing transactions over arbitrary datastores. Schema
 
 ## Documentation
 Refer to the [User Guide](/schema/wiki/User-Guide) for more detail about how to use the system and the [Implementation](/schema/wiki/Implementation) for more detail about how the system works.
-
-## Examples
-```scala
-Schema { implicit ctx =>
-  val x = Select("xid")
-  If (exists(x)) {
-    Delete(x)
-  } Else {
-    x.foo = "Hello"
-  }
-}
-```

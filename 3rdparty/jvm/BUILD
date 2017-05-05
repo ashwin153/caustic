@@ -3,29 +3,9 @@ jar_library(name='shapeless', jars=[
   jar(org='com.chuusai', name='shapeless_2.12', rev='2.3.2')
 ])
 
-# Apache Kafka
-jar_library(name='kafka', jars=[
-  jar(org='org.apache.kafka', name='kafka_2.12', rev='0.10.1.1')
-])
-
-# Rediscala (Redis)
-jar_library(name='rediscala', jars=[
-  jar(org='com.github.etaty', name='rediscala_2.12', rev='1.8.0')
-])
-
-# Shade (Memcached)
-jar_library(name='shade', jars=[
-  jar(org='io.monix', name='shade_2.12', rev='1.9.1')
-])
-
 # Akka
 jar_library(name='akka', jars=[
   jar(org='com.typesafe.akka', name='akka-actor_2.12', rev='2.4.17')
-])
-
-# Twitter Util Core
-jar_library(name='util-core', jars=[
-  jar(org='com.twitter', name='util-core_2.12', rev='6.41.0')
 ])
 
 # Google Guava

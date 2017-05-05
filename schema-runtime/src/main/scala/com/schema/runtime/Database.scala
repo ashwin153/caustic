@@ -80,6 +80,9 @@ trait Database {
           // Branches are only evaluated on their comparison condition to ensure that only the
           // branch that is taken is ever evaluated.
           branch(evaluate(cmp), pass, fail)
+        case Operation(Cons, first :: second :: Nil) =>
+          // Evaluate the first argument before the other.
+          cons(evaluate(first), second)
         case _ =>
           // Otherwise, recursively evaluate the operands of the operation.
           o.copy(operands = o.operands.map(evaluate))
@@ -92,8 +95,8 @@ trait Database {
     def fold(txn: Transaction): Transaction = txn match {
       case l: Literal => l
       case o: Operation => o.copy(operands = o.operands.map(fold)) match {
-        case Operation(Cons, Literal(_) :: Literal(y) :: Nil) =>
-          literal(y)
+        case Operation(Cons, Literal(_) :: y :: Nil) =>
+          y
         case Operation(Add, Literal(x) :: Literal(y) :: Nil) =>
           literal(x.toDouble + y.toDouble)
         case Operation(Sub, Literal(x) :: Literal(y) :: Nil) =>
@@ -124,14 +127,16 @@ trait Database {
           if (cmp != Literal.False.value) pass else fail
         case Operation(Equal, Literal(x) :: Literal(y) :: Nil) =>
           if (x == y) Literal.True else Literal.False
+        case Operation(Contains, Literal(x) :: Literal(y) :: Nil) =>
+          if (x.contains(y)) Literal.True else Literal.False
         case Operation(Matches, Literal(x) :: Literal(y) :: Nil) =>
           if (x.matches(y)) Literal.True else Literal.False
         case Operation(And, Literal(x) :: Literal(y) :: Nil) =>
-          if (x.nonEmpty && y.nonEmpty) Literal.True else Literal.False
+          if (x == Literal.True.value && y == Literal.True.value) Literal.True else Literal.False
         case Operation(Or, Literal(x) :: Literal(y) :: Nil) =>
-          if (x.nonEmpty || y.nonEmpty) Literal.True else Literal.False
+          if (x == Literal.True.value || y == Literal.True.value) Literal.True else Literal.False
         case Operation(Not, Literal(x) :: Nil) =>
-          if (x.nonEmpty) Literal.False else Literal.True
+          if (x == Literal.True.value) Literal.False else Literal.True
         case Operation(Less, Literal(x) :: Literal(y) :: Nil) =>
           if (x < y) Literal.True else Literal.False
         case Operation(Purge, Literal(list) :: Nil) =>
@@ -152,7 +157,7 @@ trait Database {
     // transaction's writeset (for their version) that have not been read before (to avoid changes
     // in value) and that are not currently depended on by the transaction (to avoid changes in
     // version) to ensure that the evaluation of the transaction is correct and consistent.
-    def reduce(txn: Transaction): Future[String] = {
+    def reduce(txn: Transaction): Future[String] =
       get(txn.readset ++ txn.writeset -- snapshot.keys -- depends.keys) flatMap { values =>
         snapshot ++= values
         fold(evaluate(txn)) match {
@@ -160,7 +165,6 @@ trait Database {
           case o: Operation => reduce(o)
         }
       }
-    }
 
     // Recursively reduce the transaction, and then conditionally persist all changes made by the
     // transaction to the underlying database if and only if the versions of its various

@@ -1,14 +1,13 @@
-package com.schema.runtime.syntax
+package com.schema.runtime
 
-import com.schema.runtime._
-import com.schema.runtime.Transaction._
+import com.schema.runtime.Transaction.Literal
 
 /**
  * A mutable, transaction builder.
  *
  * @param txn Underlying transaction.
  */
-case class Builder(var txn: Transaction) {
+case class Context(var txn: Transaction) {
 
   /**
    * Appends the specified transaction using a cons operation.

@@ -1,6 +1,5 @@
-package com.schema.runtime.syntax
+package com.schema.runtime
 
-import com.schema.runtime._
 import scala.language.dynamics
 
 /**
@@ -10,7 +9,7 @@ import scala.language.dynamics
  *
  * @param path Underlying object key.
  */
-case class Proxy(path: Transaction) extends Dynamic {
+class Proxy(path: Transaction) extends Dynamic {
 
   /**
    * Returns a proxy to the field or reference specified by name.
@@ -19,7 +18,7 @@ case class Proxy(path: Transaction) extends Dynamic {
    * @return Proxy to named field.
    */
   def selectDynamic(name: String): Proxy =
-    Proxy(read(this.path ++ FieldDelimiter ++ name))
+    new Proxy(read(this.path ++ FieldDelimiter ++ name))
 
   /**
    * Returns a proxy to the specified array index.
@@ -28,7 +27,17 @@ case class Proxy(path: Transaction) extends Dynamic {
    * @return Proxy to array index.
    */
   def apply(index: Any): Proxy =
-    Proxy(this.path ++ FieldDelimiter ++ index.toString)
+    new Proxy(this.path ++ FieldDelimiter ++ index.toString)
+
+  /**
+   * Returns a proxy to the specified array index of the field.
+   *
+   * @param name
+   * @param index
+   * @return
+   */
+  def applyDynamics(name: String)(index: Any): Proxy =
+    this.selectDynamic(name)(index)
 
   /**
    * Updates the field or reference with the specified name to the specified value. Implementation
@@ -38,16 +47,13 @@ case class Proxy(path: Transaction) extends Dynamic {
    * @param name Field name.
    * @param value Updated value.
    */
-  def updateDynamic(name: String)(value: Transaction)(
-    implicit builder: Builder
-  ): Unit = {
+  def updateDynamic(name: String)(value: Transaction)(implicit ctx: Context): Unit = {
     val field = this.path ++ FieldDelimiter ++ name
 
-    If (read(this.path).contains(field)) {
-      Return(write(field, value))
-    } Else {
-      Return(cons(write(this.path, read(this.path) ++ field ++ ListDelimiter), write(field, value)))
-    }
+    ctx :+ branch(read(this.path).contains(field),
+      write(field, value),
+      cons(write(this.path, read(this.path) ++ field ++ ListDelimiter), write(field, value))
+    )
   }
 
   /**
@@ -58,16 +64,13 @@ case class Proxy(path: Transaction) extends Dynamic {
    * @param index Array index.
    * @param value Updated value.
    */
-  def update(index: Any, value: Transaction)(
-    implicit builder: Builder
-  ): Unit = {
+  def update(index: Any, value: Transaction)(implicit ctx: Context): Unit = {
     val field = this.path ++ FieldDelimiter ++ index.toString
 
-    If (read(this.path).contains(field)) {
-      Return(write(field, value))
-    } Else {
-      Return(cons(write(path, read(path) ++ field ++ ListDelimiter), write(field, value)))
-    }
+    ctx :+ branch(read(this.path).contains(field),
+      write(field, value),
+      cons(write(this.path, read(this.path) ++ field ++ ListDelimiter), write(field, value))
+    )
   }
 
 }

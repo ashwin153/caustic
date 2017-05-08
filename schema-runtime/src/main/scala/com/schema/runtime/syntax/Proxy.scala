@@ -1,4 +1,5 @@
 package com.schema.runtime
+package syntax
 
 import scala.language.dynamics
 
@@ -8,49 +9,67 @@ import scala.language.dynamics
  * scala.language.dynamics language feature to enable dynamic-typing.
  *
  * @param key Underlying object key.
+ * @param owner Owning object.
  */
-case class Proxy(key: Transaction, owner: Option[Transaction]) extends Dynamic {
+case class Proxy(key: Transaction, owner: Option[Proxy]) extends Dynamic {
 
+  /**
+   *
+   * @param name
+   * @return
+   */
   def selectDynamic(name: String): Proxy = owner match {
     case None =>
       // Interpret key as an object and name as a field.
-      Proxy(this.key ++ FieldDelimiter ++ name, Some(this.key))
+      Proxy(this.key ++ FieldDelimiter ++ name, Some(this))
     case Some(o) =>
       // Interpret key as a reference and name as field on the referenced object.
-      Proxy(read(this.key) ++ FieldDelimiter ++ name, Some(read(this.key)))
+      Proxy(read(this.key) ++ FieldDelimiter ++ name, Some(Proxy(read(this.key), None)))
   }
 
+  /**
+   *
+   * @param index
+   * @return
+   */
   def apply(index: Any): Proxy = {
     // Interpret key as an array.
-    Proxy(this.key ++ FieldDelimiter ++ index.toString, Some(this.key))
+    Proxy(this.key ++ FieldDelimiter ++ index.toString, Some(this))
   }
 
+  /**
+   *
+   * @param name
+   * @param index
+   * @return
+   */
   def applyDynamics(name: String)(index: Any): Proxy = {
     // Interpret key as an object and name as an array field.
-    Proxy(this.key ++ FieldDelimiter ++ name ++ FieldDelimiter ++ index.toString, Some(this.key))
+    Proxy(this.key ++ FieldDelimiter ++ name ++ FieldDelimiter ++ index.toString, Some(this))
   }
 
+  /**
+   *
+   * @param index
+   * @param value
+   * @param ctx
+   */
   def update(index: Any, value: Transaction)(implicit ctx: Context): Unit =
     updateDynamic(index.toString)(value)
 
+  /**
+   *
+   * @param name
+   * @param value
+   * @param ctx
+   */
   def updateDynamic(name: String)(value: Transaction)(implicit ctx: Context): Unit = {
     val field = this.path ++ FieldDelimiter ++ name
 
-    // Check that the owning object contains the field name before modifying the field. This is
-    // necessary to ensure consistent, safe deletes to the system.
-    owner match {
-      case None =>
-        ctx :+ branch(
-          read(this.key) contains field,
-          write(field, value),
-          cons(write(this.key, read(this.key) ++ field ++ ListDelimiter), write(field, value))
-        )
-      case Some(o) =>
-        ctx :+ branch(
-          read(o) contains field,
-          write(field, value),
-          cons(write(this.key, read(this.key) ++ field ++ ListDelimiter), write(field, value))
-        )
+    // Verify that the field is contained in the objects field collection.
+    this.owner match {
+      case None => Collection(this.fields) += field
+      case Some(o) => Collection(o.fields) += field
     }
   }
 

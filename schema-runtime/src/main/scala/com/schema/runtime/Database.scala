@@ -1,7 +1,5 @@
 package com.schema.runtime
 
-import com.schema.runtime.Transaction._
-import com.schema.runtime.Transaction.Operation._
 import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -53,6 +51,7 @@ trait Database {
     val snapshot = mutable.Map.empty[Key, (Revision, Value)].withDefaultValue((0L, ""))
     val changes  = mutable.Map.empty[Key, (Revision, Value)]
     val depends  = mutable.Map.empty[Key,  Revision]
+    val locals   = mutable.Map.empty[Key,  Value]
 
     // Replaces all read operations on literal keys with the most up-to-date value associated with
     // the key, and saves all write operations to a literal key and value in the change buffer and
@@ -83,6 +82,9 @@ trait Database {
         case Operation(Cons, first :: second :: Nil) =>
           // Evaluate the first argument before the other.
           cons(evaluate(first), second)
+        case Operation(Loop, cmp :: body :: Nil) =>
+          // Do not evaluate the body of the loop.
+          loop(evaluate(cmp), body)
         case _ =>
           // Otherwise, recursively evaluate the operands of the operation.
           o.copy(operands = o.operands.map(evaluate))
@@ -95,6 +97,8 @@ trait Database {
     def fold(txn: Transaction): Transaction = txn match {
       case l: Literal => l
       case o: Operation => o.copy(operands = o.operands.map(fold)) match {
+        case Operation(Loop, Literal(c) :: b :: Nil) =>
+          branch(c, cons(b, loop(c, b)), Literal.Empty)
         case Operation(Cons, Literal(_) :: y :: Nil) =>
           y
         case Operation(Add, Literal(x) :: Literal(y) :: Nil) =>
@@ -120,7 +124,7 @@ trait Database {
         case Operation(Length, Literal(x) :: Nil) =>
           literal(x.length)
         case Operation(Slice, Literal(x) :: Literal(l) :: Literal(h) :: Nil) =>
-          literal(x.substring(l.toInt, h.toInt))
+          literal(x.substring(l.toDouble.toInt, h.toDouble.toInt))
         case Operation(Concat, Literal(x) :: Literal(y) :: Nil) =>
           literal(x + y)
         case Operation(Branch, Literal(cmp) :: pass :: fail :: Nil) =>
@@ -139,12 +143,11 @@ trait Database {
           if (x == Literal.True.value) Literal.False else Literal.True
         case Operation(Less, Literal(x) :: Literal(y) :: Nil) =>
           if (x < y) Literal.True else Literal.False
-        case Operation(Purge, Literal(list) :: Nil) =>
-          list.split(ListDelimiter.value)
-            .filter(_.nonEmpty)
-            .map(key => write(key, Literal.Empty))
-            .reduceLeftOption((a, b) => cons(a, b))
-            .getOrElse(Literal.Empty)
+        case Operation(Load, Literal(key) :: Nil) =>
+          Literal(locals.getOrElse(key, ""))
+        case Operation(Store, Literal(key) :: Literal(value) :: Nil) =>
+          locals.put(key, value)
+          Literal(value)
         case default =>
           default
       }
@@ -168,7 +171,7 @@ trait Database {
 
     // Recursively reduce the transaction, and then conditionally persist all changes made by the
     // transaction to the underlying database if and only if the versions of its various
-    // dependencies have not changed.
+    // dependencies have not changed. Filter out empty first changes to allow local variables.
     reduce(fold(txn)).flatMap(r => put(depends.toMap, changes.toMap).map(_ => r))
   }
 

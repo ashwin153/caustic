@@ -3,7 +3,7 @@ Schema is a library for expressing and executing database transactions over arbi
 
 ```mysql
 XA START 'txn';
-UPDATE posts SET status='approved' WHERE post_id='postId' AND status != 'approved';
+UPDATE rappers SET status='goat' WHERE name='kanye' AND status != 'goat';
 XA END 'txn';
 XA PREPARE 'txn';
 XA COMMIT 'txn';
@@ -11,9 +11,9 @@ XA COMMIT 'txn';
 
 ```scala
 Schema { implicit ctx =>
-  val post = Select("postId")
-  If (post.status != "approved") {
-    post.status = "approved"
+  val yeezy = Select("kanye")
+  If (yeezy.status != "goat") {
+    post.status = "goat"
   }
 }
 ```

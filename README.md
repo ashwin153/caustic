@@ -3,7 +3,7 @@ Schema is a library for expressing and executing database transactions over arbi
 
 ```mysql
 XA START 'txn';
-UPDATE posts SET status='approved' where post_id='postId' AND status != 'approved';
+UPDATE posts SET status='approved' WHERE post_id='postId' AND status != 'approved';
 XA END 'txn';
 XA PREPARE 'txn';
 XA COMMIT 'txn';

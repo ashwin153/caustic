@@ -3,17 +3,18 @@ Schema is a library for expressing and executing database transactions over arbi
 
 ```mysql
 XA START 'txn';
-UPDATE rappers SET status='goat' WHERE name='kanye' AND status != 'goat';
+INSERT INTO counters (name, count) VALUES ("x", "0") ON DUPLICATE KEY count = count + 1;
 XA END 'txn';
 XA PREPARE 'txn';
 XA COMMIT 'txn';
 ```
-
 ```scala
 Schema { implicit ctx =>
-  val yeezy = Select("kanye")
-  If (yeezy.status != "goat") {
-    post.status = "goat"
+  val counter = Select("x")
+  If (Exists(counter)) {
+    counter.count = 0
+  } Else {
+    counter.count += 1
   }
 }
 ```

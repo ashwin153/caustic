@@ -1,6 +1,7 @@
 package com.schema.runtime
 
-import com.schema.runtime.Database.RollbackedException
+import com.schema.runtime.Database.{ExecutionException, RollbackedException}
+import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
@@ -55,116 +56,6 @@ trait Database {
     val depends  = mutable.Map.empty[Key,  Revision]
     val locals   = mutable.Map.empty[Key,  Value]
 
-    // Replaces all read operations on literal keys with the most up-to-date value associated with
-    // the key, and saves all write operations to a literal key and value in the change buffer and
-    // replaces them with the updated value.
-    def evaluate(txn: Transaction): Transaction = txn match {
-      case l: Literal => l
-      case o: Operation => o match {
-        case Operation(Read, Literal(key) :: Nil) =>
-          // Reads to a key are first attempted on the local changes and then on the local snapshot
-          // in order to guarantee that all reads return the latest known version for any particular
-          // key. If a key was modified within a transaction, the result of read should reflect
-          // these modifications.
-          val (_, value) = changes.getOrElse(key, snapshot(key))
-          val (version, _) = snapshot(key)
-          depends += key -> version
-          Literal(value)
-        case Operation(Write, Literal(key) :: Literal(value) :: Nil) =>
-          // Writes to a key do not immediately take effect; instead, they are stored in the local
-          // change buffer and are committed at the end of execution. Writes operators return the
-          // value that was written to the key.
-          val (version, _) = snapshot(key)
-          changes += key -> (version + 1, value)
-          Literal(value)
-        case Operation(Branch, cmp :: pass :: fail :: Nil) =>
-          // Branches are only evaluated on their comparison condition to ensure that only the
-          // branch that is taken is ever evaluated.
-          branch(evaluate(cmp), pass, fail)
-        case Operation(Cons, first :: second :: Nil) =>
-          // Evaluate the first argument before the other.
-          cons(evaluate(first), second)
-        case Operation(Repeat, cmp :: body :: Nil) =>
-          // Do not evaluate the body of the loop.
-          repeat(evaluate(cmp), body)
-        case Operation(Loop, from :: until :: step :: index :: body :: Nil) =>
-          // Do not evaluate the body of the loop.
-          loop(evaluate(from), evaluate(until), evaluate(step), evaluate(index), body)
-        case _ =>
-          // Otherwise, recursively evaluate the operands of the operation.
-          o.copy(operands = o.operands.map(evaluate))
-      }
-    }
-
-    // Folds operations on constants into constants. Because all operations must eventually take
-    // literals as arguments and all operations are reducible to literals, all transactions must
-    // eventually be foldable into literals.
-    def fold(txn: Transaction): Transaction = txn match {
-      case l: Literal => l
-      case o: Operation => o.copy(operands = o.operands.map(fold)) match {
-        case Operation(Repeat, Literal(c) :: b :: Nil) =>
-          branch(c, cons(b, repeat(c, b)), Literal.Empty)
-        case Operation(Loop, Literal(f) :: Literal(u) :: Literal(s) :: i :: b :: Nil) =>
-          (f.toDouble.toInt to u.toDouble.toInt by s.toDouble.toInt)
-            .map(j => cons(store(i, j), b))
-            .reduceLeftOption((a, b) => cons(a, b))
-            .getOrElse(Literal.Empty)
-        case Operation(Cons, Literal(_) :: y :: Nil) =>
-          y
-        case Operation(Add, Literal(x) :: Literal(y) :: Nil) =>
-          literal(x.toDouble + y.toDouble)
-        case Operation(Sub, Literal(x) :: Literal(y) :: Nil) =>
-          literal(x.toDouble - y.toDouble)
-        case Operation(Mul, Literal(x) :: Literal(y) :: Nil) =>
-          literal(x.toDouble * y.toDouble)
-        case Operation(Div, Literal(x) :: Literal(y) :: Nil) =>
-          literal(x.toDouble / y.toDouble)
-        case Operation(Mod, Literal(x) :: Literal(y) :: Nil) =>
-          literal(x.toDouble % y.toDouble)
-        case Operation(Pow, Literal(x) :: Literal(y) :: Nil) =>
-          literal(math.pow(x.toDouble, y.toDouble))
-        case Operation(Log, Literal(x) :: Nil) =>
-          literal(math.log(x.toDouble))
-        case Operation(Sin, Literal(x) :: Nil) =>
-          literal(math.sin(x.toDouble))
-        case Operation(Cos, Literal(x) :: Nil) =>
-          literal(math.cos(x.toDouble))
-        case Operation(Floor, Literal(x) :: Nil) =>
-          literal(math.floor(x.toDouble))
-        case Operation(Length, Literal(x) :: Nil) =>
-          literal(x.length)
-        case Operation(Slice, Literal(x) :: Literal(l) :: Literal(h) :: Nil) =>
-          literal(x.substring(l.toDouble.toInt, h.toDouble.toInt))
-        case Operation(Concat, Literal(x) :: Literal(y) :: Nil) =>
-          literal(x + y)
-        case Operation(Branch, Literal(cmp) :: pass :: fail :: Nil) =>
-          if (cmp != Literal.False.value) pass else fail
-        case Operation(Equal, Literal(x) :: Literal(y) :: Nil) =>
-          if (x == y) Literal.True else Literal.False
-        case Operation(Contains, Literal(x) :: Literal(y) :: Nil) =>
-          if (x.contains(y)) Literal.True else Literal.False
-        case Operation(Matches, Literal(x) :: Literal(y) :: Nil) =>
-          if (x.matches(y)) Literal.True else Literal.False
-        case Operation(And, Literal(x) :: Literal(y) :: Nil) =>
-          if (x == Literal.True.value && y == Literal.True.value) Literal.True else Literal.False
-        case Operation(Or, Literal(x) :: Literal(y) :: Nil) =>
-          if (x == Literal.True.value || y == Literal.True.value) Literal.True else Literal.False
-        case Operation(Not, Literal(x) :: Nil) =>
-          if (x == Literal.True.value) Literal.False else Literal.True
-        case Operation(Less, Literal(x) :: Literal(y) :: Nil) =>
-          if (x < y) Literal.True else Literal.False
-        case Operation(Load, Literal(key) :: Nil) =>
-          Literal(locals.getOrElse(key, ""))
-        case Operation(Store, Literal(key) :: Literal(value) :: Nil) =>
-          locals.put(key, value)
-          Literal(value)
-        case Operation(Rollback, Literal(msg) :: Nil) =>
-          throw RollbackedException(msg)
-        case default =>
-          default
-      }
-    }
-
     // Reduces the transaction to a literal by repeatedly evaluating and folding it. Because all
     // transactions must terminate in literals (they are the "leaves" of the transaction) and all
     // operations are reducible to literals, all transaction must eventually reduce to a literal.
@@ -175,16 +66,185 @@ trait Database {
     def reduce(txn: Transaction): Future[String] =
       get(txn.readset ++ txn.writeset -- snapshot.keys -- depends.keys) flatMap { values =>
         snapshot ++= values
-        fold(evaluate(txn)) match {
+        fold(List(Left(txn)), List.empty) match {
           case l: Literal => Future(l.value)
           case o: Operation => reduce(o)
         }
       }
 
+    @tailrec def fold(
+      stack: List[Either[Transaction, Operator]],
+      operands: List[Transaction]
+    ): Transaction = (stack, operands) match {
+      case (Nil, Nil) =>
+        operands.head
+      case (Nil, _) =>
+        throw ExecutionException("Illegal transaction")
+      case (Left(l: Literal) :: rest, _)=>
+        fold(rest, l :: operands)
+      case (Left(Operation(Read, Literal(key) :: Nil)) :: rest, _) =>
+        // Reads to a key are first attempted on the local changes and then on the local snapshot.
+        val (_, value) = changes.getOrElse(key, snapshot(key))
+        val (version, _) = snapshot(key)
+        depends += key -> version
+        fold(rest, value :: operands)
+      case (Left(Operation(Write, Literal(key) :: Literal(value) :: Nil)) :: rest, _) =>
+        // Writes to a key do not immediately take effect; they are locally buffered.
+        val (version, _) = snapshot(key)
+        changes += key -> (version + 1, value)
+        fold(rest, value :: operands)
+      case (Left(Operation(Branch, cmp :: pass :: fail :: Nil)) :: rest, _) =>
+        // Only recursively fold the condition to ensure we only process the branch that is taken.
+        fold(Left(cmp) :: Right(Branch) :: rest, pass :: fail :: operands)
+      case (Left(Operation(Cons, first :: second :: Nil)) :: rest, _) =>
+        // Only recursively fold the first argument of cons to ensure it is processed first.
+        fold(Left(first) :: Right(Cons) :: rest, second :: operands)
+      case (Left(Operation(Repeat, cmp :: body :: Nil)) :: rest, _) =>
+        // Do not fold the body of the repeat block.
+        fold(Left(cmp) :: Right(Repeat) :: rest, body :: operands)
+      case (Left(Operation(Loop, from :: until :: step :: index :: body :: Nil)) :: rest, _) =>
+        // Do not fold the body of the loop block.
+        fold(Left(index) :: Left(step) :: Left(until) :: Left(from) :: Right(Loop) :: rest, body :: operands)
+      case (Left(o: Operation) :: rest, _) =>
+        // Otherwise, recusively fold all the operands of any operation.
+        fold(o.operands.reverse.map(Left.apply) ::: Right(o.operator) :: rest, operands)
+
+      // Core Operations.
+      case (Right(Read) :: rest, k :: rem) =>
+        fold(rest, read(k) :: rem)
+      case (Right(Write) :: rest, k :: v :: rem) =>
+        fold(rest, write(k, v) :: rem)
+      case (Right(Load) :: rest, Literal(k) :: rem) =>
+        fold(rest, locals.getOrElse(k, "") :: rem)
+      case (Right(Load) :: rest, k :: rem) =>
+        fold(rest, load(k) :: rem)
+      case (Right(Store) :: rest, Literal(k) :: Literal(v) :: rem) =>
+        locals.put(k, v)
+        fold(rest, v :: rem)
+      case (Right(Store) :: rest, k :: v :: rem) =>
+        fold(rest, store(k, v) :: rem)
+      case (Right(Rollback) :: _, Literal(m) :: _) =>
+        throw RollbackedException(m)
+      case (Right(Rollback) :: rest, m :: rem) =>
+        fold(rest, rollback(m) :: rem)
+      case (Right(Repeat) :: rest, Literal(c) :: b :: rem) =>
+        fold(rest, branch(c, cons(b, repeat(c, b)), Literal.Empty) :: rem)
+      case (Right(Repeat) :: rest, c :: b :: rem) =>
+        fold(rest, repeat(c, b) :: rem)
+      case (Right(Loop) :: rest, Literal(f) :: Literal(u) :: Literal(s) :: i :: b :: rem) =>
+        val unroll = (f.toDouble.toInt to u.toDouble.toInt by s.toDouble.toInt)
+          .map(j => cons(store(i, j), b))
+          .reduceLeftOption((a, b) => cons(a, b))
+          .getOrElse(Literal.Empty)
+        fold(rest, unroll :: rem)
+      case (Right(Loop) :: rest, f :: u :: s :: i :: b :: rem) =>
+        fold(rest, loop(f, u, s, i, b) :: rem)
+      case (Right(Cons) :: rest, Literal(f) :: s :: rem) =>
+        fold(Left(s) :: rest, rem)
+      case (Right(Cons) :: rest, f :: s :: rem) =>
+        fold(rest, cons(f, s) :: rem)
+
+      // Numeric Operations.
+      case (Right(Add) :: rest, Literal(x) :: Literal(y) :: rem) =>
+        fold(rest, (x.toDouble + y.toDouble) :: rem)
+      case (Right(Add) :: rest, x :: y :: rem) =>
+        fold(rest, add(x, y) :: rem)
+      case (Right(Sub) :: rest, Literal(x) :: Literal(y) :: rem) =>
+        fold(rest, (x.toDouble - y.toDouble) :: rem)
+      case (Right(Sub) :: rest, x :: y :: rem) =>
+        fold(rest, sub(x, y) :: rem)
+      case (Right(Mul) :: rest, Literal(x) ::Literal(y) ::  rem) =>
+        fold(rest, (x.toDouble * y.toDouble) :: rem)
+      case (Right(Mul) :: rest, x :: y :: rem) =>
+        fold(rest, mul(x, y) :: rem)
+      case (Right(Div) :: rest, Literal(x) :: Literal(y) :: rem) =>
+        fold(rest, (x.toDouble / y.toDouble) :: rem)
+      case (Right(Div) :: rest, x :: y :: rem) =>
+        fold(rest, div(x, y) :: rem)
+      case (Right(Mod) :: rest, Literal(x) :: Literal(y) :: rem) =>
+        fold(rest, (x.toDouble % y.toDouble) :: rem)
+      case (Right(Mod) :: rest, x :: y :: rem) =>
+        fold(rest, mod(x, y) :: rem)
+      case (Right(Pow) :: rest, Literal(x) :: Literal(y) :: rem) =>
+        fold(rest, math.pow(x.toDouble, y.toDouble) :: rem)
+      case (Right(Pow) :: rest, x :: y :: rem) =>
+        fold(rest, pow(x, y) :: rem)
+      case (Right(Log) :: rest, Literal(x) :: rem) =>
+        fold(rest, math.log(x.toDouble) :: rem)
+      case (Right(Log) :: rest, x :: rem) =>
+        fold(rest, log(x) :: rem)
+      case (Right(Sin) :: rest, Literal(x) :: rem) =>
+        fold(rest, math.sin(x.toDouble) :: rem)
+      case (Right(Sin) :: rest, x :: rem) =>
+        fold(rest, sin(x) :: rem)
+      case (Right(Cos) :: rest, Literal(x) :: rem) =>
+        fold(rest, math.cos(x.toDouble) :: rem)
+      case (Right(Cos) :: rest, x :: rem) =>
+        fold(rest, cos(x) :: rem)
+      case (Right(Floor) :: rest, Literal(x) :: rem) =>
+        fold(rest, math.floor(x.toDouble) :: rem)
+      case (Right(Floor) :: rest, x :: rem) =>
+        fold(rest, floor(x) :: rem)
+
+      // String Operations.
+      case (Right(Length) :: rest, Literal(x) :: rem) =>
+        fold(rest, x.length :: rem)
+      case (Right(Length) :: rest, x :: rem) =>
+        fold(rest, length(x) :: rem)
+      case (Right(Slice) :: rest, Literal(x) :: Literal(l) :: Literal(h) :: rem) =>
+        fold(rest, x.substring(l.toDouble.toInt, h.toDouble.toInt) :: rem)
+      case (Right(Slice) :: rest, x :: l :: h :: rem) =>
+        fold(rest, slice(x, l, h) :: rem)
+      case (Right(Concat) :: rest, Literal(x) :: Literal(y) :: rem) =>
+        fold(rest, (x + y) :: rem)
+      case (Right(Concat) :: rest, x :: y :: rem) =>
+        fold(rest, concat(x, y) :: rem)
+      case (Right(Contains) :: rest, Literal(x) :: Literal(y) :: rem) =>
+        fold(rest, x.contains(y) :: rem)
+      case (Right(Contains) :: rest, x :: y :: rem) =>
+        fold(rest, contains(x, y) :: rem)
+      case (Right(Matches) :: rest, Literal(x) :: Literal(y) :: rem) =>
+        fold(rest, x.matches(y) :: rem)
+      case (Right(Matches) :: rest, x :: y :: rem) =>
+        fold(rest, matches(x, y) :: rem)
+
+      // Logical Operations.
+      case (Right(Branch) :: rest, Literal(c) :: p :: f :: rem) =>
+        val take =  if (c != Literal.False.value) p else f
+        fold(Left(take) :: rest, rem)
+      case (Right(Branch) :: rest, c :: p :: f :: rem) =>
+        fold(rest, branch(c, p, f) :: rem)
+      case (Right(Equal) :: rest, Literal(x) :: Literal(y) :: rem) =>
+        val res = if (x == y) Literal.True else Literal.False
+        fold(rest, res :: rem)
+      case (Right(Equal) :: rest, x :: y :: rem) =>
+        fold(rest, equal(x, y) :: rem)
+      case (Right(And) :: rest, Literal(x) :: Literal(y) :: rem) =>
+        val res = if (x == Literal.True.value && y == Literal.True.value) Literal.True else Literal.False
+        fold(rest, res :: rem)
+      case (Right(And) :: rest, x :: y :: rem) =>
+        fold(rest, and(x, y) :: rem)
+      case (Right(Or) :: rest, Literal(x) :: Literal(y) :: rem) =>
+        val res = if (x == Literal.True.value || y == Literal.True.value) Literal.True else Literal.False
+        fold(rest, res :: rem)
+      case (Right(Or) :: rest, x :: y :: rem) =>
+        fold(rest, or(x, y) :: rem)
+      case (Right(Less) :: rest, Literal(x) :: Literal(y) :: rem) =>
+        val res = if (x < y) Literal.True else Literal.False
+        fold(rest, res :: rem)
+      case (Right(Less) :: rest, x :: y :: rem) =>
+        fold(rest, less(x, y) :: rem)
+      case (Right(Not) :: rest, Literal(x) :: rem) =>
+        val res = if (x == Literal.True.value) Literal.False else Literal.True
+        fold(rest, res :: rem)
+      case (Right(Not) :: rest, x :: rem) =>
+        fold(rest, not(x) :: rem)
+    }
+
     // Recursively reduce the transaction, and then conditionally persist all changes made by the
     // transaction to the underlying database if and only if the versions of its various
     // dependencies have not changed. Filter out empty first changes to allow local variables.
-    reduce(fold(txn)).transformWith {
+    reduce(txn).transformWith {
       case Success(r) => put(depends.toMap, changes.toMap).map(_ => r)
       case Failure(e: RollbackedException) => Future(e.message)
       case Failure(e) => Future.failed(e)
@@ -201,6 +261,16 @@ object Database {
    * @param cause
    */
   case class RollbackedException(
+    message: String = "",
+    cause: Throwable = None.orNull
+  ) extends Exception(message, cause)
+
+  /**
+   *
+   * @param message
+   * @param cause
+   */
+  case class ExecutionException(
     message: String = "",
     cause: Throwable = None.orNull
   ) extends Exception(message, cause)

@@ -12,7 +12,7 @@ object DatabaseBenchmark extends Bench.LocalTime {
   val database: SynchronizedDatabase = SynchronizedDatabase.empty
 
   // Benchmark transactions containing sequential reads.
-  val sizes: Gen[Int] = Gen.range("size")(10, 100, 10)
+  val sizes: Gen[Int] = Gen.range("size")(100, 1000, 100)
   val sequential: Gen[Transaction] = sizes.map(size => Seq.fill(size)(read("xyz")).reduce((a, b) => cons(a, b)))
 
   // Benchmark transactions containing nested reads.

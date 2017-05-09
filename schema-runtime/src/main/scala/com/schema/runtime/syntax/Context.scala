@@ -8,20 +8,7 @@ import scala.language.dynamics
  *
  * @param txn Underlying transaction.
  */
-class Context(
-  private[syntax] var txn: Transaction
-) extends Dynamic {
-
-  /**
-   * Appends the specified transaction to the underlying context.
-   *
-   * @param that Transaction to append.
-   */
-  private[syntax] def +=(that: Transaction): Unit = (this.txn, that) match {
-    case (_, v: Literal) if v == Literal.Empty =>
-    case (u: Literal, v) if u == Literal.Empty => this.txn = v
-    case (u, v) => this.txn = cons(u, v)
-  }
+class Context(var txn: Transaction) extends Dynamic {
 
   /**
    * Returns the value of the local variable with the specified name.
@@ -29,7 +16,7 @@ class Context(
    * @param name
    * @return
    */
-  private[syntax] def selectDynamic(name: String): Transaction =
+  def selectDynamic(name: String): Transaction =
     load(name)
 
   /**
@@ -39,16 +26,28 @@ class Context(
    * @param value
    * @param ctx
    */
-  private[syntax] def updateDynamic(name: String)(value: Transaction)(implicit ctx: Context): Unit =
+  def updateDynamic(name: String)(value: Transaction)(implicit ctx: Context): Unit =
     ctx += store(name, value)
+
+  /**
+   * Appends the specified transaction to the underlying context.
+   *
+   * @param that Transaction to append.
+   */
+  def +=(that: Transaction): Unit = (this.txn, that) match {
+    case (_, v: Literal) if v == Literal.Empty =>
+    case (u: Literal, v) if u == Literal.Empty => this.txn = v
+    case (u, v) => this.txn = cons(u, v)
+  }
 
 }
 
 object Context {
 
   /**
+   * An empty transactional context.
    *
-   * @return
+   * @return Empty context.
    */
   def empty: Context = new Context(Literal.Empty)
 

@@ -57,7 +57,7 @@ object LockFreeDatabase {
    *
    * @return Empty local database.
    */
-  def empty = new LockFreeDatabase(TrieMap.empty)
+  def empty: LockFreeDatabase = new LockFreeDatabase(TrieMap.empty)
 
   /**
    * Constructs a database backed by a [[TrieMap]] that is initialized with the specified key value
@@ -66,7 +66,7 @@ object LockFreeDatabase {
    * @param initial Initial key value pairs.
    * @return Local database initialized with the specified key value pairs.
    */
-  def apply(initial: (Key, Value)*) = {
+  def apply(initial: (Key, Value)*): LockFreeDatabase = {
     val underlying = initial.map { case (k, v) => (k, (new AtomicBoolean(false), (0L, v))) }
     new LockFreeDatabase(TrieMap(underlying: _*))
   }

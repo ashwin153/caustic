@@ -42,7 +42,7 @@ object SynchronizedDatabase {
    *
    * @return Empty synchronized database.
    */
-  def empty = new SynchronizedDatabase(TrieMap.empty)
+  def empty: SynchronizedDatabase = new SynchronizedDatabase(TrieMap.empty)
 
   /**
    * Constructs a database backed by a [[TrieMap]] that is initialized with the specified key value
@@ -51,7 +51,7 @@ object SynchronizedDatabase {
    * @param initial Initial key value pairs.
    * @return Synchronized database initialized with the specified key value pairs.
    */
-  def apply(initial: (Key, Value)*) = {
+  def apply(initial: (Key, Value)*): SynchronizedDatabase = {
     val underlying = initial.map { case (k, v) => (k, (0L, v)) }
     new SynchronizedDatabase(TrieMap(underlying: _*))
   }

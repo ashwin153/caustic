@@ -7,7 +7,9 @@ case object Load     extends Operator  // Lookup the value of a local key.
 case object Store    extends Operator  // Update the value of a local key.
 case object Cons     extends Operator  // Sequentially evaluate arguments.
 case object Loop     extends Operator  // Repeat while the condition is not satisfied.
+case object Repeat   extends Operator  // Repeat the specified number of times.
 case object Branch   extends Operator  // Jump to third if first is empty, and second otherwise.
+case object Rollback extends Operator  // Rolls back the transaction.
 case object Add      extends Operator  // Sum of the two arguments.
 case object Sub      extends Operator  // Difference of the two arguments.
 case object Mul      extends Operator  // Product of the two arguments.

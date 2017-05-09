@@ -6,7 +6,7 @@ package syntax
  *
  * @param proxy
  */
-case class Collection(proxy: Proxy) {
+case class Index(proxy: Proxy) {
 
   /**
    *
@@ -29,17 +29,17 @@ case class Collection(proxy: Proxy) {
    */
   def +=(value: Transaction)(implicit ctx: Context): Unit = {
     // Setup local variables.
-    ctx.found = Literal.False
+    ctx.found = -1
 
     // Find the index of the value in the list.
-    For (0, proxy.length) { i =>
-      If (!ctx.found && equal(proxy(i), value)) {
-        ctx.found = Literal.True
+    For (ctx.i, 0, proxy.length) {
+      If (proxy(ctx.i) == value) {
+        ctx.found = ctx.i
       }
     }
 
     // Add the value to the end of the set if it does not exist.
-    If (!ctx.found) {
+    If (ctx.found < 0) {
       proxy(proxy.length) = value
       proxy.length = proxy.length + 1
     }
@@ -52,21 +52,33 @@ case class Collection(proxy: Proxy) {
    */
   def -=(value: Transaction)(implicit ctx: Context): Unit = {
     // Setup local variables.
-    ctx.found = Literal.False
+    ctx.found = -1
 
     // Find the index of the value in the list.
-    For (0, proxy.length) { i =>
-      If (!ctx.found && equal(proxy(i), value)) {
-        ctx.found = Literal.True
+    For (ctx.i, 0, proxy.length) {
+      If (proxy(ctx.i) == value) {
+        ctx.found = ctx.i
       }
     }
 
     // Shift all the values by one index to the left if it exists.
-    If (ctx.found) {
-      For (ctx.index, proxy.length) { i =>
-        proxy(i) = proxy(i + 1)
+    If (ctx.found >= 0) {
+      For (ctx.i, ctx.found, proxy.length) {
+        proxy(ctx.i) = proxy(ctx.i + 1)
       }
     }
+  }
+
+  /**
+   *
+   * @param ctx
+   */
+  def clear()(implicit ctx: Context): Unit = {
+    For (ctx.i, 0, proxy.length) {
+      proxy(ctx.i) = Literal.Empty
+    }
+
+    proxy.length = 0
   }
 
 }

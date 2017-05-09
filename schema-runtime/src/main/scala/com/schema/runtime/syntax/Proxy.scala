@@ -68,8 +68,8 @@ case class Proxy(key: Transaction, owner: Option[Proxy]) extends Dynamic {
 
     // Verify that the field is contained in the objects field collection.
     this.owner match {
-      case None => Collection(this.fields) += field
-      case Some(o) => Collection(o.fields) += field
+      case None => Index(this.fields) += field
+      case Some(o) => Index(o.fields) += field
     }
   }
 

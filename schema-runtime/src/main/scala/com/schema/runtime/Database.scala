@@ -1,7 +1,9 @@
 package com.schema.runtime
 
+import com.schema.runtime.Database.RollbackedException
 import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Success}
 
 /**
  * An asynchronous, key-value store.
@@ -45,7 +47,7 @@ trait Database {
    * @param ec Implicit execution context.
    * @return Result of transaction execution, or an exception on failure.
    */
-  final def execute(txn: Transaction)(
+  def execute(txn: Transaction)(
     implicit ec: ExecutionContext
   ): Future[Value] = {
     val snapshot = mutable.Map.empty[Key, (Revision, Value)].withDefaultValue((0L, ""))
@@ -82,9 +84,12 @@ trait Database {
         case Operation(Cons, first :: second :: Nil) =>
           // Evaluate the first argument before the other.
           cons(evaluate(first), second)
-        case Operation(Loop, cmp :: body :: Nil) =>
+        case Operation(Repeat, cmp :: body :: Nil) =>
           // Do not evaluate the body of the loop.
-          loop(evaluate(cmp), body)
+          repeat(evaluate(cmp), body)
+        case Operation(Loop, from :: until :: step :: index :: body :: Nil) =>
+          // Do not evaluate the body of the loop.
+          loop(evaluate(from), evaluate(until), evaluate(step), evaluate(index), body)
         case _ =>
           // Otherwise, recursively evaluate the operands of the operation.
           o.copy(operands = o.operands.map(evaluate))
@@ -97,8 +102,13 @@ trait Database {
     def fold(txn: Transaction): Transaction = txn match {
       case l: Literal => l
       case o: Operation => o.copy(operands = o.operands.map(fold)) match {
-        case Operation(Loop, Literal(c) :: b :: Nil) =>
-          branch(c, cons(b, loop(c, b)), Literal.Empty)
+        case Operation(Repeat, Literal(c) :: b :: Nil) =>
+          branch(c, cons(b, repeat(c, b)), Literal.Empty)
+        case Operation(Loop, Literal(f) :: Literal(u) :: Literal(s) :: i :: b :: Nil) =>
+          (f.toDouble.toInt to u.toDouble.toInt by s.toDouble.toInt)
+            .map(j => cons(store(i, j), b))
+            .reduceLeftOption((a, b) => cons(a, b))
+            .getOrElse(Literal.Empty)
         case Operation(Cons, Literal(_) :: y :: Nil) =>
           y
         case Operation(Add, Literal(x) :: Literal(y) :: Nil) =>
@@ -148,6 +158,8 @@ trait Database {
         case Operation(Store, Literal(key) :: Literal(value) :: Nil) =>
           locals.put(key, value)
           Literal(value)
+        case Operation(Rollback, Literal(msg) :: Nil) =>
+          throw RollbackedException(msg)
         case default =>
           default
       }
@@ -172,7 +184,25 @@ trait Database {
     // Recursively reduce the transaction, and then conditionally persist all changes made by the
     // transaction to the underlying database if and only if the versions of its various
     // dependencies have not changed. Filter out empty first changes to allow local variables.
-    reduce(fold(txn)).flatMap(r => put(depends.toMap, changes.toMap).map(_ => r))
+    reduce(fold(txn)).transformWith {
+      case Success(r) => put(depends.toMap, changes.toMap).map(_ => r)
+      case Failure(e: RollbackedException) => Future(e.message)
+      case Failure(e) => Future.failed(e)
+    }
   }
+
+}
+
+object Database {
+
+  /**
+   *
+   * @param message
+   * @param cause
+   */
+  case class RollbackedException(
+    message: String = "",
+    cause: Throwable = None.orNull
+  ) extends Exception(message, cause)
 
 }

@@ -8,7 +8,8 @@ import scala.concurrent.duration.FiniteDuration
 package object syntax {
 
   // Implicit conversions.
-  implicit def proxy2ops(proxy: syntax.Proxy): RichTransaction = proxy2txn(proxy)
+  implicit def proxy2ctx(proxy: syntax.Proxy)(implicit ctx: Context): ContextualTransaction = proxy2txn(proxy)
+  implicit def proxy2fix(proxy: syntax.Proxy): InfixTransaction = proxy2txn(proxy)
   implicit def proxy2txn(proxy: syntax.Proxy): Transaction = proxy.owner match {
     case None => proxy.key
     case Some(_) => read(proxy.key)
@@ -100,15 +101,15 @@ package object syntax {
    */
   def Delete(proxy: syntax.Proxy)(implicit ctx: Context): Unit = {
     // Delete all the fields of the object.
-    val fields = Collection(proxy.fields)
-    For (0, fields.length) { i =>
-      ctx += write(read(fields(i)), Literal.Empty)
-      ctx += write(fields(i), Literal.Empty)
+    val fields = Index(proxy.fields)
+    For (ctx.i, 0, fields.length) {
+      ctx += write(read(fields(ctx.i)), Literal.Empty)
     }
 
+
     // Deletes the object itself.
-    ctx += write(fields.length, Literal.Empty)
     ctx += write(proxy.path, Literal.Empty)
+    fields.clear()
   }
 
   /**
@@ -140,40 +141,6 @@ package object syntax {
 
   /**
    *
-   * @param from
-   * @param to
-   * @param by
-   * @param block
-   * @param ctx
-   */
-  def For(
-    from: Transaction,
-    to: Transaction,
-    by: Transaction = Literal.One
-  )(
-    block: Transaction => Unit
-  )(
-    implicit ctx: Context
-  ): Unit = {
-    // Reset the context.
-    val before = ctx.txn
-    ctx.txn = Literal.Empty
-
-    // Perform the loop body, and increment the index.
-    block(ctx.index)
-    ctx.index = ctx.index + by
-
-    // Reset the context.
-    val body = ctx.txn
-    ctx.txn = before
-
-    // Set the index and do the loop.
-    ctx.index = from
-    ctx += loop(ctx.index < to, body)
-  }
-
-  /**
-   *
    * @param cmp
    * @param block
    */
@@ -183,7 +150,34 @@ package object syntax {
     block
     val body = ctx.txn
     ctx.txn = before
-    ctx += loop(cmp, body)
+    ctx += repeat(cmp, body)
+  }
+
+  /**
+   *
+   * @param index
+   * @param from
+   * @param until
+   * @param by
+   * @param block
+   * @param ctx
+   */
+  def For(
+    index: Transaction,
+    from: Transaction,
+    until: Transaction,
+    by: Transaction = Literal.One
+  )(
+    block: => Unit
+  )(
+    implicit ctx: Context
+  ): Unit = {
+    val before = ctx.txn
+    ctx.txn = Literal.Empty
+    block
+    val body = ctx.txn
+    ctx.txn = before
+    ctx.txn += loop(from, until, by, index, body)
   }
 
   /**
@@ -204,5 +198,20 @@ package object syntax {
           .reduceLeft((a, b) => a ++ "," ++ b),
         "]"
       ))
+
+  /**
+   *
+   * @param x
+   * @param ctx
+   */
+  implicit class ContextualTransaction(x: Transaction)(implicit ctx: Context) {
+
+    def +=(y: Transaction): Unit = ctx += write(x, x + y)
+    def -=(y: Transaction): Unit = ctx += write(x, x - y)
+    def *=(y: Transaction): Unit = ctx += write(x, x * y)
+    def /=(y: Transaction): Unit = ctx += write(x, x / y)
+    def %=(y: Transaction): Unit = ctx += write(x, x % y)
+
+  }
 
 }

@@ -19,12 +19,14 @@ package object runtime {
   def write(k: Transaction, v: Transaction): Transaction = Operation(Write, List(k, v))
   def branch(c: Transaction, p: Transaction, f: Transaction): Transaction = Operation(Branch, List(c, p, f))
   def cons(x: Transaction, y: Transaction): Transaction = Operation(Cons, List(x, y))
-  def loop(t: Transaction, s: Transaction): Transaction = Operation(Loop, List(t, s))
+  def repeat(t: Transaction, s: Transaction): Transaction = Operation(Repeat, List(t, s))
+  def loop(f: Transaction, u: Transaction, s: Transaction, i: Transaction, b: Transaction): Transaction = Operation(Loop, List(f, u, s, i, b))
   def load(k: Transaction): Transaction = Operation(Load, List(k))
   def store(k: Transaction, v: Transaction): Transaction = Operation(Store, List(k, v))
   def literal(x: Boolean): Transaction = if (x) Literal.True else Literal.False
   def literal(x: String): Transaction = Literal(x)
   def literal[T](x: T)(implicit num: Numeric[T]): Transaction = Literal(num.toDouble(x).toString)
+  def rollback(result: Transaction): Transaction = Operation(Rollback, List.empty)
 
   // Math Operations.
   lazy val E  : Transaction = Literal(math.E.toString)
@@ -73,8 +75,11 @@ package object runtime {
   def matches(x: Transaction, y: Transaction): Transaction = Operation(Matches, List(x, y))
   def contains(x: Transaction, y: Transaction): Transaction = Operation(Contains, List(x, y))
 
-  // Infix Operations.
-  implicit class RichTransaction(x: Transaction) {
+  /**
+   *
+   * @param x
+   */
+  implicit class InfixTransaction(x: Transaction) {
 
     def unary_- : Transaction = sub(Literal.Zero, x)
     def unary_! : Transaction = not(x)
@@ -85,6 +90,7 @@ package object runtime {
     def *(y: Transaction): Transaction = mul(x, y)
     def /(y: Transaction): Transaction = div(x, y)
     def %(y: Transaction): Transaction = mod(x, y)
+
     def <(y: Transaction): Transaction = less(x, y)
     def >(y: Transaction): Transaction = not(or(equal(x, y), less(x, y)))
     def ==(y: Transaction): Transaction = equal(x, y)

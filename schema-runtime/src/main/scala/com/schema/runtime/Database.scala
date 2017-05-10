@@ -242,6 +242,8 @@ trait Database {
             fold(rest, res :: rem)
           case (Not, x :: rem) =>
             fold(rest, not(x) :: rem)
+          case _ =>
+            throw ExecutionException("Invalid transaction.")
         }
     }
 

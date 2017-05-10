@@ -8,11 +8,6 @@ jar_library(name='akka', jars=[
   jar(org='com.typesafe.akka', name='akka-actor_2.12', rev='2.4.17')
 ])
 
-# Google Guava
-jar_library(name='guava', jars=[
-  jar(org='com.google.guava', name='guava', rev='21.0')
-])
-
 # JUnit
 jar_library(name='junit', jars=[
   jar(org='junit', name='junit', rev='4.12'),

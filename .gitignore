@@ -11,3 +11,6 @@
 dist
 .pids
 .pants.workdir.file_lock
+
+# Benchmarks
+target/

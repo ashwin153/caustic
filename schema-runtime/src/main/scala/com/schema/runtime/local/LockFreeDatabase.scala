@@ -52,19 +52,15 @@ class LockFreeDatabase(
 object LockFreeDatabase {
 
   /**
-   * Constructs an empty database backed by a [[TrieMap]]. Because keys will tend to have character
-   * sequences in common, a trie will significantly reduce the memory overhead of the database.
    *
-   * @return Empty local database.
+   * @return
    */
   def empty: LockFreeDatabase = new LockFreeDatabase(TrieMap.empty)
 
   /**
-   * Constructs a database backed by a [[TrieMap]] that is initialized with the specified key value
-   * pairs. Particularly useful for loading test data into the database.
    *
-   * @param initial Initial key value pairs.
-   * @return Local database initialized with the specified key value pairs.
+   * @param initial
+   * @return
    */
   def apply(initial: (Key, Value)*): LockFreeDatabase = {
     val underlying = initial.map { case (k, v) => (k, (new AtomicBoolean(false), (0L, v))) }

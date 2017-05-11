@@ -5,7 +5,7 @@ import scala.collection.concurrent.TrieMap
 import scala.concurrent.{ExecutionContext, Future}
 
 /**
- * An in-memory, database that linearizes put operations via synchronization.
+ * An in-memory, synchronous database.
  *
  * @param underlying Underlying mutable map.
  */
@@ -37,19 +37,15 @@ class SynchronizedDatabase(
 object SynchronizedDatabase {
 
   /**
-   * Constructs an empty database backed by a [[TrieMap]]. Because keys will tend to have character
-   * sequences in common, a trie will significantly reduce the memory overhead of the database.
    *
-   * @return Empty synchronized database.
+   * @return
    */
   def empty: SynchronizedDatabase = new SynchronizedDatabase(TrieMap.empty)
 
   /**
-   * Constructs a database backed by a [[TrieMap]] that is initialized with the specified key value
-   * pairs. Particularly useful for loading test data into the database.
    *
-   * @param initial Initial key value pairs.
-   * @return Synchronized database initialized with the specified key value pairs.
+   * @param initial
+   * @return
    */
   def apply(initial: (Key, Value)*): SynchronizedDatabase = {
     val underlying = initial.map { case (k, v) => (k, (0L, v)) }

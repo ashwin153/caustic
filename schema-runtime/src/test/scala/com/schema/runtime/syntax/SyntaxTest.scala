@@ -15,7 +15,7 @@ class SyntaxTest extends FunSuite {
       val x = Select("id")
       x.foo = "Hello"
       x.grades("math") = 4.0
-      Return(x)
+      Return (x)
     }, Duration.Inf))
   }
 

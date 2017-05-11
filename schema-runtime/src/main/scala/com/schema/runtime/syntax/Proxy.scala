@@ -1,6 +1,6 @@
 package com.schema.runtime.syntax
 
-import com.schema.runtime.{literal, _}
+import com.schema.runtime._
 import scala.language.dynamics
 
 /**
@@ -84,8 +84,8 @@ case class Field(key: Transaction, name: String, owner: Object) extends Proxy {
 
   override def updateDynamic(field: String)(value: Transaction)(implicit ctx: Context): Unit = {
     // Verify that the owning object exists.
-    If (!equal(this.owner, Literal.True)) {
-      ctx += write(this.owner.key, Literal.True)
+    If (this.owner === Literal.Empty) {
+      ctx += write(this.owner.key, this.owner.key)
     }
 
     // Verify that the field name is recorded on the owner object.
@@ -111,8 +111,8 @@ case class Field(key: Transaction, name: String, owner: Object) extends Proxy {
     ctx += write(path, value)
 
     // Verify that the owning object exists.
-    If (!equal(this.owner, Literal.True)) {
-      ctx += write(this.owner.key, Literal.True)
+    If (this.owner === Literal.Empty) {
+      ctx += write(this.owner.key, this.owner.key)
     }
 
     // Verify that the index name is recorded on the owner object.

@@ -9,108 +9,154 @@ package object runtime {
   type Revision = Long
   type Value = String
 
-  // Implicit conversions.
-  implicit def str2txn(value: String): Transaction = literal(value)
-  implicit def bool2txn(value: Boolean): Transaction = literal(value)
-  implicit def num2txn[T](value: T)(implicit num: Numeric[T]): Transaction = literal(value)
+  // Implicit conversions to literals.
+  implicit def str2lit(value: String): Literal = literal(value)
+  implicit def bol2lit(value: Boolean): Literal = literal(value)
+  implicit def num2lit[T](value: T)(implicit num: Numeric[T]): Literal = literal(value)
 
-  // Core Operations.
+  // Remote Key-Value Pairs.
   def read(k: Transaction): Transaction = Operation(Read, List(k))
   def write(k: Transaction, v: Transaction): Transaction = Operation(Write, List(k, v))
-  def branch(c: Transaction, p: Transaction, f: Transaction): Transaction = Operation(Branch, List(c, p, f))
-  def cons(x: Transaction, y: Transaction): Transaction = Operation(Cons, List(x, y))
-  def repeat(t: Transaction, s: Transaction): Transaction = Operation(Repeat, List(t, s))
-  def loop(f: Transaction, u: Transaction, s: Transaction, i: Transaction, b: Transaction): Transaction = Operation(Loop, List(f, u, s, i, b))
+
+  // Local Variables.
   def load(k: Transaction): Transaction = Operation(Load, List(k))
   def store(k: Transaction, v: Transaction): Transaction = Operation(Store, List(k, v))
-  def literal(x: Boolean): Transaction = if (x) Literal.True else Literal.False
-  def literal(x: String): Transaction = Literal(x)
-  def literal[T](x: T)(implicit num: Numeric[T]): Transaction = Literal(num.toDouble(x).toString)
-  def rollback(result: Transaction): Transaction = Operation(Rollback, List.empty)
+
+  // Literals.
+  def literal(x: Boolean): Literal = if (x) Literal.True else Literal.False
+  def literal(x: String): Literal = Literal(x)
+  def literal[T](x: T)(implicit num: Numeric[T]): Literal = Literal(num.toDouble(x).toString)
+
+  // Control Flow Operations.
+  def rollback(result: Transaction): Transaction =
+    Operation(Rollback, List.empty)
+
+  def cons(a: Transaction, b: Transaction): Transaction = (a, b) match {
+    case (_: Literal, y) => y
+    case _ => Operation(Cons, List(a, b))
+  }
+
+  def branch(a: Transaction, b: Transaction, c: Transaction): Transaction = (a, b, c) match {
+    case (x: Literal, y, z) => if (x != Literal.False && x != Literal.Empty) y else z
+    case _ => Operation(Branch, List(a, b, c))
+  }
+
+  def prefetch(a: Transaction): Transaction = a match {
+    case l: Literal => l.value.split(",")
+      .map(k => read(k))
+      .reduceLeftOption((a, b) => cons(a, b))
+      .getOrElse(Literal.Empty)
+    case _ => Operation(Prefetch, List(a))
+  }
+
+  def repeat(a: Transaction, b: Transaction): Transaction = (a, b) match {
+    case (x: Literal, y) =>
+      require(x != Literal.False && x != Literal.Empty, "Infinite loop detected.")
+      Literal.Empty
+    case _ => Operation(Repeat, List(a, b))
+  }
 
   // Math Operations.
-  lazy val E  : Transaction = Literal(math.E.toString)
-  lazy val Pi : Transaction = Literal(math.Pi.toString)
+  def add(a: Transaction, b: Transaction): Transaction = (a, b) match {
+    case (Literal(x), Literal(y)) => x.toDouble + y.toDouble
+    case _ => Operation(Add, List(a, b))
+  }
 
-  def add(x: Transaction, y: Transaction): Transaction = Operation(Add, List(x, y))
-  def sub(x: Transaction, y: Transaction): Transaction = Operation(Sub, List(x, y))
-  def mul(x: Transaction, y: Transaction): Transaction = Operation(Mul, List(x, y))
-  def div(x: Transaction, y: Transaction): Transaction = Operation(Div, List(x, y))
-  def mod(x: Transaction, y: Transaction): Transaction = Operation(Mod, List(x, y))
-  def abs(x: Transaction): Transaction = branch(less(x, Literal.Zero), sub(Literal.Zero, x), x)
+  def sub(a: Transaction, b: Transaction): Transaction = (a, b) match {
+    case (Literal(x), Literal(y)) => x.toDouble - y.toDouble
+    case _ => Operation(Sub, List(a, b))
+  }
 
-  def pow(x: Transaction, y: Transaction): Transaction = Operation(Pow, List(x, y))
-  def exp(x: Transaction): Transaction = pow(E, x)
-  def log(x: Transaction): Transaction = Operation(Log, List(x))
-  def sqrt(x: Transaction): Transaction = pow(x, Literal.Half)
+  def mul(a: Transaction, b: Transaction): Transaction = (a, b) match {
+    case (Literal(x), Literal(y)) => x.toDouble * y.toDouble
+    case _ => Operation(Mul, List(a, b))
+  }
 
-  def sin(x: Transaction): Transaction = Operation(Sin, List(x))
-  def cos(x: Transaction): Transaction = Operation(Cos, List(x))
-  def tan(x: Transaction): Transaction = div(sin(x), cos(x))
-  def cot(x: Transaction): Transaction = div(cos(x), sin(x))
-  def sec(x: Transaction): Transaction = div(Literal.One, cos(x))
-  def csc(x: Transaction): Transaction = div(Literal.One, sin(x))
-  def sinh(x: Transaction): Transaction = div(sub(exp(x), exp(sub(Literal.Zero, x))), Literal.Two)
-  def cosh(x: Transaction): Transaction = div(add(exp(x), exp(sub(Literal.Zero, x))), Literal.Two)
-  def tanh(x: Transaction): Transaction = div(sinh(x), cosh(x))
-  def coth(x: Transaction): Transaction = div(cosh(x), sinh(x))
-  def sech(x: Transaction): Transaction = div(Literal.One, cosh(x))
-  def csch(x: Transaction): Transaction = div(Literal.One, sinh(x))
+  def div(a: Transaction, b: Transaction): Transaction = (a, b) match {
+    case (Literal(x), Literal(y)) => x.toDouble / y.toDouble
+    case _ => Operation(Div, List(a, b))
+  }
 
-  def ceil(x: Transaction): Transaction = branch(equal(x, floor(x)), x, floor(x) + 1)
-  def floor(x: Transaction): Transaction = Operation(Floor, List(x))
-  def round(x: Transaction): Transaction = branch(less(sub(x, floor(x)), Literal.Half), floor(x), ceil(x))
+  def mod(a: Transaction, b: Transaction): Transaction = (a, b) match {
+    case (Literal(x), Literal(y)) => x.toDouble % y.toDouble
+    case _ => Operation(Mod, List(a, b))
+  }
+
+  def pow(a: Transaction, b: Transaction): Transaction = (a, b) match {
+    case (Literal(x), Literal(y)) => math.pow(x.toDouble, y.toDouble)
+    case _ => Operation(Pow, List(a, b))
+  }
+
+  def log(a: Transaction): Transaction = a match {
+    case Literal(x) => math.log(x.toDouble)
+    case _ => Operation(Log, List(a))
+  }
+
+  def sin(a: Transaction): Transaction = a match {
+    case Literal(x) => math.sin(x.toDouble)
+    case _ => Operation(Sin, List(a))
+  }
+
+  def cos(a: Transaction): Transaction = a match {
+    case Literal(x) => math.cos(x.toDouble)
+    case _ => Operation(Cos, List(a))
+  }
+
+  def floor(a: Transaction): Transaction = a match {
+    case Literal(x) => math.floor(x.toDouble)
+    case _ => Operation(Floor, List(a))
+  }
 
   // String Operations.
-  def length(x: Transaction): Transaction = Operation(Length, List(x))
-  def concat(x: Transaction, y: Transaction): Transaction = Operation(Concat, List(x, y))
-  def slice(x: Transaction, l: Transaction, h: Transaction): Transaction = Operation(Slice, List(x, l, h))
+  def length(a: Transaction): Transaction = a match {
+    case Literal(x) => x.length
+    case _ => Operation(Length, List(a))
+  }
+
+  def concat(a: Transaction, b: Transaction): Transaction = (a, b) match {
+    case (Literal(x), Literal(y)) => x + y
+    case _ => Operation(Concat, List(a, b))
+  }
+
+  def slice(a: Transaction, b: Transaction, c: Transaction): Transaction = (a, b, c) match {
+    case (Literal(x), Literal(y), Literal(z)) => x.substring(y.toDouble.toInt, z.toDouble.toInt)
+    case _ => Operation(Slice, List(a, b, c))
+  }
+
+  def matches(a: Transaction, b: Transaction): Transaction = (a, b) match {
+    case (Literal(x), Literal(y)) => if (x.matches(y)) Literal.True else Literal.False
+    case _ => Operation(Matches, List(a, b))
+  }
+
+  def contains(a: Transaction, b: Transaction): Transaction = (a, b) match {
+    case (Literal(x), Literal(y)) => if (x.contains(y)) Literal.True else Literal.False
+    case _ => Operation(Contains, List(a, b))
+  }
 
   // Logical Operations.
-  def and(x: Transaction, y: Transaction): Transaction = Operation(And, List(x, y))
-  def or(x: Transaction, y: Transaction): Transaction = Operation(Or, List(x, y))
-  def not(x: Transaction): Transaction = Operation(Not, List(x))
-  def equal(x: Transaction, y: Transaction): Transaction = Operation(Equal, List(x, y))
-  def less(x: Transaction, y: Transaction): Transaction = Operation(Less, List(x, y))
-  def matches(x: Transaction, y: Transaction): Transaction = Operation(Matches, List(x, y))
-  def contains(x: Transaction, y: Transaction): Transaction = Operation(Contains, List(x, y))
+  def and(a: Transaction, b: Transaction): Transaction = (a, b) match {
+    case (x: Literal, y: Literal) => if (x != Literal.False && y != Literal.False) Literal.True else Literal.False
+    case _ => Operation(And, List(a, b))
+  }
 
-  /**
-   *
-   * @param x
-   */
-  implicit class InfixTransaction(x: Transaction) {
+  def or(a: Transaction, b: Transaction): Transaction = (a, b) match {
+    case (x: Literal, y: Literal) => if (x != Literal.False || y != Literal.False) Literal.True else Literal.False
+    case _ => Operation(Or, List(a, b))
+  }
 
-    def unary_- : Transaction = sub(Literal.Zero, x)
-    def unary_! : Transaction = not(x)
-    def unary_~ : Transaction = not(x)
+  def not(a: Transaction): Transaction = a match {
+    case x: Literal => if (x != Literal.False) Literal.False else Literal.True
+    case _ => Operation(Not, List(a))
+  }
 
-    def +(y: Transaction): Transaction = add(x, y)
-    def -(y: Transaction): Transaction = sub(x, y)
-    def *(y: Transaction): Transaction = mul(x, y)
-    def /(y: Transaction): Transaction = div(x, y)
-    def %(y: Transaction): Transaction = mod(x, y)
+  def equal(a: Transaction, b: Transaction): Transaction = (a, b) match {
+    case (Literal(x), Literal(y)) => if (x == y) Literal.True else Literal.False
+    case _ => Operation(Equal, List(a, b))
+  }
 
-    def <(y: Transaction): Transaction = less(x, y)
-    def >(y: Transaction): Transaction = not(or(equal(x, y), less(x, y)))
-    def ==(y: Transaction): Transaction = equal(x, y)
-    def !=(y: Transaction): Transaction = not(equal(x, y))
-    def <=(y: Transaction): Transaction = or(equal(x, y), less(x, y))
-    def >=(y: Transaction): Transaction = not(less(x, y))
-    def &&(y: Transaction): Transaction = and(x, y)
-    def ||(y: Transaction): Transaction = or(x, y)
-    def max(y: Transaction): Transaction = branch(less(x, y), y, x)
-    def min(y: Transaction): Transaction = branch(less(x, y), x, y)
-
-    def ++(y: Transaction): Transaction = concat(x, y)
-    def charAt(i: Transaction): Transaction = slice(x, i, add(i, Literal.One))
-    def contains(y: Transaction): Transaction = runtime.contains(x, y)
-    def endsWith(y: Transaction): Transaction = equal(x.substring(length(x) - length(y)), y)
-    def startsWith(y: Transaction): Transaction = equal(x.substring(0, length(y)), y)
-    def matches(y: Transaction): Transaction = runtime.matches(x, y)
-    def substring(l: Transaction): Transaction = x.substring(l, length(x))
-    def substring(l: Transaction, h: Transaction): Transaction = slice(x, l.min(h).max(0), h.max(l).min(length(x)))
-
+  def less(a: Transaction, b: Transaction): Transaction = (a, b) match {
+    case (Literal(x), Literal(y)) => if (x < y) Literal.True else Literal.False
+    case _ => Operation(Less, List(a, b))
   }
 
 }

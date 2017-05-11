@@ -6,8 +6,8 @@ case object Write    extends Operator  // Update the version and value of a remo
 case object Load     extends Operator  // Lookup the value of a local key.
 case object Store    extends Operator  // Update the value of a local key.
 case object Cons     extends Operator  // Sequentially evaluate arguments.
-case object Loop     extends Operator  // Repeat while the condition is not satisfied.
-case object Repeat   extends Operator  // Repeat the specified number of times.
+case object Prefetch extends Operator  // Prefetches the comma delimited list of keys.
+case object Repeat   extends Operator  // Repeat while the condition is not satisfied.
 case object Branch   extends Operator  // Jump to third if first is empty, and second otherwise.
 case object Rollback extends Operator  // Rolls back the transaction.
 case object Add      extends Operator  // Sum of the two arguments.

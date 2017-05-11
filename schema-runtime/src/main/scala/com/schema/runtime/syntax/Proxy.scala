@@ -1,41 +1,25 @@
-package com.schema.runtime
-package syntax
+package com.schema.runtime.syntax
 
+import com.schema.runtime.{literal, _}
 import scala.language.dynamics
 
 /**
- * A dynamically-typed, object. Proxies may represent a reference, a field, or an array. However,
- * its meaning is entirely dependent on the way that it is used. Implementation relies on the
- * scala.language.dynamics language feature to enable dynamic-typing.
  *
- * @param key Underlying object key.
- * @param owner Owning object.
  */
-case class Proxy(key: Transaction, owner: Option[Proxy]) extends Dynamic {
+sealed trait Proxy extends Dynamic {
+
+  /**
+   *
+   * @return
+   */
+  def key: Transaction
 
   /**
    *
    * @param name
    * @return
    */
-  def selectDynamic(name: String): Proxy = owner match {
-    case None =>
-      // Interpret key as an object and name as a field.
-      Proxy(this.key ++ FieldDelimiter ++ name, Some(this))
-    case Some(o) =>
-      // Interpret key as a reference and name as field on the referenced object.
-      Proxy(read(this.key) ++ FieldDelimiter ++ name, Some(Proxy(read(this.key), None)))
-  }
-
-  /**
-   *
-   * @param index
-   * @return
-   */
-  def apply(index: Any): Proxy = {
-    // Interpret key as an array.
-    Proxy(this.key ++ FieldDelimiter ++ index.toString, Some(this))
-  }
+  def selectDynamic(name: String): Field
 
   /**
    *
@@ -43,19 +27,7 @@ case class Proxy(key: Transaction, owner: Option[Proxy]) extends Dynamic {
    * @param index
    * @return
    */
-  def applyDynamics(name: String)(index: Any): Proxy = {
-    // Interpret key as an object and name as an array field.
-    Proxy(this.key ++ FieldDelimiter ++ name ++ FieldDelimiter ++ index.toString, Some(this))
-  }
-
-  /**
-   *
-   * @param index
-   * @param value
-   * @param ctx
-   */
-  def update(index: Any, value: Transaction)(implicit ctx: Context): Unit =
-    updateDynamic(index.toString)(value)
+  def applyDynamic(name: String)(index: Transaction): Field
 
   /**
    *
@@ -63,13 +35,96 @@ case class Proxy(key: Transaction, owner: Option[Proxy]) extends Dynamic {
    * @param value
    * @param ctx
    */
-  def updateDynamic(name: String)(value: Transaction)(implicit ctx: Context): Unit = {
-    val field = this.path ++ FieldDelimiter ++ name
+  def updateDynamic(name: String)(value: Transaction)(implicit ctx: Context): Unit
 
-    // Verify that the field is contained in the objects field collection.
-    this.owner match {
-      case None => Index(this.fields) += field
-      case Some(o) => Index(o.fields) += field
+}
+
+/**
+ *
+ */
+case class Object(key: Transaction) extends Proxy {
+
+  override def selectDynamic(field: String): Field =
+    Field(this.key ++ FieldDelimiter ++ literal(field), field, this)
+
+  override def applyDynamic(field: String)(index: Transaction): Field =
+    Field(this.key ++ FieldDelimiter ++ literal(field) ++ FieldDelimiter ++ index, field, this)
+
+  override def updateDynamic(field: String)(value: Transaction)(implicit ctx: Context): Unit = {
+    // Verify that the owning object exists.
+    If (!equal(this, Literal.True)) {
+      ctx += write(this.key, Literal.True)
+    }
+
+    // Verify that the field name is recorded on the object.
+    val names = this.key ++ FieldDelimiter ++ "$fields"
+    If (!read(names).contains(field)) {
+      ctx += write(names, read(names) ++ literal(field) ++ ListDelimiter)
+    }
+
+    // Append the field update to the context.
+    val path = this.key ++ FieldDelimiter ++ literal(field)
+    ctx += write(path, value)
+  }
+
+}
+
+/**
+ *
+ * @param key
+ * @param owner
+ */
+case class Field(key: Transaction, name: String, owner: Object) extends Proxy {
+
+  override def selectDynamic(field: String): Field =
+    Field(read(this.key) ++ FieldDelimiter ++ literal(field), field, Object(read(this.key)))
+
+  override def applyDynamic(field: String)(index: Transaction): Field =
+    Field(read(this.key) ++ FieldDelimiter ++ literal(field) ++ FieldDelimiter ++ index, field, Object(read(this.key)))
+
+  override def updateDynamic(field: String)(value: Transaction)(implicit ctx: Context): Unit = {
+    // Verify that the owning object exists.
+    If (!equal(this.owner, Literal.True)) {
+      ctx += write(this.owner.key, Literal.True)
+    }
+
+    // Verify that the field name is recorded on the owner object.
+    val names = this.owner.key ++ FieldDelimiter ++ "$fields"
+    If (!read(names).contains(field)) {
+      ctx += write(names, read(names) ++ literal(field) ++ ListDelimiter)
+    }
+
+    // Append the field update to the context.
+    val path = read(this.key) ++ FieldDelimiter ++ literal(field)
+    ctx += write(path, value)
+  }
+
+  /**
+   *
+   * @param at
+   * @param value
+   * @param ctx
+   */
+  def update(at: Transaction, value: Transaction)(implicit ctx: Context): Unit = {
+    // Append the array update to the context.
+    val path = this.key ++ FieldDelimiter ++ at
+    ctx += write(path, value)
+
+    // Verify that the owning object exists.
+    If (!equal(this.owner, Literal.True)) {
+      ctx += write(this.owner.key, Literal.True)
+    }
+
+    // Verify that the index name is recorded on the owner object.
+    val names = this.owner.key ++ FieldDelimiter ++ "$indices"
+    If (!read(names).contains(this.name)) {
+      ctx += write(names, read(names) ++ literal(this.name) ++ ListDelimiter)
+    }
+
+    // Verify that the at is recorded on the index.
+    val index = this.key ++ FieldDelimiter ++ literal("$values")
+    If (!read(index).contains(at)) {
+      ctx += write(index, read(index) ++ at ++ ListDelimiter)
     }
   }
 

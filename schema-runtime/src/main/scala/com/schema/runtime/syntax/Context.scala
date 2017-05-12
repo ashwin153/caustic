@@ -9,7 +9,7 @@ import scala.language.dynamics
  *
  * @param txn Underlying transaction.
  */
-class Context(var txn: Transaction) extends Dynamic {
+final class Context(var txn: Transaction) extends Dynamic {
 
   def selectDynamic(name: String): Variable =
     Variable(name)
@@ -31,7 +31,7 @@ object Context {
    *
    * @param name
    */
-  case class Variable(name: String)
+  final case class Variable(name: String)
 
   /**
    *

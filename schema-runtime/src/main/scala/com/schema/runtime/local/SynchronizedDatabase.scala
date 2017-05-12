@@ -5,7 +5,7 @@ import scala.collection.concurrent.TrieMap
 import scala.concurrent.{ExecutionContext, Future}
 
 /**
- * An in-memory, synchronous database.
+ * An in-memory, database that synchronizes put operations.
  *
  * @param underlying Underlying mutable map.
  */

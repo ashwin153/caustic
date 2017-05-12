@@ -3,6 +3,9 @@ package com.schema.runtime.syntax
 import java.util.concurrent.ThreadLocalRandom
 import scala.concurrent.duration.Duration
 
+/**
+ *
+ */
 object Backoff {
 
   /**

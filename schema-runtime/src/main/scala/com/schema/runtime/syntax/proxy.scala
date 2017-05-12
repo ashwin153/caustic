@@ -42,7 +42,7 @@ sealed trait Proxy extends Dynamic {
 /**
  *
  */
-case class Object(key: Transaction) extends Proxy {
+final case class Object(key: Transaction) extends Proxy {
 
   override def selectDynamic(field: String): Field =
     Field(this.key ++ FieldDelimiter ++ literal(field), field, this)
@@ -59,7 +59,7 @@ case class Object(key: Transaction) extends Proxy {
     // Verify that the field name is recorded on the object.
     val names = this.key ++ FieldDelimiter ++ "$fields"
     If (!read(names).contains(field)) {
-      ctx += write(names, read(names) ++ literal(field) ++ ListDelimiter)
+      ctx += write(names, read(names) ++ literal(field) ++ ArrayDelimiter)
     }
 
     // Append the field update to the context.
@@ -74,7 +74,7 @@ case class Object(key: Transaction) extends Proxy {
  * @param key
  * @param owner
  */
-case class Field(key: Transaction, name: String, owner: Object) extends Proxy {
+final case class Field(key: Transaction, name: String, owner: Object) extends Proxy {
 
   override def selectDynamic(field: String): Field =
     Field(read(this.key) ++ FieldDelimiter ++ literal(field), field, Object(read(this.key)))
@@ -91,7 +91,7 @@ case class Field(key: Transaction, name: String, owner: Object) extends Proxy {
     // Verify that the field name is recorded on the owner object.
     val names = this.owner.key ++ FieldDelimiter ++ "$fields"
     If (!read(names).contains(field)) {
-      ctx += write(names, read(names) ++ literal(field) ++ ListDelimiter)
+      ctx += write(names, read(names) ++ literal(field) ++ ArrayDelimiter)
     }
 
     // Append the field update to the context.
@@ -118,13 +118,13 @@ case class Field(key: Transaction, name: String, owner: Object) extends Proxy {
     // Verify that the index name is recorded on the owner object.
     val names = this.owner.key ++ FieldDelimiter ++ "$indices"
     If (!read(names).contains(this.name)) {
-      ctx += write(names, read(names) ++ literal(this.name) ++ ListDelimiter)
+      ctx += write(names, read(names) ++ literal(this.name) ++ ArrayDelimiter)
     }
 
     // Verify that the at is recorded on the index.
     val index = this.key ++ FieldDelimiter ++ literal("$values")
     If (!read(index).contains(at)) {
-      ctx += write(index, read(index) ++ at ++ ListDelimiter)
+      ctx += write(index, read(index) ++ at ++ ArrayDelimiter)
     }
   }
 

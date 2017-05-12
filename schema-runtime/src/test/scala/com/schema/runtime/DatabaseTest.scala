@@ -24,14 +24,14 @@ class DatabaseTest extends fixture.FunSuite with ScalaFutures with MockitoSugar 
 
   test("Execute is strongly consistent.") { db =>
     // Get on an unknown key returns the empty string.
-    whenReady(db.execute(read("x")))(_ shouldEqual "")
+    whenReady(db.execute(read(literal("x"))))(_ shouldEqual "")
 
     // Get on a inserted key returns the inserted value.
-    whenReady(db.execute(write("x", "1")))(_ shouldEqual "1")
-    whenReady(db.execute(read("x")))(_ shouldEqual "1")
+    whenReady(db.execute(write(literal("x"), literal("1"))))(_ shouldEqual "1")
+    whenReady(db.execute(read(literal("x"))))(_ shouldEqual "1")
 
     // Get on a modified key within a transaction returns the modified value.
-    whenReady(db.execute(cons(write("x", "2"), read("x"))))(_ shouldEqual "2")
+    whenReady(db.execute(cons(write(literal("x"), literal("2")), read(literal("x")))))(_ shouldEqual "2")
   }
 
   test("Execute is thread-safe.") { db =>
@@ -53,17 +53,17 @@ class DatabaseTest extends fixture.FunSuite with ScalaFutures with MockitoSugar 
     // construct a second transaction that updates the value of the field and unblocks the first
     // transaction after it completes execution. This introduces a conflict that should cause the
     // first transaction to fail.
-    val exec = fake.execute(read("x"))
+    val exec = fake.execute(read(literal("x")))
     assert(ready.await(10, TimeUnit.SECONDS))
-    fake.execute(write("x", "foo")).onComplete(_ => block.countDown())
+    fake.execute(write(literal("x"), literal("foo"))).onComplete(_ => block.countDown())
     whenReady(exec.failed)(_ shouldBe an [Exception])
   }
 
   test("Execute correctly performs operations.") { db =>
     // Logical operations.
-    whenReady(db.execute(schema.equal(0, 0.0)))(_ shouldEqual Literal.True.value)
-    whenReady(db.execute(schema.not(schema.equal(0, 1))))(_ shouldEqual Literal.True.value)
-    whenReady(db.execute(less(0, 1)))(_ shouldEqual Literal.True.value)
+    whenReady(db.execute(schema.equal(literal(0), literal(0.0))))(_ shouldEqual Literal.True.value)
+    whenReady(db.execute(schema.not(schema.equal(literal(0), literal(1)))))(_ shouldEqual Literal.True.value)
+    whenReady(db.execute(less(literal(0), literal(1))))(_ shouldEqual Literal.True.value)
 
     // Logical operations.
     whenReady(db.execute(and(Literal.False, Literal.True)))(_ shouldEqual Literal.False.value)
@@ -72,29 +72,36 @@ class DatabaseTest extends fixture.FunSuite with ScalaFutures with MockitoSugar 
     whenReady(db.execute(schema.not(Literal.True)))(_ shouldEqual Literal.False.value)
 
     // Arithmetic operations.
-    whenReady(db.execute(add(6, 9)))(_ shouldEqual "15.0")
-    whenReady(db.execute(sub(9, 6)))(_ shouldEqual "3.0")
-    whenReady(db.execute(mul(2, 3)))(_ shouldEqual "6.0")
-    whenReady(db.execute(div(5, 2)))(_ shouldEqual "2.5")
-    whenReady(db.execute(mod(5, 2)))(_ shouldEqual Literal.One.value)
-    whenReady(db.execute(pow(5, 2)))(_ shouldEqual "25.0")
-    whenReady(db.execute(log(math.exp(2))))(_ shouldEqual Literal.Two.value)
-    whenReady(db.execute(sin(0.0)))(_ shouldEqual Literal.Zero.value)
-    whenReady(db.execute(cos(0.0)))(_ shouldEqual Literal.One.value)
-    whenReady(db.execute(floor(1.0)))(_ shouldEqual Literal.One.value)
-    whenReady(db.execute(floor(1.5)))(_ shouldEqual Literal.One.value)
-    whenReady(db.execute(floor(1.4)))(_ shouldEqual Literal.One.value)
+    whenReady(db.execute(add(literal(6), literal(9))))(_ shouldEqual "15.0")
+    whenReady(db.execute(sub(literal(9), literal(6))))(_ shouldEqual "3.0")
+    whenReady(db.execute(mul(literal(2), literal(3))))(_ shouldEqual "6.0")
+    whenReady(db.execute(div(literal(5), literal(2))))(_ shouldEqual "2.5")
+    whenReady(db.execute(mod(literal(5), literal(2))))(_ shouldEqual Literal.One.value)
+    whenReady(db.execute(pow(literal(5), literal(2))))(_ shouldEqual "25.0")
+    whenReady(db.execute(log(literal(math.exp(2)))))(_ shouldEqual Literal.Two.value)
+    whenReady(db.execute(sin(literal(0.0))))(_ shouldEqual Literal.Zero.value)
+    whenReady(db.execute(cos(literal(0.0))))(_ shouldEqual Literal.One.value)
+    whenReady(db.execute(floor(literal(1.0))))(_ shouldEqual Literal.One.value)
+    whenReady(db.execute(floor(literal(1.5))))(_ shouldEqual Literal.One.value)
+    whenReady(db.execute(floor(literal(1.4))))(_ shouldEqual Literal.One.value)
 
     // String operations.
-    whenReady(db.execute(schema.length("Hello")))(_ shouldEqual "5.0")
-    whenReady(db.execute(schema.slice("Hello", 1, 3)))(_ shouldEqual "el")
-    whenReady(db.execute(schema.concat("A", "bc")))(_ shouldEqual "Abc")
-    whenReady(db.execute(schema.matches("a41i3", "[a-z1-4]+")))(_ shouldEqual Literal.True.value)
-    whenReady(db.execute(schema.contains("abc", "bc")))(_ shouldEqual Literal.True.value)
-    whenReady(db.execute(schema.contains("abc", "de")))(_ shouldEqual Literal.False.value)
+    whenReady(db.execute(schema.length(literal("Hello"))))(_ shouldEqual "5.0")
+    whenReady(db.execute(schema.slice(literal("Hello"), literal(1), literal(3))))(_ shouldEqual "el")
+    whenReady(db.execute(schema.concat(literal("A"), literal("bc"))))(_ shouldEqual "Abc")
+    whenReady(db.execute(schema.matches(literal("a41i3"), literal("[a-z1-4]+"))))(_ shouldEqual Literal.True.value)
+    whenReady(db.execute(schema.contains(literal("abc"), literal("bc"))))(_ shouldEqual Literal.True.value)
+    whenReady(db.execute(schema.contains(literal("abc"), literal("de"))))(_ shouldEqual Literal.False.value)
 
     // Loop operations.
-    whenReady(db.execute(cons(store("$i", 0), cons(repeat(less(load("$i"), 3), store("$i", add(load("$i"), 1))), load("$i")))))(_ shouldEqual "3.0")
+    whenReady(db.execute(cons(
+      store(literal("$i"), literal(0)),
+      cons(
+        repeat(
+          less(load(literal("$i")), literal(3)),
+          store(literal("$i"), add(load(literal("$i")), literal(1)))),
+        load(literal("$i"))))
+    ))(_ shouldEqual "3.0")
   }
 
 }

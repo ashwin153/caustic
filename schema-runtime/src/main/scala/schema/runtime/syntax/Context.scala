@@ -12,18 +12,20 @@ import scala.language.dynamics
 final class Context(var txn: Transaction) extends Dynamic {
 
   /**
+   * Returns the local variable with the specified name.
    *
-   * @param name
-   * @return
+   * @param name Variable name.
+   * @return Corresponding variable.
    */
   def selectDynamic(name: String): Variable =
     Variable(name)
 
   /**
+   * Updates the variable with the specified name to the specified value.
    *
-   * @param name
-   * @param value
-   * @param ctx
+   * @param name Variable name.
+   * @param value New value.
+   * @param ctx Implicit transaction context.
    */
   def updateDynamic(name: String)(value: Transaction)(
     implicit ctx: Context
@@ -31,8 +33,9 @@ final class Context(var txn: Transaction) extends Dynamic {
     ctx += store(name, value)
 
   /**
+   * Appends the specified transaction to the underlying state.
    *
-   * @param that
+   * @param that Transaction to append.
    */
   def +=(that: Transaction): Unit = (this.txn, that) match {
     case (_, v: Literal) if v == Literal.Empty =>

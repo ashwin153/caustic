@@ -4,53 +4,61 @@ package syntax
 import scala.language.dynamics
 
 /**
- *
+ * A dynamic delegate type.
  */
 sealed trait Proxy extends Dynamic {
 
   /**
+   * Database key associated with the proxy.
    *
-   * @return
+   * @return Database key.
    */
   def key: Transaction
 
   /**
+   * Returns the field with the specified name.
    *
-   * @param name
-   * @return
+   * @param name Field name.
+   * @return Corresponding field.
    */
   def selectDynamic(name: String): Field
 
   /**
+   * Returns the value at the specified address of the index with the specified name.
    *
-   * @param name
-   * @param index
-   * @return
+   * @param name Index name.
+   * @param address Index address.
+   * @return Value at index address.
    */
-  def applyDynamic(name: String)(index: Transaction): Field
+  def applyDynamic(name: String)(address: Transaction): Field
 
   /**
+   * Updates the field specified by name to the specified value.
    *
-   * @param name
-   * @param value
-   * @param ctx
+   * @param name Field name.
+   * @param value Updated value.
+   * @param ctx Implicit transaction context.
    */
   def updateDynamic(name: String)(value: Transaction)(implicit ctx: Context): Unit
 
 }
 
 /**
+ * A dynamically-typed object proxy.
  *
+ * @param key Corresponding database key.
  */
 final case class Object(key: Transaction) extends Proxy {
 
   override def selectDynamic(field: String): Field =
     Field(this.key ++ FieldDelimiter ++ literal(field), field, this)
 
-  override def applyDynamic(field: String)(index: Transaction): Field =
-    Field(this.key ++ FieldDelimiter ++ literal(field) ++ FieldDelimiter ++ index, field, this)
+  override def applyDynamic(field: String)(address: Transaction): Field =
+    Field(this.key ++ FieldDelimiter ++ literal(field) ++ FieldDelimiter ++ address, field, this)
 
-  override def updateDynamic(field: String)(value: Transaction)(implicit ctx: Context): Unit = {
+  override def updateDynamic(field: String)(value: Transaction)(
+    implicit ctx: Context
+  ): Unit = {
     // Verify that the owning object exists.
     If (!equal(this, Literal.True)) {
       ctx += write(this.key, Literal.True)
@@ -70,19 +78,23 @@ final case class Object(key: Transaction) extends Proxy {
 }
 
 /**
+ * A dynamically-typed field proxy.
  *
- * @param key
- * @param owner
+ * @param key Corresponding database key.
+ * @param name Field name.
+ * @param owner Owning object.
  */
 final case class Field(key: Transaction, name: String, owner: Object) extends Proxy {
 
   override def selectDynamic(field: String): Field =
     Field(read(this.key) ++ FieldDelimiter ++ literal(field), field, Object(read(this.key)))
 
-  override def applyDynamic(field: String)(index: Transaction): Field =
-    Field(read(this.key) ++ FieldDelimiter ++ literal(field) ++ FieldDelimiter ++ index, field, Object(read(this.key)))
+  override def applyDynamic(field: String)(address: Transaction): Field =
+    Field(read(this.key) ++ FieldDelimiter ++ literal(field) ++ FieldDelimiter ++ address, field, Object(read(this.key)))
 
-  override def updateDynamic(field: String)(value: Transaction)(implicit ctx: Context): Unit = {
+  override def updateDynamic(field: String)(value: Transaction)(
+    implicit ctx: Context
+  ): Unit = {
     // Verify that the owning object exists.
     If (this.owner === Literal.Empty) {
       ctx += write(this.owner.key, this.owner.key)
@@ -100,14 +112,17 @@ final case class Field(key: Transaction, name: String, owner: Object) extends Pr
   }
 
   /**
+   * Updates the specified index address to the specified value.
    *
-   * @param at
-   * @param value
-   * @param ctx
+   * @param address Index address.
+   * @param value Updated value.
+   * @param ctx Implicit transaction context.
    */
-  def update(at: Transaction, value: Transaction)(implicit ctx: Context): Unit = {
+  def update(address: Transaction, value: Transaction)(
+    implicit ctx: Context
+  ): Unit = {
     // Append the array update to the context.
-    val path = this.key ++ FieldDelimiter ++ at
+    val path = this.key ++ FieldDelimiter ++ address
     ctx += write(path, value)
 
     // Verify that the owning object exists.
@@ -123,8 +138,8 @@ final case class Field(key: Transaction, name: String, owner: Object) extends Pr
 
     // Verify that the at is recorded on the index.
     val index = this.key ++ FieldDelimiter ++ literal("$values")
-    If (!read(index).contains(at)) {
-      ctx += write(index, read(index) ++ at ++ ArrayDelimiter)
+    If (!read(index).contains(address)) {
+      ctx += write(index, read(index) ++ address ++ ArrayDelimiter)
     }
   }
 

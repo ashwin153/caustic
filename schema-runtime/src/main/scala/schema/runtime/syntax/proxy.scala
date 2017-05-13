@@ -1,6 +1,6 @@
-package com.schema.runtime.syntax
+package schema.runtime
+package syntax
 
-import com.schema.runtime._
 import scala.language.dynamics
 
 /**

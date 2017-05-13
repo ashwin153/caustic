@@ -1,10 +1,10 @@
-package com.schema.runtime
+package schema.runtime
 package syntax
 
+import Database._
+import Context._
 import akka.actor.ActorSystem
 import akka.pattern.after
-import com.schema.runtime.Database.ExecutionException
-import com.schema.runtime.syntax.Context.Variable
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.FiniteDuration
 import scala.util.control.NonFatal
@@ -73,8 +73,8 @@ trait Language {
     implicit ctx: Context
   ): Unit = {
     // When working with loops, it is important to prefetch keys whenever possible.
-    prefetch(obj.$fields)
-    prefetch(obj.$indices)
+    ctx += prefetch(obj.$fields)
+    ctx += prefetch(obj.$indices)
 
     // Serialize the various fields of the object.
     If(length(obj.$fields) > 0) {
@@ -211,7 +211,7 @@ trait Language {
   ): Unit = {
     // Prefetch all the values of the collection.
     val values = read(in.key ++ FieldDelimiter ++ "$values")
-    prefetch(values)
+    ctx += prefetch(values)
 
     ctx.$i = 0
     While (ctx.$i < length(values)) {
@@ -230,15 +230,31 @@ trait Language {
 
   /**
    *
-   * @param obj
-   * @param ctx
+   * @param index
+   * @param in
+   * @param block
    */
-  def Json(obj: Object)(
+  def Foreach(index: Variable, in: Iterable[Key])(block: => Unit)(
     implicit ctx: Context
   ): Unit = {
+    val before = ctx.txn
+    ctx.txn = Literal.Empty
+    block
+    val body = ctx.txn
+    ctx.txn = before
+    ctx += prefetch(in.mkString(ArrayDelimiter))
+    ctx += (0 until in.size).foldLeft[Transaction](Literal.Empty)((a, _) => cons(a, body))
+  }
+
+  /**
+   *
+   * @param obj
+   */
+  def Json(obj: Object): Transaction = {
     // When working with loops, it is important to prefetch keys whenever possible.
-    prefetch(obj.$fields)
-    prefetch(obj.$indices)
+    implicit val ctx = Context.empty
+    ctx += prefetch(obj.$fields)
+    ctx += prefetch(obj.$indices)
     ctx.$json = literal("{\"key\":\"") ++ obj.key ++ "\""
 
     // Serialize the various fields of the object.
@@ -294,6 +310,45 @@ trait Language {
     // Place the serialized value into the context.
     ctx.$json = ctx.$json ++ "}"
     ctx += ctx.$json
+    ctx.txn
   }
+
+  /**
+   *
+   * @param first
+   * @param rest
+   * @param ctx
+   */
+  def Return(first: Transaction, rest: Transaction*)(
+    implicit ctx: Context
+  ): Unit =
+    if (rest.isEmpty)
+      ctx += first
+    else
+      ctx += concat("[", concat(
+        rest.+:(first)
+          .map(t => concat("\"", concat(t, "\"")))
+          .reduceLeft((a, b) => a ++ "," ++ b),
+        "]"
+      ))
+
+  /**
+   *
+   * @param message
+   * @param ctx
+   */
+  def Rollback(message: Transaction = Literal.Empty)(
+    implicit ctx: Context
+  ): Unit =
+    ctx += rollback(message)
+
+  /**
+   *
+   * @param ctx
+   */
+  def Abort(
+    implicit ctx: Context
+  ): Unit =
+    ctx += abort()
 
 }

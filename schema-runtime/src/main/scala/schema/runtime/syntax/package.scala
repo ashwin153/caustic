@@ -1,7 +1,6 @@
-package com.schema.runtime
+package schema.runtime
 
-import com.schema.runtime
-import com.schema.runtime.syntax.Context.Variable
+import syntax.Context._
 
 package object syntax extends Language {
 
@@ -19,7 +18,7 @@ package object syntax extends Language {
   implicit def var2fix(variable: Variable): InfixTransaction = var2txn(variable)
   implicit def fld2obj(field: Field): Object = Object(read(field.key))
 
-  // Additional Math Operations.
+  // Additional math functions.
   lazy val E : Transaction = literal(math.E)
   lazy val Pi: Transaction = literal(math.Pi)
 
@@ -39,12 +38,11 @@ package object syntax extends Language {
   def ceil(x: Transaction): Transaction = branch(equal(x, floor(x)), x, floor(x) + Literal.One)
   def round(x: Transaction): Transaction = branch(less(sub(x, floor(x)), Literal.Half), floor(x), ceil(x))
 
-  // Infix Operator Extensions.
+  // Infix operator extensions.
   implicit class InfixTransaction(x: Transaction) {
 
     def unary_- : Transaction = sub(Literal.Zero, x)
     def unary_! : Transaction = not(x)
-    def unary_~ : Transaction = not(x)
 
     def +(y: Transaction): Transaction = add(x, y)
     def -(y: Transaction): Transaction = sub(x, y)

@@ -1,4 +1,4 @@
-package com.schema.runtime
+package schema.runtime
 
 import org.scalatest.{FunSuite, Matchers}
 import org.scalatest.mockito.MockitoSugar

@@ -1,4 +1,4 @@
-package com.schema.runtime
+package schema.runtime
 package local
 
 import java.util.concurrent.atomic.AtomicBoolean
@@ -6,9 +6,7 @@ import scala.collection.concurrent.TrieMap
 import scala.concurrent.{ExecutionContext, Future}
 
 /**
- * An in-memory, lock-free database. Implementation associates an atomic boolean with each key value
- * pair that represents whether the key is exclusively locked or not. Put operations attempt to
- * acquire all locks in their change set via a non-blocking, compare-and-set.
+ * An in-memory, lock-free database.
  *
  * @param underlying Underlying mutable map.
  */
@@ -28,20 +26,20 @@ class LockFreeDatabase(
   override def put(depends: Map[Key, Revision], changes: Map[Key, (Revision, Value)])(
     implicit ec: ExecutionContext
   ): Future[Unit] = {
-    // Attempt to acquire the lock associated with each key in the change set.
-    val locks = changes.keySet.map { k =>
-      val (lock, (_, _)) = this.underlying.getOrElseUpdate(k, (new AtomicBoolean(false), (0L, "")))
+    // Attempt to acquire the write lock associated with each key in the change set in parallel
+    // using a non-blocking compare-and-set.
+    val locks = changes.keySet.par.map { k =>
+      val (lock, _) = this.underlying.getOrElseUpdate(k, (new AtomicBoolean(false), (0L, "")))
       k -> lock.compareAndSet(false, true)
     }
 
+    // if there exists a dependency whose revision has changed then the transaction conflicts with
+    // a committed write. If it conflicts, release all acquired locks and return failure. Otherwise,
+    // apply all changes. Then, release all locks that the transaction acquired.
     if (locks.exists(!_._2) || depends.exists { case (k, r) => this.underlying.get(k).exists(_._2._1 != r) }) {
-      // If there exists a lock that could not be acquired, then there is a write-write conflict and
-      // if there exists a dependency whose revision has changed then the transaction conflicts with
-      // a committed write. If it conflicts, release all acquired locks and return failure.
       locks.filter(_._2).foreach { case (k, _) => this.underlying(k)._1.set(false) }
       Future.failed(new Exception("Transaction conflicts."))
     } else {
-      // Otherwise, apply all changes and release the various locks.
       this.underlying ++= changes.mapValues(x => (new AtomicBoolean(false), x))
       Future.unit
     }
@@ -52,15 +50,17 @@ class LockFreeDatabase(
 object LockFreeDatabase {
 
   /**
+   * Constructs an empty database.
    *
-   * @return
+   * @return Empty database.
    */
   def empty: LockFreeDatabase = new LockFreeDatabase(TrieMap.empty)
 
   /**
+   * Constructs a database with the initial key-value pairs.
    *
-   * @param initial
-   * @return
+   * @param initial Initial key-value pairs.
+   * @return Initialized lock-free database.
    */
   def apply(initial: (Key, Value)*): LockFreeDatabase = {
     val underlying = initial.map { case (k, v) => (k, (new AtomicBoolean(false), (0L, v))) }

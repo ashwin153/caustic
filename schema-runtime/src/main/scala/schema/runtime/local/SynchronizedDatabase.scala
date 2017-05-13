@@ -1,4 +1,4 @@
-package com.schema.runtime
+package schema.runtime
 package local
 
 import scala.collection.concurrent.TrieMap
@@ -37,15 +37,17 @@ class SynchronizedDatabase(
 object SynchronizedDatabase {
 
   /**
+   * Constructs an empty database.
    *
-   * @return
+   * @return Empty database.
    */
   def empty: SynchronizedDatabase = new SynchronizedDatabase(TrieMap.empty)
 
   /**
+   * Constructs a database with the initial key-value pairs.
    *
-   * @param initial
-   * @return
+   * @param initial Initial key-value pairs.
+   * @return Initialized database.
    */
   def apply(initial: (Key, Value)*): SynchronizedDatabase = {
     val underlying = initial.map { case (k, v) => (k, (0L, v)) }

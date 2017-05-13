@@ -1,6 +1,6 @@
-package com.schema.runtime
+package schema.runtime
 
-import com.schema.runtime.Operation._
+import Operation._
 
 /**
  * An immutable, database transaction. Transactions form an implicit abstract syntax tree that may
@@ -103,6 +103,7 @@ object Operation {
   case object Repeat   extends Operator  // Repeat while the condition is not satisfied.
   case object Branch   extends Operator  // Jump to third if first is empty, and second otherwise.
   case object Rollback extends Operator  // Rolls back the transaction.
+  case object Abort    extends Operator  // Does not even attempt the transaction.
   case object Add      extends Operator  // Sum of the two arguments.
   case object Sub      extends Operator  // Difference of the two arguments.
   case object Mul      extends Operator  // Product of the two arguments.

@@ -1,6 +1,5 @@
-package com.schema.runtime
+package schema.runtime
 
-import com.schema.{runtime => schema}
 import com.schema.runtime.local.SynchronizedDatabase
 import java.util.concurrent.{CountDownLatch, TimeUnit}
 import org.junit.runner.RunWith

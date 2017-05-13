@@ -1,10 +1,11 @@
-package com.schema.runtime
+package schema.runtime
 
-import com.schema.runtime.Database._
-import com.schema.runtime.Operation._
+import Database._
+import Operation._
 import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Success}
 
 /**
  * An asynchronous, key-value store.
@@ -115,6 +116,7 @@ trait Database {
           case (Load, k :: rem) => fold(rest, load(k) :: rem)
           case (Store, Literal(k) :: Literal(v) :: rem) => locals.put(k, v); fold(rest, literal(v) :: rem)
           case (Store, k :: v :: rem) => fold(rest, store(k, v) :: rem)
+          case (Abort, _) => throw ExecutionException("Transaction aborted.")
           case (Rollback, Literal(m) :: _) => throw RollbackedException(m)
           case (Rollback, m :: rem) => fold(rest, rollback(m) :: rem)
           case (Repeat, c :: b :: rem) => fold(rest, repeat(c, b) :: rem)
@@ -156,9 +158,10 @@ trait Database {
     // Recursively reduce the transaction, and then conditionally persist all changes made by the
     // transaction to the underlying database if and only if the versions of its various
     // dependencies have not changed. Filter out empty first changes to allow local variables.
-    reduce(txn)
-      .flatMap { r => put(depends.toMap, changes.toMap).map(_ => r) }
-      .recover { case e: RollbackedException => e.message }
+    reduce(txn).transformWith {
+      case Success(r) => put(depends.toMap, changes.toMap).map(_ => r)
+      case Failure(e: RollbackedException) => put(depends.toMap, Map.empty).map(_ => e.message)
+    }
   }
 
 }

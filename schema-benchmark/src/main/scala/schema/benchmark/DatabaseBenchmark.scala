@@ -1,16 +1,15 @@
-package com.schema.benchmark
+package schema.benchmark
 
+import schema.runtime._
 import org.scalameter.api._
-import com.schema.runtime._
 import org.scalameter.picklers.Implicits._
-import com.schema.runtime.local.SynchronizedDatabase
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 
 object DatabaseBenchmark extends Bench.OfflineReport {
 
-  val database: SynchronizedDatabase = SynchronizedDatabase.empty
+  val database: Database = local.SynchronizedDatabase.empty
 
   override lazy val executor = LocalExecutor(
     new Executor.Warmer.Default,

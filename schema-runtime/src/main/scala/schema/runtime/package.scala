@@ -1,6 +1,6 @@
-package com.schema
+package schema
 
-import com.schema.runtime.Operation._
+import runtime.Operation._
 
 package object runtime {
 
@@ -24,9 +24,11 @@ package object runtime {
   def literal(x: String): Literal = Literal(x)
   def literal[T](x: T)(implicit num: Numeric[T]): Literal = Literal(num.toDouble(x).toString)
 
-  // Control Flow Operations.
+  // Execution traps.
   def rollback(message: Transaction): Transaction = Operation(Rollback, List(message))
+  def abort(): Transaction = Operation(Abort, List.empty)
 
+  // Control Flow Operations.
   def cons(first: Transaction, second: Transaction): Transaction = (first, second) match {
     case (_: Literal, y) => y
     case _ => Operation(Cons, List(first, second))

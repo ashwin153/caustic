@@ -11,7 +11,7 @@ XA COMMIT 'txn';
 ```scala
 Schema { implicit ctx =>
   val counter = Select("x")
-  If (Exists(counter)) {
+  If (!counter) {
     counter.count = 0
   } Else {
     counter.count += 1

@@ -2,6 +2,7 @@ package schema.mysql
 
 import org.scalatest.Outcome
 import schema.runtime.DatabaseTest
+import scala.concurrent.ExecutionContext.Implicits.global
 
 class MySqlDatabaseTest extends DatabaseTest {
 

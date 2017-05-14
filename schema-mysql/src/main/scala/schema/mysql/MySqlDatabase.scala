@@ -16,7 +16,7 @@ class MySqlDatabase private[mysql](
   underlying: ComboPooledDataSource
 ) extends Database with Closeable {
 
-  private def execute[R](f: Connection => R)(
+  private def sql[R](f: Connection => R)(
     implicit ec: ExecutionContext
   ): Future[R] =
     Future {
@@ -37,7 +37,7 @@ class MySqlDatabase private[mysql](
     if (keys.isEmpty)
       Future(Map.empty)
     else
-      execute { con =>
+      sql { con =>
         // Determine the versions and values of all keys.
         val smt = con.createStatement()
         val res = smt.executeQuery(
@@ -57,7 +57,7 @@ class MySqlDatabase private[mysql](
   override def put(depends: Map[Key, Revision], changes: Map[Key, (Revision, Value)])(
     implicit ec: ExecutionContext
   ): Future[Unit] =
-    execute { con =>
+    sql { con =>
       // Filter out dependencies on objects that do not yet exist, sort the dependencies by version
       // and concatenate them into a comma delimited string.
       con.setAutoCommit(false)
@@ -167,6 +167,7 @@ object MySqlDatabase {
        """.stripMargin)
 
     // Construct a MySQL Database.
+    con.close()
     new MySqlDatabase(cpds)
   }
 

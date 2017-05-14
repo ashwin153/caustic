@@ -161,6 +161,7 @@ trait Database {
     reduce(txn).transformWith {
       case Success(r) => put(depends.toMap, changes.toMap).map(_ => r)
       case Failure(e: RollbackedException) => put(depends.toMap, Map.empty).map(_ => e.message)
+      case Failure(e) => Future.failed(e)
     }
   }
 

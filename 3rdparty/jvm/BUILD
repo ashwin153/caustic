@@ -8,6 +8,27 @@ jar_library(name='akka', jars=[
   jar(org='com.typesafe.akka', name='akka-actor_2.12', rev='2.4.17')
 ])
 
+# Scala ARM
+jar_library(name='scala-arm', jars=[
+  jar(org='com.jsuereth', name='scala-arm_2.12', rev='2.0')
+])
+
+# Cassandra
+jar_library(name='cassandra', jars=[
+  jar(org='org.apache.cassandra', name='cassandra-all', rev='3.10')
+])
+
+# Redis
+jar_library(name='redis', jars=[
+  jar(org='com.github.etaty', name='rediscala_2.12', rev='1.8.0')
+])
+
+# MySQL
+jar_library(name='mysql', jars=[
+  jar(org='mysql', name='mysql-connector-java', rev='6.0.6'),
+  jar(org='c3p0', name='c3p0', rev='0.9.1.2')
+])
+
 # JUnit
 jar_library(name='junit', jars=[
   jar(org='junit', name='junit', rev='4.12'),

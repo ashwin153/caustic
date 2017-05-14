@@ -220,18 +220,18 @@ trait Language {
     implicit ctx: Context
   ): Unit = {
     // Prefetch all the values of the collection.
-    val values = read(in.key ++ FieldDelimiter ++ "$values")
-    ctx += prefetch(values)
+    val names = read(in.key ++ FieldDelimiter ++ "$values")
+    ctx += prefetch(names)
 
     ctx.$i = 0
-    While (ctx.$i < length(values)) {
+    While (ctx.$i < length(names)) {
       ctx.$j = ctx.$i + 1
-      While (values.charAt(ctx.$j) <> ArrayDelimiter) {
+      While (names.charAt(ctx.$j) <> ArrayDelimiter) {
         ctx.$j = ctx.$j + 1
       }
 
       // Load the index into the index variable and perform the block.
-      val at = values.substring(ctx.$i, ctx.$j)
+      val at = names.substring(ctx.$i, ctx.$j)
       ctx += store(variable.name, in.key ++ FieldDelimiter ++ at)
       block
       ctx.$i = ctx.$j + 1

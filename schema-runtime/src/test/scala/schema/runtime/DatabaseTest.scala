@@ -1,6 +1,6 @@
 package schema.runtime
 
-import com.schema.runtime.local.SynchronizedDatabase
+import schema._
 import java.util.concurrent.{CountDownLatch, TimeUnit}
 import org.junit.runner.RunWith
 import org.scalatest.{Matchers, Outcome, fixture}
@@ -13,13 +13,14 @@ import org.mockito.invocation.InvocationOnMock
 import scala.concurrent.ExecutionContext.Implicits.global
 
 @RunWith(classOf[JUnitRunner])
-class DatabaseTest extends fixture.FunSuite with ScalaFutures with MockitoSugar with Matchers {
+abstract class DatabaseTest extends fixture.FunSuite
+  with ScalaFutures
+  with MockitoSugar
+  with Matchers {
 
   type FixtureParam = Database
 
-  def withFixture(test: OneArgTest): Outcome = {
-    test(SynchronizedDatabase.empty)
-  }
+  def withFixture(test: OneArgTest): Outcome
 
   test("Execute is strongly consistent.") { db =>
     // Get on an unknown key returns the empty string.
@@ -60,15 +61,15 @@ class DatabaseTest extends fixture.FunSuite with ScalaFutures with MockitoSugar 
 
   test("Execute correctly performs operations.") { db =>
     // Logical operations.
-    whenReady(db.execute(schema.equal(literal(0), literal(0.0))))(_ shouldEqual Literal.True.value)
-    whenReady(db.execute(schema.not(schema.equal(literal(0), literal(1)))))(_ shouldEqual Literal.True.value)
+    whenReady(db.execute(runtime.equal(literal(0), literal(0.0))))(_ shouldEqual Literal.True.value)
+    whenReady(db.execute(runtime.not(runtime.equal(literal(0), literal(1)))))(_ shouldEqual Literal.True.value)
     whenReady(db.execute(less(literal(0), literal(1))))(_ shouldEqual Literal.True.value)
 
     // Logical operations.
     whenReady(db.execute(and(Literal.False, Literal.True)))(_ shouldEqual Literal.False.value)
     whenReady(db.execute(and(Literal.True, Literal.True)))(_ shouldEqual Literal.True.value)
     whenReady(db.execute(or(Literal.False, Literal.True)))(_ shouldEqual Literal.True.value)
-    whenReady(db.execute(schema.not(Literal.True)))(_ shouldEqual Literal.False.value)
+    whenReady(db.execute(runtime.not(Literal.True)))(_ shouldEqual Literal.False.value)
 
     // Arithmetic operations.
     whenReady(db.execute(add(literal(6), literal(9))))(_ shouldEqual "15.0")
@@ -85,12 +86,12 @@ class DatabaseTest extends fixture.FunSuite with ScalaFutures with MockitoSugar 
     whenReady(db.execute(floor(literal(1.4))))(_ shouldEqual Literal.One.value)
 
     // String operations.
-    whenReady(db.execute(schema.length(literal("Hello"))))(_ shouldEqual "5.0")
-    whenReady(db.execute(schema.slice(literal("Hello"), literal(1), literal(3))))(_ shouldEqual "el")
-    whenReady(db.execute(schema.concat(literal("A"), literal("bc"))))(_ shouldEqual "Abc")
-    whenReady(db.execute(schema.matches(literal("a41i3"), literal("[a-z1-4]+"))))(_ shouldEqual Literal.True.value)
-    whenReady(db.execute(schema.contains(literal("abc"), literal("bc"))))(_ shouldEqual Literal.True.value)
-    whenReady(db.execute(schema.contains(literal("abc"), literal("de"))))(_ shouldEqual Literal.False.value)
+    whenReady(db.execute(runtime.length(literal("Hello"))))(_ shouldEqual "5.0")
+    whenReady(db.execute(runtime.slice(literal("Hello"), literal(1), literal(3))))(_ shouldEqual "el")
+    whenReady(db.execute(runtime.concat(literal("A"), literal("bc"))))(_ shouldEqual "Abc")
+    whenReady(db.execute(runtime.matches(literal("a41i3"), literal("[a-z1-4]+"))))(_ shouldEqual Literal.True.value)
+    whenReady(db.execute(runtime.contains(literal("abc"), literal("bc"))))(_ shouldEqual Literal.True.value)
+    whenReady(db.execute(runtime.contains(literal("abc"), literal("de"))))(_ shouldEqual Literal.False.value)
 
     // Loop operations.
     whenReady(db.execute(cons(

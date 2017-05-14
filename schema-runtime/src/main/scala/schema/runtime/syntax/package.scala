@@ -7,6 +7,7 @@ package object syntax extends Language {
   // Internal delimiter constants.
   val FieldDelimiter: String = "@"
   val ArrayDelimiter: String = ","
+  val LocalDelimiter: String = "$"
 
   // Implicit conversions.
   implicit def str2lit(value: String): Literal = literal(value)
@@ -14,8 +15,8 @@ package object syntax extends Language {
   implicit def bol2lit(value: Boolean): Literal = literal(value)
   implicit def pxy2txn(proxy: Proxy): Transaction = read(proxy.key)
   implicit def var2txn(variable: Variable): Transaction = load(variable.name)
-  implicit def pxy2fix(proxy: Proxy): InfixTransaction = pxy2txn(proxy)
-  implicit def var2fix(variable: Variable): InfixTransaction = var2txn(variable)
+  implicit def pxy2ops(proxy: Proxy): TransactionOps = pxy2txn(proxy)
+  implicit def var2ops(variable: Variable): TransactionOps = var2txn(variable)
   implicit def fld2obj(field: Field): Object = Object(read(field.key))
 
   // Additional math functions.
@@ -39,7 +40,7 @@ package object syntax extends Language {
   def round(x: Transaction): Transaction = branch(less(sub(x, floor(x)), Literal.Half), floor(x), ceil(x))
 
   // Infix operator extensions.
-  implicit class InfixTransaction(x: Transaction) {
+  implicit class TransactionOps(x: Transaction) {
 
     def unary_- : Transaction = sub(Literal.Zero, x)
     def unary_! : Transaction = not(x)
@@ -62,6 +63,8 @@ package object syntax extends Language {
     def min(y: Transaction): Transaction = branch(less(x, y), x, y)
 
     def ++(y: Transaction): Transaction = concat(x, y)
+    def isEmpty: Transaction = equals(x, Literal.Empty)
+    def nonEmpty: Transaction = not(equals(x, Literal.Empty))
     def charAt(i: Transaction): Transaction = slice(x, i, add(i, Literal.One))
     def contains(y: Transaction): Transaction = schema.runtime.contains(x, y)
     def endsWith(y: Transaction): Transaction = equal(x.substring(length(x) - length(y)), y)

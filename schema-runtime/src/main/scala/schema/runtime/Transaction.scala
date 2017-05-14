@@ -1,6 +1,7 @@
 package schema.runtime
 
 import Operation._
+import scala.annotation.tailrec
 
 /**
  * An immutable, database transaction. Transactions form an implicit abstract syntax tree that may
@@ -14,14 +15,32 @@ sealed trait Transaction {
    *
    * @return Read set.
    */
-  def readset: Set[Key]
+  def readset: Set[Key] = {
+    @tailrec def fold(stack: List[Transaction], rset: Set[Key]): Set[Key] = stack match {
+      case Nil => rset
+      case Operation(Read, Literal(key) :: Nil) :: rest => fold(rest, rset + key)
+      case Operation(_, operands) :: rest => fold(operands ::: rest, rset)
+      case _ :: rest => fold(rest, rset)
+    }
+
+    fold(List(this), Set.empty)
+  }
 
   /**
    * Returns the set of all keys that may be modified by the transaction.
    *
    * @return Write set.
    */
-  def writeset: Set[Key]
+  def writeset: Set[Key] = {
+    @tailrec def fold(stack: List[Transaction], wset: Set[Key]): Set[Key] = stack match {
+      case Nil => wset
+      case Operation(Write, Literal(key) :: _ :: Nil) :: rest => fold(rest, wset + key)
+      case Operation(_, operands) :: rest => fold(operands ::: rest, wset)
+      case _ :: rest => fold(rest, wset)
+   }
+
+    fold(List(this), Set.empty)
+  }
 
 }
 
@@ -36,10 +55,6 @@ sealed trait Transaction {
 final case class Literal private[runtime](
   value: Value
 ) extends Transaction {
-
-  override def readset: Set[Key] = Set.empty
-
-  override def writeset: Set[Key] = Set.empty
 
   override def toString: String = "\"" + value + "\""
 
@@ -75,16 +90,6 @@ final case class Operation private[runtime](
   operator: Operator,
   operands: List[Transaction]
 ) extends Transaction {
-
-  override def readset: Set[Key] = this match {
-    case Operation(Read, Literal(key) :: Nil) => Set(key)
-    case _ => this.operands.foldLeft(Set.empty[Key])(_ ++ _.readset)
-  }
-
-  override def writeset: Set[Key] = this match {
-    case Operation(Write, Literal(key) :: _ :: Nil) => Set(key)
-    case _ => this.operands.foldLeft(Set.empty[Key])(_ ++ _.writeset)
-  }
 
   override def toString: String =
     this.operator.toString + "(" + this.operands.map(_.toString).mkString(", ") + ")"

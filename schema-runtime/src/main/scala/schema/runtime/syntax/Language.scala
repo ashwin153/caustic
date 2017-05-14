@@ -264,7 +264,7 @@ trait Language {
    *
    * @param obj Object to serialize.
    */
-  def Json(obj: Object): Transaction = {
+  def Stitch(obj: Object): Transaction = {
     // When working with loops, it is important to prefetch keys whenever possible.
     implicit val ctx = Context.empty
     ctx += prefetch(obj.$fields)

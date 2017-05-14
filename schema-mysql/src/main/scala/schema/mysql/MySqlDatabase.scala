@@ -16,21 +16,6 @@ class MySqlDatabase private[mysql](
   underlying: ComboPooledDataSource
 ) extends Database with Closeable {
 
-  private def sql[R](f: Connection => R)(
-    implicit ec: ExecutionContext
-  ): Future[R] =
-    Future {
-      blocking {
-        var con: Connection = null
-        try {
-          con = this.underlying.getConnection()
-          f(con)
-        } finally {
-          if (con != null) con.close()
-        }
-      }
-    }
-
   override def get(keys: Set[Key])(
     implicit ec: ExecutionContext
   ): Future[Map[Key, (Revision, Value)]] =
@@ -60,7 +45,6 @@ class MySqlDatabase private[mysql](
     sql { con =>
       // Filter out dependencies on objects that do not yet exist, sort the dependencies by version
       // and concatenate them into a comma delimited string.
-      con.setAutoCommit(false)
       val requires = depends.values.filter(_ > 0).toSeq.sorted.mkString(",")
 
       // Update versions and values if and only if the corresponding revisions remain the same.
@@ -81,7 +65,7 @@ class MySqlDatabase private[mysql](
 
       val insert = con.prepareStatement(
         s"""
-           | INSERT IGNORE INTO `schema`.`schema` (`key`, `revision`, `value`) VALUES (?, 0, NULL)
+           | INSERT IGNORE INTO `schema`.`schema` (`key`) VALUES (?)
          """.stripMargin)
 
       val update = con.prepareStatement(
@@ -92,6 +76,7 @@ class MySqlDatabase private[mysql](
          """.stripMargin)
 
       // Build and commit the transaction.
+      con.setAutoCommit(false)
       if (depends.isEmpty) {
         val default = con.createStatement()
         default.execute("SET @conflicts = false")
@@ -110,16 +95,39 @@ class MySqlDatabase private[mysql](
       }
 
       con.commit()
+      con.setAutoCommit(true)
 
       // Return whether or not the transaction was successfully applied.
-      con.setAutoCommit(true)
       val check = con.createStatement()
       val res = check.executeQuery("SELECT @conflicts AS conflicts")
       res.next()
-      if (res.getBoolean("conflicts")) throw new Exception("Transaction conflicts.")
+      if (res.getBoolean(1)) throw new Exception("Transaction conflicts.")
     }
 
-  override def close(): Unit = this.underlying.close()
+  override def close(): Unit =
+    this.underlying.close()
+
+  /**
+   *
+   * @param f
+   * @param ec
+   * @tparam R
+   * @return
+   */
+  private def sql[R](f: Connection => R)(
+    implicit ec: ExecutionContext
+  ): Future[R] =
+    Future {
+      blocking {
+        var con: Connection = null
+        try {
+          con = this.underlying.getConnection()
+          f(con)
+        } finally {
+          if (con != null) con.close()
+        }
+      }
+    }
 
 }
 
@@ -137,7 +145,7 @@ object MySqlDatabase {
   def apply(host: String, port: Int, user: String, password: String, test: Boolean = false): MySqlDatabase = {
     val cpds = new ComboPooledDataSource()
     cpds.setDriverClass("com.mysql.cj.jdbc.Driver")
-    cpds.setJdbcUrl(s"jdbc:mysql://${ host }:${ port }?useSSL=false&serverTimezone=UTC")
+    cpds.setJdbcUrl(s"jdbc:mysql://${ host }:${ port }?serverTimezone=UTC")
     cpds.setUser(user)
     cpds.setPassword(password)
 
@@ -159,7 +167,7 @@ object MySqlDatabase {
     smt.execute(
       s"""
          | CREATE TABLE IF NOT EXISTS `schema`.`schema`(
-         |   `key` varchar (250) NOT NULL,
+         |   `key` varchar (1000) NOT NULL,
          |   `revision` BIGINT DEFAULT 0,
          |   `value` TEXT,
          |   PRIMARY KEY(`key`)

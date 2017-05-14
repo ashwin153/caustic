@@ -59,41 +59,7 @@ abstract class DatabaseTest extends fixture.FunSuite
     whenReady(exec.failed)(_ shouldBe an [Exception])
   }
 
-  test("Execute correctly performs operations.") { db =>
-    // Logical operations.
-    whenReady(db.execute(runtime.equal(literal(0), literal(0.0))))(_ shouldEqual Literal.True.value)
-    whenReady(db.execute(runtime.not(runtime.equal(literal(0), literal(1)))))(_ shouldEqual Literal.True.value)
-    whenReady(db.execute(less(literal(0), literal(1))))(_ shouldEqual Literal.True.value)
-
-    // Logical operations.
-    whenReady(db.execute(and(Literal.False, Literal.True)))(_ shouldEqual Literal.False.value)
-    whenReady(db.execute(and(Literal.True, Literal.True)))(_ shouldEqual Literal.True.value)
-    whenReady(db.execute(or(Literal.False, Literal.True)))(_ shouldEqual Literal.True.value)
-    whenReady(db.execute(runtime.not(Literal.True)))(_ shouldEqual Literal.False.value)
-
-    // Arithmetic operations.
-    whenReady(db.execute(add(literal(6), literal(9))))(_ shouldEqual "15.0")
-    whenReady(db.execute(sub(literal(9), literal(6))))(_ shouldEqual "3.0")
-    whenReady(db.execute(mul(literal(2), literal(3))))(_ shouldEqual "6.0")
-    whenReady(db.execute(div(literal(5), literal(2))))(_ shouldEqual "2.5")
-    whenReady(db.execute(mod(literal(5), literal(2))))(_ shouldEqual Literal.One.value)
-    whenReady(db.execute(pow(literal(5), literal(2))))(_ shouldEqual "25.0")
-    whenReady(db.execute(log(literal(math.exp(2)))))(_ shouldEqual Literal.Two.value)
-    whenReady(db.execute(sin(literal(0.0))))(_ shouldEqual Literal.Zero.value)
-    whenReady(db.execute(cos(literal(0.0))))(_ shouldEqual Literal.One.value)
-    whenReady(db.execute(floor(literal(1.0))))(_ shouldEqual Literal.One.value)
-    whenReady(db.execute(floor(literal(1.5))))(_ shouldEqual Literal.One.value)
-    whenReady(db.execute(floor(literal(1.4))))(_ shouldEqual Literal.One.value)
-
-    // String operations.
-    whenReady(db.execute(runtime.length(literal("Hello"))))(_ shouldEqual "5.0")
-    whenReady(db.execute(runtime.slice(literal("Hello"), literal(1), literal(3))))(_ shouldEqual "el")
-    whenReady(db.execute(runtime.concat(literal("A"), literal("bc"))))(_ shouldEqual "Abc")
-    whenReady(db.execute(runtime.matches(literal("a41i3"), literal("[a-z1-4]+"))))(_ shouldEqual Literal.True.value)
-    whenReady(db.execute(runtime.contains(literal("abc"), literal("bc"))))(_ shouldEqual Literal.True.value)
-    whenReady(db.execute(runtime.contains(literal("abc"), literal("de"))))(_ shouldEqual Literal.False.value)
-
-    // Loop operations.
+  test("Execute maintains mutable state.") { db =>
     whenReady(db.execute(cons(
       store(literal("$i"), literal(0)),
       cons(

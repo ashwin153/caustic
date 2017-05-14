@@ -35,7 +35,7 @@ package object runtime {
   }
 
   def branch(cond: Transaction, pass: Transaction, fail: Transaction): Transaction = (cond, pass, fail) match {
-    case (x: Literal, y, z) => if (x != Literal.False && x != Literal.Empty) y else z
+    case (x: Literal, y, z) => if (x != Literal.False) y else z
     case _ => Operation(Branch, List(cond, pass, fail))
   }
 

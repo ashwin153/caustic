@@ -13,9 +13,9 @@ Schema { implicit ctx =>
 ```
 
 ## Overview
-- ```schema-runtime```: Core runtime library
-- ```schema-benchmarks```: Performance tests
-- ```schema-mysql```: MySQL Integration
+- ```schema-runtime/```: Core runtime library
+- ```schema-benchmarks/```: Performance tests
+- ```schema-mysql/```: MySQL Integration
 
 ## Documentation
 Refer to the [User Guide](https://github.com/ashwin153/schema/wiki/User-Guide) to learn about how to use the system, the [Appendix](https://github.com/ashwin153/schema/wiki/Appendix) for an exhaustive list of the various library features, and the [Implementation](https://github.com/ashwin153/schema/wiki/Implementation) for more detail about how the system works.

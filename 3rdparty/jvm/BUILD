@@ -23,10 +23,19 @@ jar_library(name='redis', jars=[
   jar(org='com.github.etaty', name='rediscala_2.12', rev='1.8.0')
 ])
 
+# C3P0
+jar_library(name='c3p0', jars=[
+  jar(org='c3p0', name='c3p0', rev='0.9.1.2')
+])
+
 # MySQL
 jar_library(name='mysql', jars=[
   jar(org='mysql', name='mysql-connector-java', rev='6.0.6'),
-  jar(org='c3p0', name='c3p0', rev='0.9.1.2')
+])
+
+# PostgreSQL
+jar_library(name='postgres', jars=[
+  jar(org='postgresql', name='postgresql', rev='9.1-901.jdbc4'),
 ])
 
 # JUnit

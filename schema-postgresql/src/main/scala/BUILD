@@ -3,7 +3,7 @@ scala_library(
   sources=rglobs('*.scala'),
   dependencies=[
     'schema-runtime/src/main/scala',
-    '3rdparty/jvm:mysql',
+    '3rdparty/jvm:postgres',
     '3rdparty/jvm:c3p0',
   ]
 )

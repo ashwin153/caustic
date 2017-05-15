@@ -57,6 +57,7 @@ abstract class DatabaseTest extends fixture.FunSuite
     assert(ready.await(10, TimeUnit.SECONDS))
     fake.execute(write(literal("x"), literal("foo"))).onComplete(_ => block.countDown())
     whenReady(exec.failed)(_ shouldBe an [Exception])
+    whenReady(db.get(Set("x")))(_ should contain theSameElementsAs Seq("x" -> (1L, "foo")))
   }
 
   test("Execute maintains mutable state.") { db =>

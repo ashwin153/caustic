@@ -1,0 +1,11 @@
+junit_tests(
+  name='scala',
+  sources=rglobs('*.scala'),
+  dependencies=[
+    'schema-postgresql/src/main/scala',
+    'schema-runtime/src/test/scala',
+    '3rdparty/jvm:junit',
+    '3rdparty/jvm:scalatest',
+    '3rdparty/jvm:mockito',
+  ]
+)

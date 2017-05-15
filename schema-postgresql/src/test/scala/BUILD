@@ -4,6 +4,7 @@ junit_tests(
   dependencies=[
     'schema-postgresql/src/main/scala',
     'schema-runtime/src/test/scala',
+    '3rdparty/jvm:c3p0',
     '3rdparty/jvm:junit',
     '3rdparty/jvm:scalatest',
     '3rdparty/jvm:mockito',

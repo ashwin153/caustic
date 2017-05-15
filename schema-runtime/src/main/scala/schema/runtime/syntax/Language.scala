@@ -353,7 +353,9 @@ trait Language {
    * @param result Return value.
    * @param ctx Implicit transaction context.
    */
-  def Rollback(result: Transaction = Literal.Empty)(implicit ctx: Context): Unit =
+  def Rollback(result: Transaction = Literal.Empty)(
+    implicit ctx: Context
+  ): Unit =
     ctx += rollback(result)
 
   /**

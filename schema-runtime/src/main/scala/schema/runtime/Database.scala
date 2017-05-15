@@ -170,9 +170,10 @@ trait Database {
 object Database {
 
   /**
+   * An exception indicating that the transaction should be rolled back.
    *
-   * @param message
-   * @param cause
+   * @param message Exception message.
+   * @param cause Exception cause.
    */
   case class RollbackedException(
     message: String = "",
@@ -180,9 +181,10 @@ object Database {
   ) extends Exception(message, cause)
 
   /**
+   * An unretryable error that occurs during transaction execution.
    *
-   * @param message
-   * @param cause
+   * @param message Exception message.
+   * @param cause Exception cause.
    */
   case class ExecutionException(
     message: String = "",

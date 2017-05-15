@@ -1,7 +1,7 @@
 package schema.runtime.local
 
 import SQLDatabase._
-import java.sql.Connection
+import java.sql.{Connection, SQLException}
 import javax.sql.DataSource
 import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future, blocking}
@@ -16,70 +16,77 @@ abstract class SQLDatabase(underlying: DataSource) extends Database {
 
   override def get(keys: Set[Key])(
     implicit ec: ExecutionContext
-  ): Future[Map[Key, (Revision, Value)]] = {
-    if (keys.isEmpty) Future(Map.empty) else sql(this.underlying) { con =>
+  ): Future[Map[Key, (Revision, Value)]] =
+    if (keys.isEmpty)
+      Future(Map.empty)
+    else sql(this.underlying) { con =>
       // Determine the versions and values of all keys.
       val smt = con.createStatement()
       val res = smt.executeQuery(select(keys))
-      con.commit()
 
       // Convert the result set into a Map.
       val buf = mutable.Buffer.empty[(Key, (Revision, Value))]
       while (res.next()) buf += res.getString(1) -> (res.getLong(2), res.getString(3))
+
+      // Cleanup result set and statement and return.
+      res.close()
+      smt.close()
       buf.toMap
     }
-  }
 
   override def put(depends: Map[Key, Revision], changes: Map[Key, (Revision, Value)])(
     implicit ec: ExecutionContext
-  ): Future[Unit] = sql(this.underlying) { con =>
-    // Determine whether or not the transaction conflicts.
-    var error = false
-    if (depends.nonEmpty) {
-      val verify = con.prepareStatement(conflicts(depends))
-      val res = verify.executeQuery()
-      res.next()
-      error = res.getBoolean(1)
-      res.close()
-      verify.close()
-    }
+  ): Future[Unit] =
+    sql(this.underlying) { con =>
+      var error = false
+      if (depends.nonEmpty) {
+        // Determine whether or not the transaction conflicts.
+        val verify = con.prepareStatement(conflicts(depends))
+        val res = verify.executeQuery()
+        res.next()
+        error = res.getBoolean(1)
 
-    if (error) {
-      // Rollback the transaction on failure and report an error.
-      con.rollback()
-      throw new Exception("Transaction conflicts.")
-    } else {
-      // Otherwise, perform changes.
-      changes.foreach { case (k, (r, v)) =>
-        val upsert = con.prepareStatement(update(k, r, v))
-        upsert.executeUpdate()
-        upsert.close()
+        // Cleanup result set and statement.
+        res.close()
+        verify.close()
       }
 
-      con.commit()
+      if (error) {
+        // Throw an exception on error.
+        throw new SQLException("Transaction conflicts.")
+      } else {
+        // Otherwise, perform changes.
+        changes.foreach { case (k, (r, v)) =>
+          val upsert = con.prepareStatement(update(k, r, v))
+          upsert.executeUpdate()
+          upsert.close()
+        }
+      }
     }
-  }
 
   /**
+   * A select query for the key, versions and values of the specified keys.
    *
-   * @param keys
-   * @return
+   * @param keys Keys to select.
+   * @return SQL select query.
    */
   def select(keys: Set[Key]): String
 
   /**
+   * A SQL query that determines whether or not the specified dependencies conflict.
    *
-   * @param depends
-   * @return
+   * @param depends Dependencies to check.
+   * @return SQL conflict detection query.
    */
   def conflicts(depends: Map[Key, Revision]): String
 
   /**
+   * A upsert query that inserts or updates the specified key, revision, and value.
    *
-   * @param key
-   * @param revision
-   * @param value
-   * @return
+   * @param key Key to upsert.
+   * @param revision Revision of key.
+   * @param value Value of key.
+   * @return SQL update query.
    */
   def update(key: Key, revision: Long, value: Value): String
 
@@ -88,30 +95,36 @@ abstract class SQLDatabase(underlying: DataSource) extends Database {
 object SQLDatabase {
 
   /**
+   * Performs the specified transaction on the underying database.
    *
-   * @param source
-   * @param f
-   * @param ec
-   * @tparam R
-   * @return
+   * @param source Database.
+   * @param txn Transaction.
+   * @param ec Implicit execution context.
+   * @tparam R Type of return value.
+   * @return Result of performing the transaction.
    */
-  def sql[R](source: DataSource)(f: Connection => R)(
+  private def sql[R](source: DataSource)(txn: Connection => R)(
     implicit ec: ExecutionContext
-  ): Future[R] =
-    Future {
+  ): Future[R] = {
+    var con: Connection = null
+
+    Future(
       blocking {
-        var con: Connection = null
-        try {
-          con = source.getConnection()
-          con.setAutoCommit(false)
-          f(con)
-        } finally {
-          if (con != null) {
-            con.setAutoCommit(true)
-            con.close()
-          }
-        }
+        con = source.getConnection()
+        con.setAutoCommit(false)
+        val res = txn(con)
+        con.commit()
+        con.setAutoCommit(true)
+        con.close()
+        res
       }
+    ).recoverWith {
+      case e: Exception if con != null =>
+        con.rollback()
+        con.close()
+        con.setAutoCommit(true)
+        Future.failed(e)
     }
+  }
 
 }

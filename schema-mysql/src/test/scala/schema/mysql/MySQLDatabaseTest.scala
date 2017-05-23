@@ -11,7 +11,7 @@ class MySQLDatabaseTest extends DatabaseTest with BeforeAndAfterAll {
   override def beforeAll(): Unit = {
     this.pool = new ComboPooledDataSource()
     this.pool.setDriverClass("com.mysql.cj.jdbc.Driver")
-    this.pool.setJdbcUrl(s"jdbc:mysql://localhost:3306/schema?serverTimezone=UTC")
+    this.pool.setJdbcUrl(s"jdbc:mysql://localhost:3306/test?serverTimezone=UTC")
     this.pool.setUser("root")
     this.pool.setPassword("")
   }
@@ -20,7 +20,7 @@ class MySQLDatabaseTest extends DatabaseTest with BeforeAndAfterAll {
     // Delete all the table metadata.
     val con = this.pool.getConnection()
     val smt = con.createStatement()
-    smt.execute("DROP TABLE IF EXISTS `schema`.`schema`")
+    smt.execute("DROP TABLE IF EXISTS `schema`")
     con.close()
 
     // Run the tests.

@@ -7,7 +7,7 @@ import schema.runtime.{Key, Revision, Value}
 /**
  * A PostgreSQL-backed database.
  *
- * @param underlying
+ * @param underlying Underlying database.
  */
 class PostgreSQLDatabase private[postgresql](
   underlying: DataSource
@@ -17,13 +17,6 @@ class PostgreSQLDatabase private[postgresql](
     s""" SELECT key, revision, value
        | FROM schema
        | WHERE key IN (${ keys.map("'" + _ + "'").mkString(",") })
-     """.stripMargin
-
-  override def conflicts(depends: Map[Key, Revision]): String =
-    s""" SELECT '${ depends.values.filter(_ > 0).toSeq.sorted.mkString(",") }' !=
-       | string_agg(cast(revision AS text), ',' ORDER BY revision)
-       | FROM schema
-       | WHERE key IN (${ depends.keys.map("'" + _ + "'").mkString(",") })
      """.stripMargin
 
   override def update(key: Key, revision: Long, value: Value): String =
@@ -56,7 +49,7 @@ object PostgreSQLDatabase {
          | )
        """.stripMargin)
 
-    // Construct a MySQL Database.
+    // Construct a PostgreSQL Database.
     con.close()
     new PostgreSQLDatabase(source)
   }

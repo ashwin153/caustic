@@ -107,8 +107,7 @@ object Operation {
   case object Prefetch extends Operator  // Prefetches the comma delimited list of keys.
   case object Repeat   extends Operator  // Repeat while the condition is not satisfied.
   case object Branch   extends Operator  // Jump to third if first is empty, and second otherwise.
-  case object Rollback extends Operator  // Rolls back the transaction.
-  case object Abort    extends Operator  // Does not even attempt the transaction.
+  case object Rollback extends Operator  // Converts the transaction into a read-only transaction.
   case object Add      extends Operator  // Sum of the two arguments.
   case object Sub      extends Operator  // Difference of the two arguments.
   case object Mul      extends Operator  // Product of the two arguments.

@@ -1,7 +1,7 @@
 package schema.runtime.local
 
 import SQLDatabase._
-import java.sql.{Connection, SQLException}
+import java.sql.{Connection, ResultSet, SQLException, Statement}
 import javax.sql.DataSource
 import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future, blocking}
@@ -13,6 +13,24 @@ import schema.runtime.{Database, Key, Revision, Value}
  * @param underlying Underlying store.
  */
 abstract class SQLDatabase(underlying: DataSource) extends Database {
+
+  /**
+   * A select query for the key, versions and values of the specified keys.
+   *
+   * @param keys Keys to select.
+   * @return SQL select query.
+   */
+  def select(keys: Set[Key]): String
+
+  /**
+   * A upsert query that inserts or updates the specified key, revision, and value.
+   *
+   * @param key Key to upsert.
+   * @param revision Revision of key.
+   * @param value Value of key.
+   * @return SQL update query.
+   */
+  def update(key: Key, revision: Long, value: Value): String
 
   override def get(keys: Set[Key])(
     implicit ec: ExecutionContext
@@ -38,57 +56,28 @@ abstract class SQLDatabase(underlying: DataSource) extends Database {
     implicit ec: ExecutionContext
   ): Future[Unit] =
     sql(this.underlying) { con =>
-      var error = false
-      if (depends.nonEmpty) {
-        // Determine whether or not the transaction conflicts.
-        val verify = con.prepareStatement(conflicts(depends))
-        val res = verify.executeQuery()
-        res.next()
-        error = res.getBoolean(1)
+      // Determine whether or not the transaction conflicts.
+      def conflicts: Boolean = {
+        val smt: Statement = con.createStatement()
+        val res: ResultSet = smt.executeQuery(select(depends.keySet))
 
-        // Cleanup result set and statement.
-        res.close()
-        verify.close()
+        while (res.next())
+          if (depends(res.getString(1)) != res.getLong(2))
+            return true
+        false
       }
 
-      if (error) {
-        // Throw an exception on error.
-        throw new SQLException("Transaction conflicts.")
-      } else {
-        // Otherwise, perform changes.
+      // Conditionally perform modifications if the transaction does not conflict.
+      if (depends.isEmpty || !conflicts) {
         changes.foreach { case (k, (r, v)) =>
           val upsert = con.prepareStatement(update(k, r, v))
           upsert.executeUpdate()
           upsert.close()
         }
+      } else {
+        throw new SQLException("Transaction conflicts.")
       }
     }
-
-  /**
-   * A select query for the key, versions and values of the specified keys.
-   *
-   * @param keys Keys to select.
-   * @return SQL select query.
-   */
-  def select(keys: Set[Key]): String
-
-  /**
-   * A SQL query that determines whether or not the specified dependencies conflict.
-   *
-   * @param depends Dependencies to check.
-   * @return SQL conflict detection query.
-   */
-  def conflicts(depends: Map[Key, Revision]): String
-
-  /**
-   * A upsert query that inserts or updates the specified key, revision, and value.
-   *
-   * @param key Key to upsert.
-   * @param revision Revision of key.
-   * @param value Value of key.
-   * @return SQL update query.
-   */
-  def update(key: Key, revision: Long, value: Value): String
 
 }
 
@@ -108,7 +97,7 @@ object SQLDatabase {
   ): Future[R] = {
     var con: Connection = null
 
-    Future(
+    Future {
       blocking {
         con = source.getConnection()
         con.setAutoCommit(false)
@@ -118,7 +107,7 @@ object SQLDatabase {
         con.close()
         res
       }
-    ).recoverWith {
+    } recoverWith {
       case e: Exception if con != null =>
         con.rollback()
         con.close()

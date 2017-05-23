@@ -1,7 +1,6 @@
 package schema.runtime
 package syntax
 
-import Database._
 import Context._
 import akka.actor.ActorSystem
 import akka.pattern.after
@@ -9,6 +8,9 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.FiniteDuration
 import scala.util.control.NonFatal
 
+/**
+ *
+ */
 trait Language {
 
   /**
@@ -25,11 +27,8 @@ trait Language {
     akka: ActorSystem,
     db: Database
   ): Future[String] =
-    Schema(f).recoverWith {
-      case e: ExecutionException =>
-        Future.failed(e)
-      case NonFatal(_) if backoffs.nonEmpty =>
-        after(backoffs.head, akka.scheduler)(Schema(backoffs.drop(1))(f))
+    Schema(f).recoverWith { case NonFatal(e) if backoffs.nonEmpty =>
+      after(backoffs.head, akka.scheduler)(Schema(backoffs.drop(1))(f))
     }
 
   /**
@@ -357,15 +356,5 @@ trait Language {
     implicit ctx: Context
   ): Unit =
     ctx += rollback(result)
-
-  /**
-   * Cancels the execution of the transaction.
-   *
-   * @param ctx Implicit transaction context.
-   */
-  def Abort(
-    implicit ctx: Context
-  ): Unit =
-    ctx += abort()
 
 }

@@ -4,12 +4,12 @@ import syntax.Context._
 
 package object syntax extends Language {
 
-  // Internal delimiter constants.
+  // Internal Delimiters.
   val FieldDelimiter: String = "@"
   val ArrayDelimiter: String = ","
   val LocalDelimiter: String = "$"
 
-  // Implicit conversions.
+  // Implicit Conversions.
   implicit def str2lit(value: String): Literal = literal(value)
   implicit def num2lit[T](value: T)(implicit num: Numeric[T]): Literal = literal(value)
   implicit def bol2lit(value: Boolean): Literal = literal(value)
@@ -19,7 +19,7 @@ package object syntax extends Language {
   implicit def var2ops(variable: Variable): TransactionOps = var2txn(variable)
   implicit def fld2obj(field: Field): Object = Object(read(field.key))
 
-  // Additional math functions.
+  // Additional Math Operations.
   lazy val E : Transaction = literal(math.E)
   lazy val Pi: Transaction = literal(math.Pi)
 
@@ -39,7 +39,7 @@ package object syntax extends Language {
   def ceil(x: Transaction): Transaction = branch(equal(x, floor(x)), x, floor(x) + Literal.One)
   def round(x: Transaction): Transaction = branch(less(sub(x, floor(x)), Literal.Half), floor(x), ceil(x))
 
-  // Infix operator extensions.
+  // Transaction Operations.
   implicit class TransactionOps(x: Transaction) {
 
     def unary_- : Transaction = sub(Literal.Zero, x)
@@ -53,12 +53,12 @@ package object syntax extends Language {
 
     def <(y: Transaction): Transaction = less(x, y)
     def >(y: Transaction): Transaction = not(or(equal(x, y), less(x, y)))
-    def ===(y: Transaction): Transaction = equal(x, y)
     def <>(y: Transaction): Transaction = not(equal(x, y))
     def <=(y: Transaction): Transaction = or(equal(x, y), less(x, y))
     def >=(y: Transaction): Transaction = not(less(x, y))
     def &&(y: Transaction): Transaction = and(x, y)
     def ||(y: Transaction): Transaction = or(x, y)
+    def ===(y: Transaction): Transaction = equal(x, y)
     def max(y: Transaction): Transaction = branch(less(x, y), y, x)
     def min(y: Transaction): Transaction = branch(less(x, y), x, y)
 
@@ -72,6 +72,25 @@ package object syntax extends Language {
     def matches(y: Transaction): Transaction = schema.runtime.matches(x, y)
     def substring(l: Transaction): Transaction = x.substring(l, length(x))
     def substring(l: Transaction, h: Transaction): Transaction = slice(x, l, h)
+
+  }
+
+  // Object Operations.
+  implicit class ObjectOps(x: Object) {
+
+    def exists: Transaction = x.isEmpty
+
+  }
+
+  // Field Operations.
+  implicit class FieldOps(x: Field) {
+
+    def +=(y: Transaction)(implicit ctx: Context): Unit = x.owner.updateDynamic(x.name)(x + y)
+    def -=(y: Transaction)(implicit ctx: Context): Unit = x.owner.updateDynamic(x.name)(x - y)
+    def *=(y: Transaction)(implicit ctx: Context): Unit = x.owner.updateDynamic(x.name)(x * y)
+    def /=(y: Transaction)(implicit ctx: Context): Unit = x.owner.updateDynamic(x.name)(x / y)
+    def %=(y: Transaction)(implicit ctx: Context): Unit = x.owner.updateDynamic(x.name)(x % y)
+    def ++=(y: Transaction)(implicit ctx: Context): Unit = x.owner.updateDynamic(x.name)(x ++ y)
 
   }
 

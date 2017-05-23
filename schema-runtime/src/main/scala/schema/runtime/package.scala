@@ -15,18 +15,17 @@ package object runtime {
   def read(key: Transaction): Transaction = Operation(Read, List(key))
   def write(key: Transaction, value: Transaction): Transaction = Operation(Write, List(key, value))
 
-  // Local Variables.
-  def load(name: Transaction): Transaction = Operation(Load, List(name))
-  def store(name: Transaction, value: Transaction): Transaction = Operation(Store, List(name, value))
-
   // Literals.
   def literal(x: Boolean): Literal = if (x) Literal.True else Literal.False
   def literal(x: String): Literal = Literal(x)
   def literal[T](x: T)(implicit num: Numeric[T]): Literal = Literal(num.toDouble(x).toString)
 
-  // Execution traps.
+  // Local Variables.
+  def load(name: Transaction): Transaction = Operation(Load, List(name))
+  def store(name: Transaction, value: Transaction): Transaction = Operation(Store, List(name, value))
+
+  // Traps.
   def rollback(message: Transaction): Transaction = Operation(Rollback, List(message))
-  def abort(): Transaction = Operation(Abort, List.empty)
 
   // Control Flow Operations.
   def cons(first: Transaction, second: Transaction): Transaction = (first, second) match {

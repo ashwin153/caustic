@@ -5,6 +5,7 @@ import Operation._
 import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.control.ControlThrowable
 import scala.util.{Failure, Success}
 
 /**
@@ -78,6 +79,8 @@ trait Database {
       operands: List[Transaction]
     ): Transaction = stack match {
       case Nil =>
+        if (operands.size > 1)
+          throw ParseException(s"Transaction evaluates to $operands.")
         operands.head
       case Left(l: Literal) :: rest =>
         fold(rest, l :: operands)
@@ -116,8 +119,7 @@ trait Database {
           case (Load, k :: rem) => fold(rest, load(k) :: rem)
           case (Store, Literal(k) :: Literal(v) :: rem) => locals.put(k, v); fold(rest, literal(v) :: rem)
           case (Store, k :: v :: rem) => fold(rest, store(k, v) :: rem)
-          case (Abort, _) => throw ExecutionException("Transaction aborted.")
-          case (Rollback, Literal(m) :: _) => throw RollbackedException(m)
+          case (Rollback, Literal(m) :: _) => throw RollbackException(m)
           case (Rollback, m :: rem) => fold(rest, rollback(m) :: rem)
           case (Repeat, c :: b :: rem) => fold(rest, repeat(c, b) :: rem)
           case (Prefetch, l :: rem) => fold(rest, prefetch(l) :: rem)
@@ -151,7 +153,7 @@ trait Database {
           case (Or, x :: y :: rem) => fold(rest, or(x, y) :: rem)
           case (Less, x :: y :: rem) => fold(rest, less(x, y) :: rem)
           case (Not, x :: rem) => fold(rest, not(x) :: rem)
-          case _ => throw ExecutionException("Invalid transaction.")
+          case _ => throw ParseException(s"$op cannot be applied to $operands.")
         }
     }
 
@@ -160,7 +162,7 @@ trait Database {
     // dependencies have not changed. Filter out empty first changes to allow local variables.
     reduce(txn).transformWith {
       case Success(r) => put(depends.toMap, changes.toMap).map(_ => r)
-      case Failure(e: RollbackedException) => put(depends.toMap, Map.empty).map(_ => e.message)
+      case Failure(e: RollbackException) => put(depends.toMap, Map.empty).map(_ => e.message)
       case Failure(e) => Future.failed(e)
     }
   }
@@ -170,26 +172,25 @@ trait Database {
 object Database {
 
   /**
-   * An exception indicating that the transaction should be rolled back.
+   * A failure indicating that any changes performed by the transaction should be discarded and
+   * that the specified message should be returned in their place.
    *
-   * @param message Exception message.
-   * @param cause Exception cause.
+   * @param message Rollback message.
    */
-  case class RollbackedException(
-    message: String = "",
-    cause: Throwable = None.orNull
-  ) extends Exception(message, cause)
+  case class RollbackException(
+    message: String
+  ) extends Exception(message)
 
   /**
-   * An unretryable error that occurs during transaction execution.
+   * A failure indicating that a transaction cannot be parsed and should be aborted. Parse
+   * exceptions cannot be retried, and therefore inherit from [[ControlThrowable]].
    *
    * @param message Exception message.
    * @param cause Exception cause.
    */
-  case class ExecutionException(
+  case class ParseException(
     message: String = "",
     cause: Throwable = None.orNull
-  ) extends Exception(message, cause)
-
+  ) extends Exception(message, cause) with ControlThrowable
 
 }

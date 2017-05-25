@@ -8,11 +8,6 @@ jar_library(name='akka', jars=[
   jar(org='com.typesafe.akka', name='akka-actor_2.12', rev='2.4.17')
 ])
 
-# Scala ARM
-jar_library(name='scala-arm', jars=[
-  jar(org='com.jsuereth', name='scala-arm_2.12', rev='2.0')
-])
-
 # Cassandra
 jar_library(name='cassandra', jars=[
   jar(org='org.apache.cassandra', name='cassandra-all', rev='3.10')

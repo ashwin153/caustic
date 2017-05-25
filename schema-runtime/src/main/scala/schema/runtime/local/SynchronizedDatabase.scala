@@ -9,10 +9,9 @@ import scala.concurrent.{ExecutionContext, Future}
  *
  * @param underlying Underlying mutable map.
  */
-@SerialVersionUID(1L)
 class SynchronizedDatabase(
   underlying: TrieMap[Key, (Revision, Value)]
-) extends Database with Serializable {
+) extends Database {
 
   override def get(keys: Set[Key])(
     implicit ec: ExecutionContext

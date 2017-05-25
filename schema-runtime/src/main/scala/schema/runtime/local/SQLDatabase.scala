@@ -1,11 +1,11 @@
-package schema.runtime.local
+package schema.runtime
+package local
 
 import SQLDatabase._
 import java.sql.{Connection, ResultSet, SQLException, Statement}
 import javax.sql.DataSource
 import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future, blocking}
-import schema.runtime.{Database, Key, Revision, Value}
 
 /**
  * An abstract SQL database.

@@ -1,4 +1,4 @@
-package schema.mysql
+package schema.distribute
 
 import javax.sql.DataSource
 import schema.runtime.local.SQLDatabase
@@ -9,7 +9,7 @@ import schema.runtime.{Key, Revision, Value}
  *
  * @param underlying Underlying database.
  */
-class MySQLDatabase private[mysql](
+class MySQLDatabase private[distribute](
   underlying: DataSource
 ) extends SQLDatabase(underlying) {
 
@@ -30,9 +30,10 @@ class MySQLDatabase private[mysql](
 object MySQLDatabase {
 
   /**
+   * Constructs a MySQL database backed by the specified data source.
    *
-   * @param source
-   * @return
+   * @param source Data source.
+   * @return MySQL database.
    */
   def apply(source: DataSource): MySQLDatabase = {
     // Construct the database tables if they do not already exist.

@@ -31,9 +31,10 @@ object PostgreSQLDatabase {
 
 
   /**
+   * Constructs a PostgreSQL database backed by the specified data source.
    *
-   * @param source
-   * @return
+   * @param source Data source.
+   * @return PostgreSQL database.
    */
   def apply(source: DataSource): PostgreSQLDatabase = {
     // Construct the database tables if they do not already exist.

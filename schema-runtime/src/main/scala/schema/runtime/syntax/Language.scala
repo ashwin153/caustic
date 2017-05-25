@@ -8,9 +8,6 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.FiniteDuration
 import scala.util.control.NonFatal
 
-/**
- *
- */
 trait Language {
 
   /**

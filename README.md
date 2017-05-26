@@ -23,7 +23,7 @@ Refer to the [User Guide](https://github.com/ashwin153/schema/wiki/User-Guide) t
 
 ## Roadmap
 - [ ] Test the ```syntax/``` package
-- [ ] Cut a alpha release
+- [ ] Cut an alpha release
 - [ ] Write better examples
 - [ ] Design a generic conditional put implementation
 - [ ] Add support for more databases

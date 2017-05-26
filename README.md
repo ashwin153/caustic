@@ -20,3 +20,11 @@ Schema { implicit ctx =>
 
 ## Documentation
 Refer to the [User Guide](https://github.com/ashwin153/schema/wiki/User-Guide) to learn about how to use the system, the [Appendix](https://github.com/ashwin153/schema/wiki/Appendix) for an exhaustive list of the various library features, and the [Implementation](https://github.com/ashwin153/schema/wiki/Implementation) for more detail about how the system works.
+
+## Roadmap
+- [ ] Test the ```syntax/``` package
+- [ ] Cut a alpha release
+- [ ] Write better examples
+- [ ] Design a generic conditional put implementation
+- [ ] Add support for more databases
+- [ ] Cut a beta release

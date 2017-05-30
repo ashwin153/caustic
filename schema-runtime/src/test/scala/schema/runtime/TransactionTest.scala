@@ -1,10 +1,15 @@
 package schema.runtime
 
+import org.junit.runner.RunWith
+import org.scalatest.junit.JUnitRunner
 import org.scalatest.{FunSuite, Matchers}
 import org.scalatest.mockito.MockitoSugar
 import schema.runtime
 
-class TransactionTest extends FunSuite with MockitoSugar with Matchers {
+@RunWith(classOf[JUnitRunner])
+class TransactionTest extends FunSuite
+  with MockitoSugar
+  with Matchers {
 
   test("Readset is correctly generated.") {
     read(literal("A")).readset should contain theSameElementsAs Set("A")
@@ -21,11 +26,17 @@ class TransactionTest extends FunSuite with MockitoSugar with Matchers {
     literal("A").writeset should have size 0
   }
   
-  test("Folding is correctly performed") {
+  test("Folding is correctly performed.") {
     // Logical operations.
     runtime.equal(literal(0), literal(0.0)) shouldEqual Literal.True
+    runtime.equal(literal("0"), literal("0.0")) shouldEqual Literal.True
+    runtime.equal(literal(""), literal(0)) shouldEqual Literal.True
+    runtime.equal(literal(0), literal("")) shouldEqual Literal.True
     runtime.not(runtime.equal(literal(0), literal(1))) shouldEqual Literal.True
-    less(literal(0), literal(1)) shouldEqual Literal.True
+    less(literal(2), literal(10)) shouldEqual Literal.True
+    less(literal(-1), literal(1)) shouldEqual Literal.True
+    less(literal(""), literal(1)) shouldEqual Literal.True
+    less(literal(""), literal(-1)) shouldEqual Literal.False
 
     // Logical operations.
     and(Literal.False, Literal.True) shouldEqual Literal.False
@@ -48,13 +59,12 @@ class TransactionTest extends FunSuite with MockitoSugar with Matchers {
     floor(literal(1.4)) shouldEqual Literal.One
 
     // String operations.
-    runtime.length(literal("Hello")) shouldEqual literal("5.0")
+    runtime.length(literal("Hello")) shouldEqual literal(5.0)
     runtime.slice(literal("Hello"), literal(1), literal(3)) shouldEqual literal("el")
     runtime.concat(literal("A"), literal("bc")) shouldEqual literal("Abc")
     runtime.matches(literal("a41i3"), literal("[a-z1-4]+")) shouldEqual Literal.True
     runtime.contains(literal("abc"), literal("bc")) shouldEqual Literal.True
     runtime.contains(literal("abc"), literal("de")) shouldEqual Literal.False
-
   }
 
 }

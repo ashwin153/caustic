@@ -1,6 +1,7 @@
 package schema.runtime
 package syntax
 
+import Language._
 import Context._
 import akka.actor.ActorSystem
 import akka.pattern.after
@@ -63,6 +64,17 @@ trait Language {
   }
 
   /**
+   *
+   * @param variable
+   * @param ctx
+   * @return
+   */
+  def Select(variable: Variable)(
+    implicit ctx: Context
+  ): Object =
+    Select(variable.name)
+
+  /**
    * Removes the specified object and its various fields.
    *
    * @param obj Object to remove.
@@ -80,8 +92,8 @@ trait Language {
       ctx.$i = 0
 
       While(ctx.$i < length(obj.$fields)) {
-        ctx.$j = ctx.$i
-        While(!equal(obj.$fields.charAt(ctx.$j), ArrayDelimiter)) {
+        ctx.$j = ctx.$i + 1
+        While(obj.$fields.charAt(ctx.$j) <> ArrayDelimiter) {
           ctx.$j = ctx.$j + 1
         }
 
@@ -97,13 +109,13 @@ trait Language {
 
       While (ctx.$i < length(obj.$indices)) {
         ctx.$j = ctx.$i + 1
-        While (!equal(obj.$indices.charAt(ctx.$j), ArrayDelimiter)) {
+        While (obj.$indices.charAt(ctx.$j) <> ArrayDelimiter) {
           ctx.$j = ctx.$j + 1
         }
 
         val name = obj.$indices.substring(ctx.$i, ctx.$j)
         val field = obj.key ++ FieldDelimiter ++ name
-        val index = read(field ++ FieldDelimiter ++ literal("$values"))
+        val index = read(field ++ FieldDelimiter ++ literal("$addresses"))
         prefetch(index)
         ctx.$k = 0
 
@@ -118,7 +130,7 @@ trait Language {
           ctx.$k = ctx.$l + 1
         }
 
-        ctx += write(field ++ FieldDelimiter ++ literal("$values"), Literal.Empty)
+        ctx += write(field ++ FieldDelimiter ++ literal("$addresses"), Literal.Empty)
         ctx.$i = ctx.$j + 1
       }
     }
@@ -180,27 +192,27 @@ trait Language {
    * the specified variable before each iteration.
    *
    * @param variable Loop variable.
-   * @param from Inclusive starting value.
-   * @param until Exclusive ending value.
-   * @param step Step size.
+   * @param interval Loop interval.
    * @param block Loop body.
    * @param ctx Implicit transaction context.
    */
-  def For(
-    variable: Variable,
-    from: Transaction,
-    until: Transaction,
-    step: Transaction = Literal.One
-  )(
-    block: => Unit
-  )(
+  def For(variable: Variable, interval: Interval)(block: => Unit)(
     implicit ctx: Context
   ): Unit = {
-    ctx += store(variable.name, from)
-    While (load(variable.name) < until) {
-      block
-      ctx += store(variable.name, load(variable.name) + step)
+    ctx += store(variable.name, interval.start)
+
+    val condition = interval match {
+      case Interval(_, end, _, true)  => load(variable.name) <= end
+      case Interval(_, end, _, false) => load(variable.name) <  end
     }
+
+    val before = ctx.txn
+    ctx.txn = Literal.Empty
+    block
+    ctx += store(variable.name, load(variable.name) + interval.step)
+    val body = ctx.txn
+    ctx.txn = before
+    ctx += repeat(condition, body)
   }
 
   /**
@@ -215,10 +227,26 @@ trait Language {
   def Foreach(variable: Variable, in: Field)(block: => Unit)(
     implicit ctx: Context
   ): Unit = {
-    // Prefetch all the values of the collection.
-    val names = read(in.key ++ FieldDelimiter ++ "$values")
-    ctx += prefetch(names)
+    val names = read(in.key ++ FieldDelimiter ++ "$addresses")
 
+    // Prefetch all the addresses of the collection.
+    ctx.$i = 0
+    ctx.$addresses = names
+    While (ctx.$i < length(ctx.$addresses)) {
+      ctx.$j = ctx.$i + 1
+      While (ctx.$addresses.charAt(ctx.$j) <> ArrayDelimiter) {
+        ctx.$j += 1
+      }
+
+      val prefix = ctx.$addresses.substring(0, ctx.$i)
+      val suffix = ctx.$addresses.substring(ctx.$i)
+      ctx.$addresses = prefix ++ in.key ++ FieldDelimiter ++ suffix
+      ctx.$i = ctx.$j + length(in.key ++ FieldDelimiter) + 1
+    }
+
+    ctx += prefetch(ctx.$addresses)
+
+    // Iterate over all the names of addresses.
     ctx.$i = 0
     While (ctx.$i < length(names)) {
       ctx.$j = ctx.$i + 1
@@ -227,8 +255,7 @@ trait Language {
       }
 
       // Load the index into the index variable and perform the block.
-      val at = names.substring(ctx.$i, ctx.$j)
-      ctx += store(variable.name, in.key ++ FieldDelimiter ++ at)
+      ctx += store(variable.name, names.substring(ctx.$i, ctx.$j))
       block
       ctx.$i = ctx.$j + 1
     }
@@ -272,8 +299,8 @@ trait Language {
       ctx.$i = 0
 
       While(ctx.$i < length(obj.$fields)) {
-        ctx.$j = ctx.$i
-        While(!equal(obj.$fields.charAt(ctx.$j), ArrayDelimiter)) {
+        ctx.$j = ctx.$i + 1
+        While(obj.$fields.charAt(ctx.$j) <> ArrayDelimiter) {
           ctx.$j = ctx.$j + 1
         }
 
@@ -290,12 +317,12 @@ trait Language {
 
       While (ctx.$i < length(obj.$indices)) {
         ctx.$j = ctx.$i + 1
-        While (!equal(obj.$indices.charAt(ctx.$j), ArrayDelimiter)) {
+        While (obj.$indices.charAt(ctx.$j) <> ArrayDelimiter) {
           ctx.$j = ctx.$j + 1
         }
 
         val name = obj.$indices.substring(ctx.$i, ctx.$j)
-        val index = read(obj.key ++ FieldDelimiter ++ name ++ FieldDelimiter ++ "$values")
+        val index = read(obj.key ++ FieldDelimiter ++ name ++ FieldDelimiter ++ "$addresses")
         prefetch(index)
         ctx.$json = ctx.$json ++ ",\"" ++ name ++ "\":["
         ctx.$k = 0
@@ -353,5 +380,28 @@ trait Language {
     implicit ctx: Context
   ): Unit =
     ctx += rollback(result)
+
+}
+
+object Language {
+
+  /**
+   * A loop interval.
+   *
+   * @param start Starting value.
+   * @param end Ending value.
+   * @param step Iteration step size.
+   * @param inclusive Whether or not end value is inclusive.
+   */
+  case class Interval(
+    start: Transaction,
+    end: Transaction,
+    step: Transaction,
+    inclusive: Boolean
+  ) {
+
+    def by(s: Transaction): Interval = this.copy(step = s)
+
+  }
 
 }

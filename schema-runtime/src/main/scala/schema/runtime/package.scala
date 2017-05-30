@@ -11,6 +11,9 @@ package object runtime {
   type Revision = Long
   type Value = String
 
+  private def num(x: String): Double = if (x.isEmpty) 0.0 else x.toDouble
+  private def str[T](x: T)(implicit n: Numeric[T]): String = n.toDouble(x).toString
+
   // Remote Key-Value Pairs.
   def read(key: Transaction): Transaction = Operation(Read, List(key))
   def write(key: Transaction, value: Transaction): Transaction = Operation(Write, List(key, value))
@@ -18,7 +21,7 @@ package object runtime {
   // Literals.
   def literal(x: Boolean): Literal = if (x) Literal.True else Literal.False
   def literal(x: String): Literal = Literal(x)
-  def literal[T](x: T)(implicit num: Numeric[T]): Literal = Literal(num.toDouble(x).toString)
+  def literal[T](x: T)(implicit num: Numeric[T]): Literal = Literal(str(x))
 
   // Local Variables.
   def load(name: Transaction): Transaction = Operation(Load, List(name))
@@ -55,52 +58,52 @@ package object runtime {
 
   // Math Operations.
   def add(x: Transaction, y: Transaction): Transaction = (x, y) match {
-    case (Literal(a), Literal(b)) => literal(a.toDouble + b.toDouble)
+    case (Literal(a), Literal(b)) => literal(num(a) + num(b))
     case _ => Operation(Add, List(x, y))
   }
 
   def sub(x: Transaction, y: Transaction): Transaction = (x, y) match {
-    case (Literal(a), Literal(b)) => literal(a.toDouble - b.toDouble)
+    case (Literal(a), Literal(b)) => literal(num(a) - num(b))
     case _ => Operation(Sub, List(x, y))
   }
 
   def mul(x: Transaction, y: Transaction): Transaction = (x, y) match {
-    case (Literal(a), Literal(b)) => literal(a.toDouble * b.toDouble)
+    case (Literal(a), Literal(b)) => literal(num(a) * num(b))
     case _ => Operation(Mul, List(x, y))
   }
 
   def div(x: Transaction, y: Transaction): Transaction = (x, y) match {
-    case (Literal(a), Literal(b)) => literal(a.toDouble / b.toDouble)
+    case (Literal(a), Literal(b)) => literal(num(a) / num(b))
     case _ => Operation(Div, List(x, y))
   }
 
   def mod(x: Transaction, y: Transaction): Transaction = (x, y) match {
-    case (Literal(a), Literal(b)) => literal(a.toDouble % b.toDouble)
+    case (Literal(a), Literal(b)) => literal(num(a) % num(b))
     case _ => Operation(Mod, List(x, y))
   }
 
   def pow(x: Transaction, y: Transaction): Transaction = (x, y) match {
-    case (Literal(a), Literal(b)) => literal(math.pow(a.toDouble, b.toDouble))
+    case (Literal(a), Literal(b)) => literal(math.pow(num(a), num(b)))
     case _ => Operation(Pow, List(x, y))
   }
 
   def log(x: Transaction): Transaction = x match {
-    case Literal(a) => literal(math.log(a.toDouble))
+    case Literal(a) => literal(math.log(num(a)))
     case _ => Operation(Log, List(x))
   }
 
   def sin(x: Transaction): Transaction = x match {
-    case Literal(a) => literal(math.sin(a.toDouble))
+    case Literal(a) => literal(math.sin(num(a)))
     case _ => Operation(Sin, List(x))
   }
 
   def cos(x: Transaction): Transaction = x match {
-    case Literal(a) => literal(math.cos(a.toDouble))
+    case Literal(a) => literal(math.cos(num(a)))
     case _ => Operation(Cos, List(x))
   }
 
   def floor(x: Transaction): Transaction = x match {
-    case Literal(a) => literal(math.floor(a.toDouble))
+    case Literal(a) => literal(math.floor(num(a)))
     case _ => Operation(Floor, List(x))
   }
 
@@ -116,7 +119,7 @@ package object runtime {
   }
 
   def slice(str: Transaction, low: Transaction, high: Transaction): Transaction = (str, low, high) match {
-    case (Literal(x), Literal(y), Literal(z)) => literal(x.substring(y.toDouble.toInt, z.toDouble.toInt))
+    case (Literal(x), Literal(y), Literal(z)) => literal(x.substring(num(y).toInt, num(z).toInt))
     case _ => Operation(Slice, List(str, low, high))
   }
 
@@ -147,12 +150,26 @@ package object runtime {
   }
 
   def equal(a: Transaction, b: Transaction): Transaction = (a, b) match {
-    case (Literal(x), Literal(y)) => if (x == y) Literal.True else Literal.False
+    case (Literal(x), Literal(y)) if x.isEmpty && y.matches("^[+-]?([0-9]*[.])?[0-9]+$") =>
+      if (num(y) == 0) Literal.True else Literal.False
+    case (Literal(x), Literal(y)) if x.matches("^[+-]?([0-9]*[.])?[0-9]+$") && y.isEmpty =>
+      if (num(x) == 0) Literal.True else Literal.False
+    case (Literal(x), Literal(y)) if Seq(x, y).forall(_.matches("^[+-]?([0-9]*[.])?[0-9]+$")) =>
+      if (num(x) == num(y)) Literal.True else Literal.False
+    case (Literal(x), Literal(y)) =>
+      if (x == y) Literal.True else Literal.False
     case _ => Operation(Equal, List(a, b))
   }
 
   def less(a: Transaction, b: Transaction): Transaction = (a, b) match {
-    case (Literal(x), Literal(y)) => if (x < y) Literal.True else Literal.False
+    case (Literal(x), Literal(y)) if x.isEmpty && y.matches("^[+-]?([0-9]*[.])?[0-9]+$") =>
+      if (num(y) > 0) Literal.True else Literal.False
+    case (Literal(x), Literal(y)) if x.matches("^[+-]?([0-9]*[.])?[0-9]+$") && y.isEmpty =>
+      if (num(x) < 0) Literal.True else Literal.False
+    case (Literal(x), Literal(y)) if Seq(x, y).forall(_.matches("^[+-]?([0-9]*[.])?[0-9]+$")) =>
+      if (num(x) < num(y)) Literal.True else Literal.False
+    case (Literal(x), Literal(y)) =>
+      if (x < y) Literal.True else Literal.False
     case _ => Operation(Less, List(a, b))
   }
 

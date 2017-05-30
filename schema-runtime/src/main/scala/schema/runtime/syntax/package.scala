@@ -1,6 +1,8 @@
 package schema.runtime
 
+import syntax.Language._
 import syntax.Context._
+import scala.language.implicitConversions
 
 package object syntax extends Language {
 
@@ -18,6 +20,7 @@ package object syntax extends Language {
   implicit def pxy2ops(proxy: Proxy): TransactionOps = pxy2txn(proxy)
   implicit def var2ops(variable: Variable): TransactionOps = var2txn(variable)
   implicit def fld2obj(field: Field): Object = Object(read(field.key))
+  implicit def rng2int(range: Range): Interval = Interval(range.start, range.end, range.step, range.isInclusive)
 
   // Additional Math Operations.
   lazy val E : Transaction = literal(math.E)
@@ -63,8 +66,8 @@ package object syntax extends Language {
     def min(y: Transaction): Transaction = branch(less(x, y), x, y)
 
     def ++(y: Transaction): Transaction = concat(x, y)
-    def isEmpty: Transaction = equals(x, Literal.Empty)
-    def nonEmpty: Transaction = not(equals(x, Literal.Empty))
+    def isEmpty: Transaction = x === Literal.Empty
+    def nonEmpty: Transaction = x <> Literal.Empty
     def charAt(i: Transaction): Transaction = slice(x, i, add(i, Literal.One))
     def contains(y: Transaction): Transaction = schema.runtime.contains(x, y)
     def endsWith(y: Transaction): Transaction = equal(x.substring(length(x) - length(y)), y)
@@ -73,6 +76,8 @@ package object syntax extends Language {
     def substring(l: Transaction): Transaction = x.substring(l, length(x))
     def substring(l: Transaction, h: Transaction): Transaction = slice(x, l, h)
 
+    def to(y: Transaction): Interval = Interval(x, y, Literal.One, inclusive = true)
+    def until(y: Transaction): Interval = Interval(x, y, Literal.One, inclusive = false)
   }
 
   // Object Operations.
@@ -84,13 +89,25 @@ package object syntax extends Language {
 
   // Field Operations.
   implicit class FieldOps(x: Field) {
-
+    
     def +=(y: Transaction)(implicit ctx: Context): Unit = x.owner.updateDynamic(x.name)(x + y)
     def -=(y: Transaction)(implicit ctx: Context): Unit = x.owner.updateDynamic(x.name)(x - y)
     def *=(y: Transaction)(implicit ctx: Context): Unit = x.owner.updateDynamic(x.name)(x * y)
     def /=(y: Transaction)(implicit ctx: Context): Unit = x.owner.updateDynamic(x.name)(x / y)
     def %=(y: Transaction)(implicit ctx: Context): Unit = x.owner.updateDynamic(x.name)(x % y)
     def ++=(y: Transaction)(implicit ctx: Context): Unit = x.owner.updateDynamic(x.name)(x ++ y)
+
+  }
+
+  // Variable Operations.
+  implicit class VariableOps(x: Variable) {
+
+    def +=(y: Transaction)(implicit ctx: Context): Unit = store(x.name, x + y)
+    def -=(y: Transaction)(implicit ctx: Context): Unit = store(x.name, x - y)
+    def *=(y: Transaction)(implicit ctx: Context): Unit = store(x.name, x * y)
+    def /=(y: Transaction)(implicit ctx: Context): Unit = store(x.name, x / y)
+    def %=(y: Transaction)(implicit ctx: Context): Unit = store(x.name, x % y)
+    def ++=(y: Transaction)(implicit ctx: Context): Unit = store(x.name, x ++ y)
 
   }
 

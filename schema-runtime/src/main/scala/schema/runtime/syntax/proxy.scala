@@ -65,9 +65,11 @@ final case class Object(key: Transaction) extends Proxy {
     }
 
     // Verify that the field name is recorded on the object.
-    val names = this.key ++ FieldDelimiter ++ "$fields"
-    If (!read(names).contains(field)) {
-      ctx += write(names, read(names) ++ literal(field) ++ ArrayDelimiter)
+    if (!field.startsWith(LocalDelimiter)) {
+      val names = this.key ++ FieldDelimiter ++ "$fields"
+      If (!read(names).contains(field)) {
+        ctx += write(names, read(names) ++ literal(field) ++ ArrayDelimiter)
+      }
     }
 
     // Append the field update to the context.
@@ -101,9 +103,11 @@ final case class Field(key: Transaction, name: String, owner: Object) extends Pr
     }
 
     // Verify that the field name is recorded on the owner object.
-    val names = this.owner.key ++ FieldDelimiter ++ "$fields"
-    If (!read(names).contains(field)) {
-      ctx += write(names, read(names) ++ literal(field) ++ ArrayDelimiter)
+    if (!field.startsWith(LocalDelimiter)) {
+      val names = this.owner.key ++ FieldDelimiter ++ "$fields"
+      If (!read(names).contains(field)) {
+        ctx += write(names, read(names) ++ literal(field) ++ ArrayDelimiter)
+      }
     }
 
     // Append the field update to the context.
@@ -137,7 +141,7 @@ final case class Field(key: Transaction, name: String, owner: Object) extends Pr
     }
 
     // Verify that the at is recorded on the index.
-    val index = this.key ++ FieldDelimiter ++ literal("$values")
+    val index = this.key ++ FieldDelimiter ++ "$addresses"
     If (!read(index).contains(address)) {
       ctx += write(index, read(index) ++ address ++ ArrayDelimiter)
     }

@@ -53,7 +53,7 @@ trait Database {
   def execute(txn: Transaction)(
     implicit ec: ExecutionContext
   ): Future[Value] = {
-    val snapshot = mutable.Map.empty[Key, (Revision, Value)].withDefaultValue((0L, ""))
+    val snapshot = mutable.Map.empty[Key, (Revision, Value)]
     val changes  = mutable.Map.empty[Key, (Revision, Value)]
     val depends  = mutable.Map.empty[Key,  Revision]
     val locals   = mutable.Map.empty[Key,  Value]
@@ -65,14 +65,17 @@ trait Database {
     // transaction's writeset (for their version) that have not been read before (to avoid changes
     // in value) and that are not currently depended on by the transaction (to avoid changes in
     // version) to ensure that the evaluation of the transaction is correct and consistent.
-    def reduce(txn: Transaction): Future[String] =
-      get(txn.readset ++ txn.writeset -- snapshot.keys -- depends.keys) flatMap { values =>
-        snapshot ++= values
-        fold(List(Left(txn)), List.empty) match {
+    def reduce(txn: Transaction): Future[String] = {
+      val keys = txn.readset ++ txn.writeset -- snapshot.keys
+      snapshot ++= keys.map(k => k -> (0L, ""))
+
+      Future(keys)
+        .flatMap(k => if (k.nonEmpty) get(k).map(snapshot ++= _) else Future.unit)
+        .flatMap(_ => fold(List(Left(txn)), List.empty) match {
           case l: Literal => Future(l.value)
           case o: Operation => reduce(o)
-        }
-      }
+        })
+    }
 
     @tailrec def fold(
       stack: List[Either[Transaction, Operator]],

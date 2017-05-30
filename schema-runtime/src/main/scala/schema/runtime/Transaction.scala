@@ -63,10 +63,10 @@ final case class Literal private[runtime](
 object Literal {
 
   val Empty = Literal("")
-  val Zero  = Literal("0.0")
-  val Half  = Literal("0.5")
-  val One   = Literal("1.0")
-  val Two   = Literal("2.0")
+  val Zero  = literal(0.0)
+  val Half  = literal(0.5)
+  val One   = literal(1.0)
+  val Two   = literal(2.0)
   val True  = Literal.One
   val False = Literal.Zero
 

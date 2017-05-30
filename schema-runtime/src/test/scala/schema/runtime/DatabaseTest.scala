@@ -1,6 +1,5 @@
 package schema.runtime
 
-import schema._
 import java.util.concurrent.{CountDownLatch, TimeUnit}
 import org.junit.runner.RunWith
 import org.scalatest.{Matchers, Outcome, fixture}
@@ -61,6 +60,7 @@ abstract class DatabaseTest extends fixture.FunSuite
   }
 
   test("Execute maintains mutable state.") { db =>
+    // Verifies that local variables and loops are properly handled by the database execution logic.
     whenReady(db.execute(cons(
       store(literal("$i"), literal(0)),
       cons(

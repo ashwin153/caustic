@@ -64,6 +64,17 @@ trait Language {
   }
 
   /**
+   * Retrieves the object at the key stored in the variable.
+   *
+   * @param variable Variable containing key.
+   * @param ctx Implicit transaction context.
+   * @return Corresponding object.
+   */
+  def Select(variable: Variable)(
+    implicit ctx: Context
+  ): Object = Object(variable)
+
+  /**
    * Removes the specified object and its various fields.
    *
    * @param obj Object to remove.
@@ -251,27 +262,6 @@ trait Language {
   }
 
   /**
-   * Iterates over a collection of prefetched keys.
-   *
-   * @param in List of keys to iterate over.
-   * @param block Loop body.
-   * @param ctx Implicit transaction context.
-   */
-  def Foreach(in: Iterable[Key])(block: String => Unit)(
-    implicit ctx: Context
-  ): Unit = {
-    ctx += prefetch(in.mkString(ArrayDelimiter))
-    
-    in.foreach { k =>
-      val before = ctx.txn
-      ctx.txn = Literal.Empty
-      block(k)
-      val body = ctx.txn
-      ctx.txn = cons(before, body)
-    }
-  }
-
-  /**
    * Serializes an object and its various fields to json.
    *
    * @param obj Object to serialize.
@@ -367,8 +357,7 @@ trait Language {
    */
   def Rollback(result: Transaction = Literal.Empty)(
     implicit ctx: Context
-  ): Unit =
-    ctx += rollback(result)
+  ): Unit = ctx += rollback(result)
 
 }
 

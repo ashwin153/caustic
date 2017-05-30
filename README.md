@@ -4,10 +4,10 @@ Schema is a library for expressing and executing database transactions. Schema p
 ```scala
 Schema { implicit ctx =>
   val counter = Select("x")
-  If (!counter) {
-    counter.count = 0
+  If (!counter.exists) {
+    counter.total = 0
   } Else {
-    counter.count += 1
+    counter.total += 1
   }
 }
 ```

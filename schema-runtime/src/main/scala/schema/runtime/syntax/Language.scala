@@ -64,17 +64,6 @@ trait Language {
   }
 
   /**
-   *
-   * @param variable
-   * @param ctx
-   * @return
-   */
-  def Select(variable: Variable)(
-    implicit ctx: Context
-  ): Object =
-    Select(variable.name)
-
-  /**
    * Removes the specified object and its various fields.
    *
    * @param obj Object to remove.
@@ -235,7 +224,7 @@ trait Language {
     While (ctx.$i < length(ctx.$addresses)) {
       ctx.$j = ctx.$i + 1
       While (ctx.$addresses.charAt(ctx.$j) <> ArrayDelimiter) {
-        ctx.$j += 1
+        ctx.$j = ctx.$j + 1
       }
 
       val prefix = ctx.$addresses.substring(0, ctx.$i)
@@ -262,24 +251,24 @@ trait Language {
   }
 
   /**
-   * Iterates over each key in an iterable collection, storing the current key in the specified
-   * variable before each iteration. Automatically prefetches index keys.
+   * Iterates over a collection of prefetched keys.
    *
-   * @param variable Loop variable.
    * @param in List of keys to iterate over.
    * @param block Loop body.
    * @param ctx Implicit transaction context.
    */
-  def Foreach(variable: Variable, in: Iterable[Key])(block: => Unit)(
+  def Foreach(in: Iterable[Key])(block: String => Unit)(
     implicit ctx: Context
   ): Unit = {
-    val before = ctx.txn
-    ctx.txn = Literal.Empty
-    block
-    val body = ctx.txn
-    ctx.txn = before
     ctx += prefetch(in.mkString(ArrayDelimiter))
-    ctx += in.foldLeft[Transaction](Literal.Empty)((a, b) => cons(a, cons(store(variable.name, b), body)))
+    
+    in.foreach { k =>
+      val before = ctx.txn
+      ctx.txn = Literal.Empty
+      block(k)
+      val body = ctx.txn
+      ctx.txn = cons(before, body)
+    }
   }
 
   /**

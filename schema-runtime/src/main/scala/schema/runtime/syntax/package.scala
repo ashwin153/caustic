@@ -89,7 +89,7 @@ package object syntax extends Language {
 
   // Field Operations.
   implicit class FieldOps(x: Field) {
-    
+
     def +=(y: Transaction)(implicit ctx: Context): Unit = x.owner.updateDynamic(x.name)(x + y)
     def -=(y: Transaction)(implicit ctx: Context): Unit = x.owner.updateDynamic(x.name)(x - y)
     def *=(y: Transaction)(implicit ctx: Context): Unit = x.owner.updateDynamic(x.name)(x * y)
@@ -102,12 +102,12 @@ package object syntax extends Language {
   // Variable Operations.
   implicit class VariableOps(x: Variable) {
 
-    def +=(y: Transaction)(implicit ctx: Context): Unit = store(x.name, x + y)
-    def -=(y: Transaction)(implicit ctx: Context): Unit = store(x.name, x - y)
-    def *=(y: Transaction)(implicit ctx: Context): Unit = store(x.name, x * y)
-    def /=(y: Transaction)(implicit ctx: Context): Unit = store(x.name, x / y)
-    def %=(y: Transaction)(implicit ctx: Context): Unit = store(x.name, x % y)
-    def ++=(y: Transaction)(implicit ctx: Context): Unit = store(x.name, x ++ y)
+    def +=(y: Transaction)(implicit ctx: Context): Unit = ctx += store(x.name, x + y)
+    def -=(y: Transaction)(implicit ctx: Context): Unit = ctx += store(x.name, x - y)
+    def *=(y: Transaction)(implicit ctx: Context): Unit = ctx += store(x.name, x * y)
+    def /=(y: Transaction)(implicit ctx: Context): Unit = ctx += store(x.name, x / y)
+    def %=(y: Transaction)(implicit ctx: Context): Unit = ctx += store(x.name, x % y)
+    def ++=(y: Transaction)(implicit ctx: Context): Unit = ctx += store(x.name, x ++ y)
 
   }
 

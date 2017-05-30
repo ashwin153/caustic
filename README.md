@@ -5,9 +5,9 @@ Schema is a library for expressing and executing database transactions. Schema p
 Schema { implicit ctx =>
   val counter = Select("x")
   If (!counter.exists) {
-    counter.count = 0
+    counter.total = 0
   } Else {
-    counter.count += 1
+    counter.total += 1
   }
 }
 ```

@@ -1,5 +1,5 @@
 # Schema
-Schema is a library for expressing and executing database transactions. Schema provides a dynamically-typed language to **express** transactions and utilizes [Multiversion Concurrency Control](https://en.wikipedia.org/wiki/Multiversion_concurrency_control) to optimistically and efficiently **execute** transactions on *arbitrary* key-value stores. The following is a distributed transaction written in Schema to give you a taste of what the language can do.
+Schema is a library for expressing and executing database transactions. Schema provides a dynamically-typed language to **express** transactions and utilizes [Multiversion Concurrency Control](https://en.wikipedia.org/wiki/Multiversion_concurrency_control) to optimistically and efficiently **execute** transactions on *arbitrary* key-value stores. The following are transactions written in Schema and MySQL to give you a taste of what the library can do.
 
 ```scala
 Schema { implicit ctx =>
@@ -10,6 +10,19 @@ Schema { implicit ctx =>
     counter.total += 1
   }
 }
+```
+
+```sql
+CREATE TABLE `counters` (
+  `key` varchar(250) NOT NULL,
+  `total` BIGINT,
+  PRIMARY KEY (`key`)
+)
+
+START TRANSACTION;
+INSERT INTO `counters` (`key`, `total`) VALUES ("x", 1)
+ON DUPLICATE KEY UPDATE `value` = `value` + 1
+COMMIT;
 ```
 
 ## Overview

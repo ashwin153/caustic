@@ -27,9 +27,36 @@ COMMIT;
 
 ## Overview
 - ```schema-runtime/```: Core runtime library
-- ```schema-benchmark/```: Performance tests
 - ```schema-mysql/```: MySQL integration
 - ```schema-postgresql/```: PostgreSQL integration
+- ```schema-benchmark/```: Performance tests
+
+## Build
+Artifacts are synced to Maven Central.
+
+```xml
+<dependency>
+  <groupId>com.madavan</groupId>
+  <artifactId>schema-runtime_2.12</artifactId>
+  <version>1.0.3</version>
+</dependency>
+```
+
+```xml
+<dependency>
+  <groupId>com.madavan</groupId>
+  <artifactId>schema-mysql_2.12</artifactId>
+  <version>1.0.3</version>
+</dependency>
+```
+
+```xml
+<dependency>
+  <groupId>com.madavan</groupId>
+  <artifactId>schema-postgresql_2.12</artifactId>
+  <version>1.0.3</version>
+</dependency>
+```
 
 ## Documentation
 Refer to the [User Guide](https://github.com/ashwin153/schema/wiki/User-Guide) to learn about how to use the system, the [Appendix](https://github.com/ashwin153/schema/wiki/Appendix) for an exhaustive list of the various library features, and the [Implementation](https://github.com/ashwin153/schema/wiki/Implementation) for more detail about how the system works.

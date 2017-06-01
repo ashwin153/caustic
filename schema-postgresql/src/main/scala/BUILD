@@ -8,7 +8,7 @@ scala_library(
   provides = artifact(
     org = 'com.madavan',
     name = 'schema-postgresql_2.12',
-    repo = public
+    repo = public,
     publication_metadata = describe,
   ),
 )

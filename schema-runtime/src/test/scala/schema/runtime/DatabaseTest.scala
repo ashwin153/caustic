@@ -9,6 +9,7 @@ import org.mockito.Mockito._
 import org.scalatest.mockito.MockitoSugar
 import org.mockito.internal.stubbing.answers.CallsRealMethods
 import org.mockito.invocation.InvocationOnMock
+import org.scalatest.time.{Millis, Seconds, Span}
 import scala.concurrent.ExecutionContext.Implicits.global
 
 @RunWith(classOf[JUnitRunner])
@@ -18,6 +19,11 @@ abstract class DatabaseTest extends fixture.FunSuite
   with Matchers {
 
   type FixtureParam = Database
+
+  implicit val defaultPatience = PatienceConfig(
+    timeout = Span(15, Seconds),
+    interval = Span(100, Millis)
+  )
 
   def withFixture(test: OneArgTest): Outcome
 
@@ -38,15 +44,15 @@ abstract class DatabaseTest extends fixture.FunSuite
     // deterministic injection of race conditions into transaction execution.
     val ready = new CountDownLatch(1)
     val block = new CountDownLatch(1)
-    val fake = spy(db)
+    val fake  = spy[Database](db)
 
-    when(fake.put(Map("x" -> 0L), Map.empty)(global)).thenAnswer(new CallsRealMethods {
+    doAnswer(new CallsRealMethods {
       override def answer(invocation: InvocationOnMock): Object = {
         ready.countDown()
         assert(block.await(10, TimeUnit.SECONDS))
         super.answer(invocation)
       }
-    })
+    }).when(fake).put(Map("x" -> 0L), Map.empty)(global)
 
     // Construct a read-only transaction and wait for it to reach the faked 'put' method. Then
     // construct a second transaction that updates the value of the field and unblocks the first

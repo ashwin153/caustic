@@ -30,6 +30,15 @@ COMMIT;
 ## Build
 Artifacts are published to the [Sonatype OSS Repository Hosting Service](https://oss.sonatype.org/index.html#nexus-search;quick~com.madavan) and synced to [Maven Central](https://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.madavan%22).
 
+### Pants
+```scala
+jar_library(name='schema', jars=[
+    jar(org='com.madavan', name='schema-runtime_2.12', rev='1.0.3'),
+    jar(org='com.madavan', name='schema-postgresql_2.12', rev='1.0.3'),
+    jar(org='com.madavan', name='schema-mysql_2.12', rev='1.0.3'),
+])
+```
+
 ### SBT
 ```scala
 scalaVersion := "2.12.1"

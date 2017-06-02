@@ -1,5 +1,7 @@
 # Schema
-Schema is a library for expressing and executing database transactions. Schema provides a dynamically-typed language to **express** transactions and utilizes [Multiversion Concurrency Control](https://en.wikipedia.org/wiki/Multiversion_concurrency_control) to optimistically and efficiently **execute** transactions on *arbitrary* key-value stores. The following are transactions written in Schema and MySQL to give you a taste of what the library can do.
+Schema provides a runtime library for [optimistically](https://en.wikipedia.org/wiki/Optimistic_concurrency_control) executing transactions over arbitrary [transactional key-value stores](https://en.wikipedia.org/wiki/Key-value_database) and a [DSL](https://en.wikipedia.org/wiki/Domain-specific_language) for elegantly expressing transactions using a dynamically typed schema and functionality that is absent in SQL and most other transactional libraries. As a motivating example, let’s write transactions using MySQL and Schema that both solve the concurrent increment problem described above.
+
+Notice how the MySQL transaction requires an explicit schema definition, while the Schema transaction dynamically infers this information. Furthermore, the Schema transaction is more comprehensible and interoperable - it’ll run without modification on any transactional key-value store (including MySQL).
 
 ```scala
 Schema { implicit ctx =>
@@ -32,7 +34,7 @@ COMMIT;
 - ```schema-benchmark/```: Performance tests
 
 ## Build
-Artifacts are synced to Maven Central.
+Artifacts are synced to [Maven Central](https://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.madavan%22).
 
 ```xml
 <dependency>

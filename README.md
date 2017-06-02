@@ -1,7 +1,7 @@
 # Schema
-```Schema``` provides a runtime library for [optimistically](https://en.wikipedia.org/wiki/Optimistic_concurrency_control) executing transactions over arbitrary [transactional key-value stores](https://en.wikipedia.org/wiki/Key-value_database) and a [DSL](https://en.wikipedia.org/wiki/Domain-specific_language) for elegantly expressing transactions using a dynamically typed schema and functionality that is absent in SQL and most other transactional libraries. As a motivating example, let’s write transactions using MySQL and Schema that both solve the concurrent increment problem described above.
+```Schema``` provides a runtime library for [optimistically](https://en.wikipedia.org/wiki/Optimistic_concurrency_control) executing transactions over arbitrary [transactional key-value stores](https://en.wikipedia.org/wiki/Key-value_database) and a [DSL](https://en.wikipedia.org/wiki/Domain-specific_language) for elegantly expressing transactions using a dynamically typed schema and functionality that is absent in SQL and most other transactional libraries. As a motivating example, let’s write transactions using MySQL and ```Schema``` that both solve the concurrent increment problem described above.
 
-Notice how the MySQL transaction requires an explicit schema definition, while the Schema transaction dynamically infers this information. Furthermore, the Schema transaction is more comprehensible and interoperable - it’ll run without modification on any transactional key-value store (including MySQL).
+Notice how the MySQL transaction requires an explicit schema definition, while the ```Schema``` transaction dynamically infers this information. Furthermore, the ```Schema``` transaction is more comprehensible and interoperable - it’ll run without modification on any transactional key-value store (including MySQL).
 
 ```scala
 Schema { implicit ctx =>

@@ -1,6 +1,9 @@
 # macOS
 .DS_Store
-*.swp
+
+# Vim
+.*.swp
+.*.swo
 
 # IntelliJ 
 .idea/

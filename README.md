@@ -1,30 +1,28 @@
 # Schema
-```Schema``` provides a runtime library for [optimistically](https://en.wikipedia.org/wiki/Optimistic_concurrency_control) executing transactions over arbitrary [transactional key-value stores](https://en.wikipedia.org/wiki/Key-value_database) and a [DSL](https://en.wikipedia.org/wiki/Domain-specific_language) for elegantly expressing transactions using a dynamically typed schema and functionality that is absent in SQL and most other transactional libraries. As a motivating example, let’s write transactions using MySQL and ```Schema``` that both solve the concurrent increment problem described above.
+Schema is a Scala DSL for expressing and [optimistically executing](https://en.wikipedia.org/wiki/Optimistic_concurrency_control) database transactions. It is intended to serve as a replacement for SQL, which has reigned as the language of choice for codifying database interactions for the past 43 years. As a motivating example, let's write the same transaction in MySQL and Schema. Both transactions atomically increment a counter ```x```; however, unlike MySQL, Schema does not require an explicit table definition and runs on *any* [transactional key-value store](https://en.wikipedia.org/wiki/Key-value_database) (including MySQL). Check out the [User Guide](https://github.com/ashwin153/schema/wiki/User-Guide) for more examples of Schema in action.
 
-Notice how the MySQL transaction requires an explicit schema definition, while the ```Schema``` transaction dynamically infers this information. Furthermore, the ```Schema``` transaction is more comprehensible and interoperable - it’ll run without modification on any transactional key-value store (including MySQL).
+```sql
+CREATE TABLE `counters` (
+  `key` varchar(250) NOT NULL,
+  `value` BIGINT,
+  PRIMARY KEY (`key`)
+)
+
+START TRANSACTION;
+INSERT INTO `counters` (`key`, `value`) VALUES ("x", 1) 
+ON DUPLICATE KEY UPDATE `value` = `value` + 1
+COMMIT;
+```
 
 ```scala
 Schema { implicit ctx =>
   val counter = Select("x")
   If (!counter.exists) {
-    counter.total = 0
+    counter.value = 1
   } Else {
-    counter.total += 1
+    counter.value += 1
   }
 }
-```
-
-```sql
-CREATE TABLE `counters` (
-  `key` varchar(250) NOT NULL,
-  `total` BIGINT,
-  PRIMARY KEY (`key`)
-)
-
-START TRANSACTION;
-INSERT INTO `counters` (`key`, `total`) VALUES ("x", 1)
-ON DUPLICATE KEY UPDATE `value` = `value` + 1
-COMMIT;
 ```
 
 ## Build

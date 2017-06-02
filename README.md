@@ -1,4 +1,4 @@
-# Introduction
+# Schema
 Schema is a Scala DSL for expressing and [optimistically executing](https://en.wikipedia.org/wiki/Optimistic_concurrency_control) database transactions. It is intended to serve as a replacement for SQL, which has reigned as the language of choice for codifying database interactions for the past 43 years. As a motivating example, let's write the same transaction in MySQL and Schema. Both transactions atomically increment a counter ```x```; however, unlike MySQL, Schema does not require an explicit table definition and runs on *any* [transactional key-value store](https://en.wikipedia.org/wiki/Key-value_database) (including MySQL). Check out the [User Guide](https://github.com/ashwin153/schema/wiki/User-Guide) for more examples of Schema in action.
 
 ```sql

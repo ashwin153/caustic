@@ -59,7 +59,7 @@ Artifacts are synced to Maven Central.
 ```
 
 ## Documentation
-Refer to the [User Guide](https://github.com/ashwin153/schema/wiki/User-Guide) to learn about how to use the system, the [Appendix](https://github.com/ashwin153/schema/wiki/Appendix) for an exhaustive list of the various library features, and the [Implementation](https://github.com/ashwin153/schema/wiki/Implementation) for more detail about how the system works.
+Refer to the [User Guide](https://github.com/ashwin153/schema/wiki/User-Guide) to learn about how to use the system, the [Appendix](https://github.com/ashwin153/schema/wiki/Appendix) for an exhaustive list of the various library features, the [Implementation](https://github.com/ashwin153/schema/wiki/Implementation) for more detail about how the system works, and the [Benchmarks](https://github.com/ashwin153/schema/wiki/Benchmarks) to see how it performs.
 
 ## Release
 - Setup GPG: http://macgpg.sourceforge.net/docs/howto-build-gpg-osx.txt.asc

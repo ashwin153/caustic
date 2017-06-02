@@ -27,32 +27,39 @@ ON DUPLICATE KEY UPDATE `value` = `value` + 1
 COMMIT;
 ```
 
-## Overview
-- ```schema-runtime/```: Core runtime library
-- ```schema-mysql/```: MySQL integration
-- ```schema-postgresql/```: PostgreSQL integration
-- ```schema-benchmark/```: Performance tests
-
 ## Build
 Artifacts are synced to [Maven Central](https://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.madavan%22).
 
+### SBT
+```scala
+scalaVersion := "2.12.1"
+
+resolvers ++= Seq(
+  Resolver.sonatypeRepo("releases"),
+  Resolver.sonatypeRepo("snapshots")
+)
+
+libraryDependencies ++= Seq(
+  "com.madavan" %% "schema-runtime" % "1.0.3",
+  "com.madavan" %% "schema-mysql" % "1.0.3",
+  "com.madavan" %% "schema-postgresql" % "1.0.3"
+)
+```
+
+### Maven
 ```xml
 <dependency>
   <groupId>com.madavan</groupId>
   <artifactId>schema-runtime_2.12</artifactId>
   <version>1.0.3</version>
 </dependency>
-```
 
-```xml
 <dependency>
   <groupId>com.madavan</groupId>
   <artifactId>schema-mysql_2.12</artifactId>
   <version>1.0.3</version>
 </dependency>
-```
 
-```xml
 <dependency>
   <groupId>com.madavan</groupId>
   <artifactId>schema-postgresql_2.12</artifactId>

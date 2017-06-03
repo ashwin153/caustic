@@ -1,12 +1,29 @@
+# Setup Travis CI pants configuration.
 env:
   global:
-    # Use the Travis Configuration for Pants.
-    - PANTS_CONFIG_OVERRIDE="['pants.ini', 'build-support/travis/ci.pants.ini']"
+    - PANTS_CONFIG_OVERRIDE="['pants.ini', 'travis.pants.ini']"
 
+# Copied from https://github.com/pantsbuild/pants/blob/master/.travis.yml.
+before_cache:
+  - sudo chown -R travis:travis "${HOME}" "${TRAVIS_BUILD_DIR}"
+  - find build-support -name "*.py[co]" -delete
+  - find ${HOME}/.ivy2/pants -type f -name "ivydata-*.properties" -delete
+  - rm -f ${HOME}/.ivy2/pants/*.{css,properties,xml,xsl}
+  - rm -rf ${HOME}/.ivy2/pants/com.example
+  - rm -rf ${HOME}/.cache/pants/stats
+  
+cache:
+  directories:
+    - ${HOME}/.cache/pants
+    - ${HOME}/.ivy2/pants
+    - build-support/isort.venv
+    - build-support/pants_dev_deps.venv
+
+# Compile and run all unit tests.
 language: python
 python:
   - '2.7'
 
-script:
-  - ./pants compile ::
-  - ./pants test ::
+script: |
+  ./pants compile ::
+  ./pants test ::

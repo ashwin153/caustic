@@ -1,7 +1,12 @@
+env:
+  global:
+    # Use the Travis Configuration for Pants.
+    - PANTS_CONFIG_OVERRIDE="['pants.ini', 'build-support/travis/ci.pants.ini']"
+
 language: python
 python:
-  - 2.7
-  
+  - '2.7'
+
 script:
   - ./pants compile ::
   - ./pants test ::

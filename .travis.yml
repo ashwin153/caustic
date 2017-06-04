@@ -9,4 +9,4 @@ python:
 
 script: |
   ./pants compile --[no-]compile-scalafmt-skip ::
-  ./pants test --[no-]compile-scalafmt-skip ::
+  ./pants test ::

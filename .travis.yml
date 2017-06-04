@@ -24,6 +24,9 @@ cache:
 services:
   - mysql
   - postgresql
+  
+addons:
+  postgresql: "9.5"
 
 before_install:
   - mysql -e 'CREATE DATABASE IF NOT EXISTS test;'

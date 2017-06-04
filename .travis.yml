@@ -2,7 +2,7 @@
 env:
   global:
     - JAVA_HOME="$HOME/opt/jdk1.8.0_131"
-    - PANTS_CONFIG_OVERRIDE="['pants.ini', 'travis.pants.ini']"
+    - PANTS_CONFIG_OVERRIDE="['pants.ini', 'pants-travis.ini']"
 
 # Copied from https://github.com/pantsbuild/pants/blob/master/.travis.yml.
 before_cache:

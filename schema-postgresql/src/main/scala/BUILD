@@ -3,7 +3,7 @@ scala_library(
   sources = rglobs('*.scala'),
   dependencies = [
     'schema-runtime/src/main/scala',
-    '3rdparty/jvm:postgres',
+    scoped('3rdparty/jvm:postgres', scope='runtime'),
   ],
   provides = artifact(
     org = 'com.madavan',

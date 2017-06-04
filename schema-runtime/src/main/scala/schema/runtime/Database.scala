@@ -67,7 +67,7 @@ trait Database {
     // version) to ensure that the evaluation of the transaction is correct and consistent.
     def reduce(txn: Transaction): Future[String] = {
       val keys = txn.readset ++ txn.writeset -- snapshot.keys
-      snapshot ++= keys.map(k => k -> (0L, ""))
+      snapshot ++= keys.map(k => k -> ((0L, "")))
 
       Future(keys)
         .flatMap(k => if (k.nonEmpty) get(k).map(snapshot ++= _) else Future.unit)
@@ -98,7 +98,7 @@ trait Database {
           case Operation(Write, Literal(key) :: Literal(value) :: Nil) =>
             // Save all writes to the local change buffer.
             val (version, _) = snapshot(key)
-            changes += key -> (version + 1, value)
+            changes += key -> ((version + 1, value))
             fold(rest, literal(value) :: operands)
           case Operation(Branch, cmp :: pass :: fail :: Nil) =>
             // Do not evaluate the branch that is not taken.

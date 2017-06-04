@@ -36,7 +36,7 @@ Schema { implicit ctx =>
 - MySQL 5.0
 
 # Build
-Artifacts are published to the [Sonatype OSS Repository Hosting Service](https://oss.sonatype.org/index.html#nexus-search;quick~com.madavan) and synced to [Maven Central](https://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.madavan%22).
+Artifacts are published to the [Sonatype OSS Repository Hosting Service](https://oss.sonatype.org/index.html#nexus-search;quick~com.madavan) and synced to [Maven Central](https://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.madavan%22). Snapshots of the ```master``` branch are built using [Travis CI](https://travis-ci.org/ashwin153/schema).
 
 ## Pants
 ```python

@@ -1,4 +1,4 @@
-package schema.distribute
+package schema.mysql
 
 import javax.sql.DataSource
 import schema.runtime.local.SQLDatabase
@@ -9,7 +9,7 @@ import schema.runtime.{Key, Revision, Value}
  *
  * @param underlying Underlying database.
  */
-class MySQLDatabase private[distribute](
+class MySQLDatabase private[mysql](
   underlying: DataSource
 ) extends SQLDatabase(underlying) {
 
@@ -42,7 +42,7 @@ object MySQLDatabase {
 
     smt.execute(
       s""" CREATE TABLE IF NOT EXISTS `schema`(
-         |   `key` varchar (500) NOT NULL,
+         |   `key` varchar (200) NOT NULL,
          |   `revision` BIGINT DEFAULT 0,
          |   `value` TEXT,
          |   PRIMARY KEY(`key`)

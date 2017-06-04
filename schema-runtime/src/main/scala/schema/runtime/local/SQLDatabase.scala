@@ -44,7 +44,7 @@ abstract class SQLDatabase(underlying: DataSource) extends Database {
 
       // Convert the result set into a Map.
       val buf = mutable.Buffer.empty[(Key, (Revision, Value))]
-      while (res.next()) buf += res.getString(1) -> (res.getLong(2), res.getString(3))
+      while (res.next()) buf += res.getString(1) -> ((res.getLong(2), res.getString(3)))
 
       // Cleanup result set and statement and return.
       res.close()

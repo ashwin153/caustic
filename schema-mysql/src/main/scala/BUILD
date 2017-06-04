@@ -3,7 +3,7 @@ scala_library(
   sources = rglobs('*.scala'),
   dependencies = [
     'schema-runtime/src/main/scala',
-    '3rdparty/jvm:mysql',
+    scoped('3rdparty/jvm:mysql', scope='runtime'),
   ],
   provides = artifact(
     org = 'com.madavan',

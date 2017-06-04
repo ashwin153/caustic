@@ -28,9 +28,9 @@ class LanguageTest extends AsyncFunSuite
       .thenReturn(Future("Success"))
       .thenReturn(Future.failed(new Exception("Non-Retryable.") with ControlThrowable))
 
-    Schema(Stream(10 millis))(_ => ())
+    Schema(Seq(10 millis))(_ => ())
       .map(_ shouldEqual "Success")
-      .flatMap(_ => Schema(Stream(10 millis))(_ => ()))
+      .flatMap(_ => Schema(Seq(10 millis))(_ => ()))
       .map(_ => fail)
       .recover { case _ => succeed }
   }

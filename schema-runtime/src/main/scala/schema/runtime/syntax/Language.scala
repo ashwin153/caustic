@@ -21,7 +21,7 @@ trait Language {
    * @param db Implicit database.
    * @return Result of transaction execution.
    */
-  def Schema(backoffs: Stream[FiniteDuration])(f: Context => Unit)(
+  def Schema(backoffs: Seq[FiniteDuration])(f: Context => Unit)(
     implicit db: Database,
     ec: ExecutionContext
   ): Future[String] =

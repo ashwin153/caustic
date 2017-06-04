@@ -15,7 +15,7 @@ object Backoff {
    * @param maximum Maximum backoff.
    * @return Jittered exponential backoff.
    */
-  def exponential(
+  def exponentialJittered(
     times: Int,
     initial: FiniteDuration,
     maximum: FiniteDuration

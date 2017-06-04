@@ -11,12 +11,29 @@ import org.mockito.ArgumentMatchers._
 import org.scalatest.junit.JUnitRunner
 import schema.runtime.local.SynchronizedDatabase
 import scala.collection.JavaConverters._
+import scala.concurrent.Future
+import scala.concurrent.duration._
+import scala.util.control.ControlThrowable
 
 @RunWith(classOf[JUnitRunner])
 class LanguageTest extends AsyncFunSuite
   with ScalaFutures
   with MockitoSugar
   with Matchers {
+
+  test("Schema is correctly retrying failures.") {
+    implicit val fake = mock[Database]
+    when(fake.execute(any())(any()))
+      .thenReturn(Future.failed(new Exception("Retryable.")))
+      .thenReturn(Future("Success"))
+      .thenReturn(Future.failed(new Exception("Non-Retryable.") with ControlThrowable))
+
+    Schema(Stream(10 millis))(_ => ())
+      .map(_ shouldEqual "Success")
+      .flatMap(_ => Schema(Stream(10 millis))(_ => ()))
+      .map(_ => fail)
+      .recover { case _ => succeed }
+  }
 
   test("Stitch is correctly generated.") {
     implicit val db = spy(SynchronizedDatabase.empty)

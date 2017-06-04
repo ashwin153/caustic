@@ -20,6 +20,15 @@ cache:
     - build-support/isort.venv
     - build-support/pants_dev_deps.venv
 
+# Add and initialize database services.
+services:
+  - mysql
+  - postgresql
+
+before_install:
+  - mysql -e 'CREATE DATABASE IF NOT EXISTS test;'
+  - psql -c 'create database schema;' -U postgres
+
 # Compile and run all unit tests.
 language: python
 python:
@@ -36,6 +45,5 @@ before_script: |
   fi
   
 script: |
-  java -version
   ./pants compile ::
   ./pants test ::

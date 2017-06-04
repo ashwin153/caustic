@@ -8,5 +8,5 @@ python:
   - '2.7'
 
 script: |
-  ./pants compile ::
-  ./pants test ::
+  ./pants compile --[no-]compile-scalafmt-skip ::
+  ./pants test --[no-]compile-scalafmt-skip ::

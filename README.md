@@ -31,6 +31,7 @@ Schema { implicit ctx =>
 # Requirements
 - Scala 2.12
 - Java 1.8
+- Python 2.7
 - PostgreSQL 9.5
 - MySQL 5.0
 

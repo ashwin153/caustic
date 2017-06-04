@@ -28,6 +28,12 @@ Schema { implicit ctx =>
 }
 ```
 
+# Requirements
+- Scala 2.12
+- Java 1.8
+- PostgreSQL 9.5
+- MySQL 5.0
+
 # Build
 Artifacts are published to the [Sonatype OSS Repository Hosting Service](https://oss.sonatype.org/index.html#nexus-search;quick~com.madavan) and synced to [Maven Central](https://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.madavan%22).
 

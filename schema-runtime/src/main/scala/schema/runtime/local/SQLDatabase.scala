@@ -110,8 +110,8 @@ object SQLDatabase {
     } recoverWith {
       case e: Exception if con != null =>
         con.rollback()
-        con.close()
         con.setAutoCommit(true)
+        con.close()
         Future.failed(e)
     }
   }

@@ -1,9 +1,12 @@
 package schema.postgresql
 
 import com.mchange.v2.c3p0.ComboPooledDataSource
+import org.junit.runner.RunWith
+import org.scalatest.junit.JUnitRunner
 import org.scalatest.{BeforeAndAfterAll, Outcome}
 import schema.runtime.DatabaseTest
 
+@RunWith(classOf[JUnitRunner])
 class PostgreSQLDatabaseTest extends DatabaseTest with BeforeAndAfterAll {
 
   var pool: ComboPooledDataSource = _

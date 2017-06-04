@@ -11,8 +11,8 @@ class PostgreSQLDatabaseTest extends DatabaseTest with BeforeAndAfterAll {
   override def beforeAll(): Unit = {
     this.pool = new ComboPooledDataSource()
     this.pool.setDriverClass("org.postgresql.Driver")
-    this.pool.setJdbcUrl("jdbc:postgresql://localhost:5432/schema?serverTimezone=UTC")
-    this.pool.setUser("ashwin")
+    this.pool.setJdbcUrl("jdbc:postgresql://localhost:5432/test?serverTimezone=UTC")
+    this.pool.setUser("postgres")
     this.pool.setPassword("")
   }
 

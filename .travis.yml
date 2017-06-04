@@ -1,7 +1,7 @@
 # Setup Travis CI pants configuration.
 env:
   global:
-    - JAVA_HOME="$HOME/opt/jdk1.8.0_40"
+    - JAVA_HOME="$HOME/opt/jdk1.8.0_131"
     - PANTS_CONFIG_OVERRIDE="['pants.ini', 'travis.pants.ini']"
 
 # Copied from https://github.com/pantsbuild/pants/blob/master/.travis.yml.
@@ -27,12 +27,12 @@ python:
 
 # Install JDK 1.8 copied from https://github.com/foursquare/fsqio/blob/master/.travis.yml.
 before_script: |
-  if ! ${HOME}/opt/jdk1.8.0_40/bin/java -version; then
+  if ! ${HOME}/opt/jdk1.8.0_131/bin/java -version; then
     mkdir -p ~/opt
-    wget --no-cookies --no-check-certificate --header \
-      "Cookie: gpw_e24=http%3A%2F%2Fwww.oracle.com%2F; oraclelicense=accept-securebackup-cookie" \
-      "http://download.oracle.com/otn-pub/java/jdk/8u40-b25/jdk-8u40-linux-x64.tar.gz"
-    tar xzf jdk-8u40-linux-x64.tar.gz -C ~/opt
+     wget --no-cookies --no-check-certificate --header \
+       "Cookie: gpw_e24=http%3A%2F%2Fwww.oracle.com%2F; oraclelicense=accept-securebackup-cookie" \
+       "http://download.oracle.com/otn-pub/java/jdk/8u131-b11/d54c1d3a095b4ff2b6607d096fa80163/jdk-8u131-linux-x64.tar.gz"
+    tar xzf jdk-8u131-linux-x64.tar.gz -C ~/opt
   fi
   
 script: |

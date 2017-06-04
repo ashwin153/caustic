@@ -42,7 +42,7 @@ object MySQLDatabase {
 
     smt.execute(
       s""" CREATE TABLE IF NOT EXISTS `schema`(
-         |   `key` varchar (1000) NOT NULL,
+         |   `key` varchar (500) NOT NULL,
          |   `revision` BIGINT DEFAULT 0,
          |   `value` TEXT,
          |   PRIMARY KEY(`key`)

@@ -27,7 +27,7 @@ services:
 
 before_install:
   - mysql -e 'CREATE DATABASE IF NOT EXISTS test;'
-  - psql -c 'create database schema;' -U postgres
+  - psql -c 'CREATE DATABASE test;' -U postgres
 
 # Compile and run all unit tests.
 language: python

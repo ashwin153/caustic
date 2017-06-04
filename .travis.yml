@@ -25,5 +25,6 @@ python:
   - '2.7'
 
 script: |
+  java -version
   ./pants compile ::
   ./pants test ::

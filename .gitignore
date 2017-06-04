@@ -1,6 +1,13 @@
 # macOS
 .DS_Store
 
+# Java
+*.class
+*.jar
+
+# Python
+*.pyc
+
 # Vim
 .*.swp
 .*.swo

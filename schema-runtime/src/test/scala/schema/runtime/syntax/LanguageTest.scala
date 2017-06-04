@@ -11,9 +11,6 @@ import org.mockito.ArgumentMatchers._
 import org.scalatest.junit.JUnitRunner
 import schema.runtime.local.SynchronizedDatabase
 import scala.collection.JavaConverters._
-import scala.concurrent.Future
-import scala.concurrent.duration._
-import scala.util.control.ControlThrowable
 
 @RunWith(classOf[JUnitRunner])
 class LanguageTest extends AsyncFunSuite
@@ -21,29 +18,17 @@ class LanguageTest extends AsyncFunSuite
   with MockitoSugar
   with Matchers {
 
-  test("Schema is correctly retrying failures.") {
-    implicit val fake = mock[Database]
-    when(fake.execute(any())(any()))
-      .thenReturn(Future.failed(new Exception("Retryable.")))
-      .thenReturn(Future("Success"))
-      .thenReturn(Future.failed(new Exception("Non-Retryable.") with ControlThrowable))
-
-    Schema(Seq(10 millis))(_ => ())
-      .map(_ shouldEqual "Success")
-      .flatMap(_ => Schema(Seq(10 millis))(_ => ()))
-      .map(_ => fail)
-      .recover { case _ => succeed }
-  }
-
   test("Stitch is correctly generated.") {
-    implicit val db = spy(SynchronizedDatabase.empty)
+    val db = spy(SynchronizedDatabase.empty)
 
-    Schema { implicit ctx =>
-      val x = Select("id")
-      x.bar = -3.0
-      x.foo(3) = "Hello"
-      x.foo("baz") = "Goodbye"
-      Return(Stitch(x))
+    db.execute {
+      Schema { implicit ctx =>
+        val x = Select("id")
+        x.bar = -3.0
+        x.foo(3) = "Hello"
+        x.foo("baz") = "Goodbye"
+        Return(Stitch(x))
+      }
     } map { r =>
       verify(db, times(3)).get(any())(any())
       verify(db, times(1)).put(any(), any())(any())
@@ -52,14 +37,16 @@ class LanguageTest extends AsyncFunSuite
   }
 
   test("Delete is correctly generated.") {
-    implicit val db = spy(SynchronizedDatabase.empty)
+    val db = spy(SynchronizedDatabase.empty)
 
-    Schema { implicit ctx =>
-      val x = Select("id")
-      x.bar = -3.0
-      x.foo(3) = "Hello"
-      x.foo("baz") = "Goodbye"
-      Delete(x)
+    db.execute {
+      Schema { implicit ctx =>
+        val x = Select("id")
+        x.bar = -3.0
+        x.foo(3) = "Hello"
+        x.foo("baz") = "Goodbye"
+        Delete(x)
+      }
     } flatMap { r =>
       val arg: ArgumentCaptor[Set[String]] = ArgumentCaptor.forClass(classOf[Set[String]])
       verify(db, times(3)).get(arg.capture())(any())
@@ -73,17 +60,19 @@ class LanguageTest extends AsyncFunSuite
   }
 
   test("While is correctly generated.") {
-    implicit val db = spy(SynchronizedDatabase.empty)
+    val db = spy(SynchronizedDatabase.empty)
 
-    Schema { implicit ctx =>
-      val x = Select("id")
-      x.bar = -3.0
+    db.execute {
+      Schema { implicit ctx =>
+        val x = Select("id")
+        x.bar = -3.0
 
-      While (x.bar < 0) {
-        x.bar = x.bar + 1
+        While(x.bar < 0) {
+          x.bar = x.bar + 1
+        }
+
+        Return(x.bar)
       }
-
-      Return(x.bar)
     } map { r =>
       verify(db, times(1)).get(any())(any())
       verify(db, times(1)).put(any(), any())(any())
@@ -94,15 +83,17 @@ class LanguageTest extends AsyncFunSuite
   test("For is correctly generated.") {
     implicit val db = spy(SynchronizedDatabase.empty)
 
-    Schema { implicit ctx =>
-      val x = Select("id")
-      x.bar = 15.0
+    db.execute {
+      Schema { implicit ctx =>
+        val x = Select("id")
+        x.bar = 15.0
 
-      For (ctx.i, 1 to 5) {
-        x.bar -= ctx.i
+        For(ctx.i, 1 to 5) {
+          x.bar -= ctx.i
+        }
+
+        Return(x.bar)
       }
-
-      Return(x.bar)
     } map { r =>
       verify(db, times(1)).get(any())(any())
       verify(db, times(1)).put(any(), any())(any())
@@ -113,19 +104,23 @@ class LanguageTest extends AsyncFunSuite
   test("Foreach is correctly generated.") {
     implicit val db = spy(SynchronizedDatabase.empty)
 
-    Schema { implicit ctx =>
-      val x = Select("id")
-      x.foo(3) = "Hello"
-      x.foo("bar") = "Goodbye"
-      x.foo("baz") = "Stuff"
+    db.execute {
+      Schema { implicit ctx =>
+        val x = Select("id")
+        x.foo(3) = "Hello"
+        x.foo("bar") = "Goodbye"
+        x.foo("baz") = "Stuff"
+      }
     } flatMap { _ =>
       // Verify that index addresses are prefetched.
       reset(db)
 
-      Schema { implicit ctx =>
-        val x = Select("id")
-        Foreach (ctx.i, x.foo) {
-          x.foo(ctx.i) = "Hello"
+      db.execute {
+        Schema { implicit ctx =>
+          val x = Select("id")
+          Foreach(ctx.i, x.foo) {
+            x.foo(ctx.i) = "Hello"
+          }
         }
       } map { _ =>
         verify(db, times(2)).get(any())(any())

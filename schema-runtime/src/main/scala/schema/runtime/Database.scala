@@ -1,11 +1,12 @@
 package schema.runtime
 
+import Backoff._
 import Database._
 import Operation._
+
 import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.control.ControlThrowable
 import scala.util.{Failure, Success}
 
 /**
@@ -83,7 +84,7 @@ trait Database {
     ): Transaction = stack match {
       case Nil =>
         if (operands.size > 1)
-          throw ParseException(s"Transaction evaluates to $operands.")
+          throw FatalException(s"Transaction evaluates to $operands.")
         operands.head
       case Left(l: Literal) :: rest =>
         fold(rest, l :: operands)
@@ -156,7 +157,7 @@ trait Database {
           case (Or, x :: y :: rem) => fold(rest, or(x, y) :: rem)
           case (Less, x :: y :: rem) => fold(rest, less(x, y) :: rem)
           case (Not, x :: rem) => fold(rest, not(x) :: rem)
-          case _ => throw ParseException(s"$op cannot be applied to $operands.")
+          case _ => throw FatalException(s"$op cannot be applied to $operands.")
         }
     }
 
@@ -183,17 +184,5 @@ object Database {
   case class RollbackException(
     message: String
   ) extends Exception(message)
-
-  /**
-   * A failure indicating that a transaction cannot be parsed and should be aborted. Parse
-   * exceptions cannot be retried, and therefore inherit from [[ControlThrowable]].
-   *
-   * @param message Exception message.
-   * @param cause Exception cause.
-   */
-  case class ParseException(
-    message: String = "",
-    cause: Throwable = None.orNull
-  ) extends Exception(message, cause) with ControlThrowable
 
 }

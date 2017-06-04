@@ -25,6 +25,5 @@ python:
   - '2.7'
 
 script: |
-  ./pants fmt ::
   ./pants compile ::
   ./pants test ::

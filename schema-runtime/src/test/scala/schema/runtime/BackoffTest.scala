@@ -10,6 +10,7 @@ import org.scalatest.mockito.MockitoSugar
 import scala.concurrent.{Await, Future, TimeoutException}
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.language.postfixOps
 
 @RunWith(classOf[JUnitRunner])
 class BackoffTest extends FunSuite

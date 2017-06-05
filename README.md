@@ -85,7 +85,7 @@ libraryDependencies ++= Seq(
 ```
 
 # Documentation
-Refer to the [User Guide][6] to learn about how to use the system, and the [wiki][7] for more information.
+Refer to the [User Guide][6] to learn about how to use the system, and the [Wiki][7] for more information.
 
 [1]: https://en.wikipedia.org/wiki/Optimistic_concurrency_control
 [2]: https://en.wikipedia.org/wiki/Key-value_database

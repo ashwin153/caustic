@@ -35,8 +35,7 @@ object Backoff {
     implicit ec: ExecutionContext
   ): Future[T] =
     f.recoverWith {
-      case e: FatalException => Future.failed(e)
-      case _ if backoffs.nonEmpty =>
+      case e if !e.isInstanceOf[FatalException] && backoffs.nonEmpty =>
         val result = Promise[T]()
 
         scheduler.schedule(new TimerTask {

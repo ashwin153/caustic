@@ -56,7 +56,6 @@ trait Database {
   ): Future[Value] = {
     val snapshot = mutable.Map.empty[Key, (Revision, Value)]
     val changes  = mutable.Map.empty[Key, (Revision, Value)]
-    val depends  = mutable.Map.empty[Key,  Revision]
     val locals   = mutable.Map.empty[Key,  Value]
 
     // Reduces the transaction to a literal by repeatedly evaluating and folding it. Because all
@@ -93,8 +92,6 @@ trait Database {
           case Operation(Read, Literal(key) :: Nil) =>
             // Replace all reads to known keys with their latest value.
             val (_, value) = changes.getOrElse(key, snapshot(key))
-            val (version, _) = snapshot(key)
-            depends += key -> version
             fold(rest, literal(value) :: operands)
           case Operation(Write, Literal(key) :: Literal(value) :: Nil) =>
             // Save all writes to the local change buffer.
@@ -165,8 +162,8 @@ trait Database {
     // transaction to the underlying database if and only if the versions of its various
     // dependencies have not changed. Filter out empty first changes to allow local variables.
     reduce(txn).transformWith {
-      case Success(r) => put(depends.toMap, changes.toMap).map(_ => r)
-      case Failure(e: RollbackException) => put(depends.toMap, Map.empty).map(_ => e.message)
+      case Success(r) => put(snapshot.mapValues(_._1).toMap, changes.toMap).map(_ => r)
+      case Failure(e: RollbackException) => put(snapshot.mapValues(_._1).toMap, Map.empty).map(_ => e.message)
       case Failure(e) => Future.failed(e)
     }
   }

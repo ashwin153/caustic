@@ -1,23 +1,3 @@
-# Shapeless
-jar_library(name='shapeless', jars=[
-  jar(org='com.chuusai', name='shapeless_2.12', rev='2.3.2')
-])
-
-# Akka
-jar_library(name='akka', jars=[
-  jar(org='com.typesafe.akka', name='akka-actor_2.12', rev='2.4.17')
-])
-
-# Cassandra
-jar_library(name='cassandra', jars=[
-  jar(org='org.apache.cassandra', name='cassandra-all', rev='3.10')
-])
-
-# Redis
-jar_library(name='redis', jars=[
-  jar(org='com.github.etaty', name='rediscala_2.12', rev='1.8.0')
-])
-
 # C3P0
 jar_library(name='c3p0', jars=[
   jar(org='c3p0', name='c3p0', rev='0.9.1.2')

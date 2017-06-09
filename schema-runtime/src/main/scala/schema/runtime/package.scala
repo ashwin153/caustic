@@ -1,10 +1,6 @@
 package schema
 
-import java.util.{Timer, TimerTask}
 import runtime.Operation._
-import scala.concurrent.{ExecutionContext, Future, Promise}
-import scala.concurrent.duration.FiniteDuration
-import scala.util.control.NonFatal
 
 package object runtime {
 

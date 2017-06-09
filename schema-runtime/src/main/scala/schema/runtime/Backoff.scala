@@ -4,7 +4,6 @@ import java.util.{Timer, TimerTask}
 import java.util.concurrent.ThreadLocalRandom
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.concurrent.duration._
-import scala.util.control.{ControlThrowable, NonFatal}
 
 object Backoff {
 

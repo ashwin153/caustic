@@ -6,17 +6,17 @@ if [[ "$response" =~ ^([yY][eE][sS]|[yY])+$ ]] ; then
   # Publish Build Artifacts
   if [ -z "version" ] ; then
     ./pants publish.jar --publish-jar-no-dryrun \
-      schema-runtime/src/main/scala \
-      schema-mysql/src/main/scala \
-      schema-postgresql/src/main/scala
+      caustic-runtime/src/main/scala \
+      caustic-mysql/src/main/scala \
+      caustic-postgres/src/main/scala
   else
     ./pants publish.jar --publish-jar-no-dryrun \
-      --publish-jar-override=com.madavan#schema-runtime_2.12=$version \
-      --publish-jar-override=com.madavan#schema-mysql_2.12=$version \
-      --publish-jar-override=com.madavan#schema-postgresql_2.12=$version \
-      schema-runtime/src/main/scala \
-      schema-mysql/src/main/scala \
-      schema-postgresql/src/main/scala
+      --publish-jar-override=com.madavan#caustic-runtime_2.12=$version \
+      --publish-jar-override=com.madavan#caustic-mysql_2.12=$version \
+      --publish-jar-override=com.madavan#caustic-postgres_2.12=$version \
+      caustic-runtime/src/main/scala \
+      caustic-mysql/src/main/scala \
+      caustic-postgresql/src/main/scala
   fi
 
   # Promote to Maven Central

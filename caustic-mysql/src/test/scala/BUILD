@@ -1,0 +1,11 @@
+junit_tests(
+  name='scala',
+  sources=rglobs('*.scala'),
+  dependencies=[
+    'caustic-mysql/src/main/scala',
+    'caustic-runtime/src/test/scala',
+    '3rdparty/jvm:c3p0',
+    '3rdparty/jvm:junit',
+    '3rdparty/jvm:scalatest',
+  ]
+)

@@ -3,10 +3,10 @@ package schema.benchmark
 import schema.runtime._
 import org.scalameter.api._
 import scala.concurrent.Await
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
+import scala.concurrent.ExecutionContext.Implicits.global
 
-object DatabaseBenchmark extends Bench.OfflineReport {
+object TransactionBenchmark extends Bench.LocalTime {
 
   // Fake database to "mock" database performance.
   val database: Database = new FakeDatabase
@@ -18,7 +18,7 @@ object DatabaseBenchmark extends Bench.OfflineReport {
 
   performance of "Database" in {
     measure method "execute" in {
-      using(transactions) curve "Transaction Size" in { txn =>
+      using(transactions) curve "Execute Latency" in { txn =>
         Await.result(database.execute(txn), Duration.Inf)
       }
     }

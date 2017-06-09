@@ -13,7 +13,7 @@ class MySQLDatabase private[mysql](
   underlying: DataSource
 ) extends SQLDatabase(underlying) {
 
-  override def select(keys: Set[Key]): String =
+  override def select(keys: Iterable[Key]): String =
     s""" SELECT `key`, `revision`, `value`
        | FROM `schema`
        | WHERE `key` IN (${ keys.map("\"" + _ + "\"").mkString(",") })

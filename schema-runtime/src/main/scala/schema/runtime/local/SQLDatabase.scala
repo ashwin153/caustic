@@ -20,7 +20,7 @@ abstract class SQLDatabase(underlying: DataSource) extends Database {
    * @param keys Keys to select.
    * @return SQL select query.
    */
-  def select(keys: Set[Key]): String
+  def select(keys: Iterable[Key]): String
 
   /**
    * A upsert query that inserts or updates the specified key, revision, and value.
@@ -32,7 +32,7 @@ abstract class SQLDatabase(underlying: DataSource) extends Database {
    */
   def update(key: Key, revision: Long, value: Value): String
 
-  override def get(keys: Set[Key])(
+  override def get(keys: Iterable[Key])(
     implicit ec: ExecutionContext
   ): Future[Map[Key, (Revision, Value)]] =
     if (keys.isEmpty)

@@ -13,7 +13,7 @@ class SynchronizedDatabase(
   underlying: TrieMap[Key, (Revision, Value)]
 ) extends Database {
 
-  override def get(keys: Set[Key])(
+  override def get(keys: Iterable[Key])(
     implicit ec: ExecutionContext
   ): Future[Map[Key, (Revision, Value)]] =
     Future {
@@ -26,15 +26,15 @@ class SynchronizedDatabase(
     implicit ec: ExecutionContext
   ): Future[Unit] =
     synchronized {
-      if (depends.exists { case (k, r) => this.underlying.get(k).exists(_._1 != r) })
-        Future.failed(new Exception("Transaction conflicts"))
+      if (depends.exists { case (k, r) => this.underlying.get(k).map(_._1).getOrElse(0L) != r })
+        Future.failed(new Exception("Transaction conflicts."))
       else
         Future(this.underlying ++= changes)
     }
 
 }
 
-object SynchronizedDatabase {
+object  SynchronizedDatabase {
 
   /**
    * Constructs an empty database.

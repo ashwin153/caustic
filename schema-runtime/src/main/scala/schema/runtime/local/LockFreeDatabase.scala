@@ -14,7 +14,7 @@ class LockFreeDatabase(
   underlying: TrieMap[Key, (AtomicBoolean, (Revision, Value))]
 ) extends Database {
 
-  override def get(keys: Set[Key])(
+  override def get(keys: Iterable[Key])(
     implicit ec: ExecutionContext
   ): Future[Map[Key, (Revision, Value)]] =
     Future {
@@ -36,7 +36,9 @@ class LockFreeDatabase(
     // if there exists a dependency whose revision has changed then the transaction conflicts with
     // a committed write. If it conflicts, release all acquired locks and return failure. Otherwise,
     // apply all changes. Then, release all locks that the transaction acquired.
-    if (locks.exists(!_._2) || depends.exists { case (k, r) => this.underlying.get(k).exists(_._2._1 != r) }) {
+    println(this.underlying)
+    println(depends)
+    if (locks.exists(!_._2) || depends.exists { case (k, r) => this.underlying.get(k).map(_._1).getOrElse(0L) != r }) {
       locks.filter(_._2).foreach { case (k, _) => this.underlying(k)._1.set(false) }
       Future.failed(new Exception("Transaction conflicts."))
     } else {

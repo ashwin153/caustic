@@ -7,18 +7,6 @@ import Context._
 trait Language {
 
   /**
-   * Constructs a transaction from the specified function.
-   *
-   * @param f Transaction generator.
-   * @return Result of transaction generation.
-   */
-  def Schema(f: Context => Unit): Transaction = {
-    val ctx = Context.empty
-    f(ctx)
-    ctx.txn
-  }
-
-  /**
    * Retrieves the object with the specified key.
    *
    * @param key Key to lookup.

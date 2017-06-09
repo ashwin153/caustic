@@ -65,6 +65,9 @@ package object syntax extends Language {
     def max(y: Transaction): Transaction = branch(less(x, y), y, x)
     def min(y: Transaction): Transaction = branch(less(x, y), x, y)
 
+    def to(y: Transaction): Interval = Interval(x, y, Literal.One, inclusive = true)
+    def until(y: Transaction): Interval = Interval(x, y, Literal.One, inclusive = false)
+
     def ++(y: Transaction): Transaction = concat(x, y)
     def isEmpty: Transaction = x === Literal.Empty
     def nonEmpty: Transaction = x <> Literal.Empty
@@ -76,8 +79,20 @@ package object syntax extends Language {
     def substring(l: Transaction): Transaction = x.substring(l, length(x))
     def substring(l: Transaction, h: Transaction): Transaction = slice(x, l, h)
 
-    def to(y: Transaction): Interval = Interval(x, y, Literal.One, inclusive = true)
-    def until(y: Transaction): Interval = Interval(x, y, Literal.One, inclusive = false)
+    def indexOf(y: Transaction, from: Transaction = 0): Transaction =
+      cons(
+        cons(
+          store("$indexOf", -1),
+          store("$i", from)),
+        cons(
+          repeat(
+            load("$i") < (length(x) - length(y)) && load("$indexOf") < 0,
+            branch(
+              x.substring(load("$i"), load("$i") + length(y)) === y,
+              store("$indexOf", load("$i")),
+              store("$i", load("$i") + 1))),
+          load("$indexOf"))
+      )
   }
 
   // Object Operations.

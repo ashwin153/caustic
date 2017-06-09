@@ -36,6 +36,10 @@ package object runtime {
     case _ => Operation(Cons, List(first, second))
   }
 
+  def block(first: Transaction, second: Transaction, rest: Transaction*): Transaction = {
+    rest.foldLeft(cons(first, second))((a, b) => cons(a, b))
+  }
+
   def branch(cond: Transaction, pass: Transaction, fail: Transaction): Transaction = (cond, pass, fail) match {
     case (x: Literal, y, z) => if (x != Literal.False) y else z
     case _ => Operation(Branch, List(cond, pass, fail))

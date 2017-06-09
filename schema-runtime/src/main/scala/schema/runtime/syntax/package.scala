@@ -80,18 +80,16 @@ package object syntax extends Language {
     def substring(l: Transaction, h: Transaction): Transaction = slice(x, l, h)
 
     def indexOf(y: Transaction, from: Transaction = 0): Transaction =
-      cons(
-        cons(
-          store("$indexOf", -1),
-          store("$i", from)),
-        cons(
-          repeat(
-            load("$i") < (length(x) - length(y)) && load("$indexOf") < 0,
-            branch(
-              x.substring(load("$i"), load("$i") + length(y)) === y,
-              store("$indexOf", load("$i")),
-              store("$i", load("$i") + 1))),
-          load("$indexOf"))
+      block(
+        store("$indexOf", -1),
+        store("$i", from),
+        repeat(
+          load("$i") < (length(x) - length(y)) && load("$indexOf") < 0,
+          branch(
+            x.substring(load("$i"), load("$i") + length(y)) === y,
+            store("$indexOf", load("$i")),
+            store("$i", load("$i") + 1))),
+        load("$indexOf")
       )
   }
 

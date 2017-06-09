@@ -1,8 +1,8 @@
 # Caustic
-[![Build Status](https://travis-ci.org/ashwin153/caustic.svg?branch=master)](https://travis-ci.org/ashwin153/schema)
+[![Build Status](https://travis-ci.org/ashwin153/caustic.svg?branch=master)](https://travis-ci.org/ashwin153/caustic)
 [![Maven Central](https://img.shields.io/maven-central/v/com.madavan/caustic-runtime_2.12.svg)]()
 
-Caustic is a Scala DSL for expressing and [optimistically executing][1] database transactions. It is intended to serve as a replacement for SQL, which has reigned as the language of choice for codifying database interactions for the past 43 years. As a motivating example, let's write the same transaction in MySQL and Caustic. Both transactions atomically increment a counter ```x```; however, unlike MySQL, Schema does not require an explicit table definition and runs on *any* [transactional key-value store][2] (including MySQL).
+Caustic is a Scala DSL for expressing and [optimistically executing][1] database transactions. It is intended to serve as a replacement for SQL, which has reigned as the language of choice for codifying database interactions for the past 43 years. As a motivating example, let's write the same transaction in MySQL and Caustic. Both transactions atomically increment a counter ```x```; however, unlike MySQL, Caustic does not require an explicit table definition and runs on *any* [transactional key-value store][2] (including MySQL).
 
 ```sql
 CREATE TABLE `counters` (

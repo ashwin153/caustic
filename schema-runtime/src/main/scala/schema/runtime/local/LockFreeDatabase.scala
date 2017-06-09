@@ -33,11 +33,9 @@ class LockFreeDatabase(
       k -> lock.compareAndSet(false, true)
     }
 
-    // if there exists a dependency whose revision has changed then the transaction conflicts with
+    // If there exists a dependency whose revision has changed then the transaction conflicts with
     // a committed write. If it conflicts, release all acquired locks and return failure. Otherwise,
     // apply all changes. Then, release all locks that the transaction acquired.
-    println(this.underlying)
-    println(depends)
     if (locks.exists(!_._2) || depends.exists { case (k, r) => this.underlying.get(k).map(_._2._1).getOrElse(0L) != r }) {
       locks.filter(_._2).foreach { case (k, _) => this.underlying(k)._1.set(false) }
       Future.failed(new Exception("Transaction conflicts."))

@@ -1,4 +1,4 @@
-package caustic.postgresql
+package caustic.postgres
 
 import caustic.runtime.DatabaseTest
 import com.mchange.v2.c3p0.ComboPooledDataSource

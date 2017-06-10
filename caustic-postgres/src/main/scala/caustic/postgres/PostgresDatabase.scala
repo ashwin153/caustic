@@ -9,7 +9,7 @@ import javax.sql.DataSource
  *
  * @param underlying Underlying database.
  */
-class PostgresDatabase private[postgresql](
+class PostgresDatabase private[postgres](
   underlying: DataSource
 ) extends SQLDatabase(underlying) {
 

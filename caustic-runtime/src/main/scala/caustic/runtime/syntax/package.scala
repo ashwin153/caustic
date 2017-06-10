@@ -72,10 +72,10 @@ package object syntax extends Language {
     def isEmpty: Transaction = x === Literal.Empty
     def nonEmpty: Transaction = x <> Literal.Empty
     def charAt(i: Transaction): Transaction = slice(x, i, add(i, Literal.One))
-    def contains(y: Transaction): Transaction = schema.runtime.contains(x, y)
+    def contains(y: Transaction): Transaction = caustic.runtime.contains(x, y)
     def endsWith(y: Transaction): Transaction = equal(x.substring(length(x) - length(y)), y)
     def startsWith(y: Transaction): Transaction = equal(x.substring(0, length(y)), y)
-    def matches(y: Transaction): Transaction = schema.runtime.matches(x, y)
+    def matches(y: Transaction): Transaction = caustic.runtime.matches(x, y)
     def substring(l: Transaction): Transaction = x.substring(l, length(x))
     def substring(l: Transaction, h: Transaction): Transaction = slice(x, l, h)
 

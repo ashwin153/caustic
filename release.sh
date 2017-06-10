@@ -16,7 +16,7 @@ if [[ "$response" =~ ^([yY][eE][sS]|[yY])+$ ]] ; then
       --publish-jar-override=com.madavan#caustic-postgres_2.12=$version \
       caustic-runtime/src/main/scala \
       caustic-mysql/src/main/scala \
-      caustic-postgresql/src/main/scala
+      caustic-postgres/src/main/scala
   fi
 
   # Promote to Maven Central

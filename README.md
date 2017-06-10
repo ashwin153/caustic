@@ -41,9 +41,9 @@ Artifacts are published to the [Sonatype OSS Repository Hosting Service][3] and 
 ## Pants
 ```python
 jar_library(name='caustic', jars=[
-    jar(org='com.madavan', name='caustic-runtime_2.12', rev='1.0.3'),
-    jar(org='com.madavan', name='caustic-postgres_2.12', rev='1.0.3'),
-    jar(org='com.madavan', name='caustic-mysql_2.12', rev='1.0.3'),
+    jar(org='com.madavan', name='caustic-runtime_2.12', rev='1.0.0'),
+    jar(org='com.madavan', name='caustic-postgres_2.12', rev='1.0.0'),
+    jar(org='com.madavan', name='caustic-mysql_2.12', rev='1.0.0'),
 ])
 ```
 
@@ -57,9 +57,9 @@ resolvers ++= Seq(
 )
 
 libraryDependencies ++= Seq(
-  "com.madavan" %% "caustic-runtime" % "1.0.3",
-  "com.madavan" %% "caustic-mysql" % "1.0.3",
-  "com.madavan" %% "caustic-postgres" % "1.0.3"
+  "com.madavan" %% "caustic-runtime" % "1.0.0",
+  "com.madavan" %% "caustic-mysql" % "1.0.0",
+  "com.madavan" %% "caustic-postgres" % "1.0.0"
 )
 ```
 

@@ -68,19 +68,19 @@ libraryDependencies ++= Seq(
 <dependency>
   <groupId>com.madavan</groupId>
   <artifactId>caustic-runtime_2.12</artifactId>
-  <version>1.0.3</version>
+  <version>1.0.0</version>
 </dependency>
 
 <dependency>
   <groupId>com.madavan</groupId>
   <artifactId>caustic-mysql_2.12</artifactId>
-  <version>1.0.3</version>
+  <version>1.0.0</version>
 </dependency>
 
 <dependency>
   <groupId>com.madavan</groupId>
   <artifactId>caustic-postgres_2.12</artifactId>
-  <version>1.0.3</version>
+  <version>1.0.0</version>
 </dependency>
 ```
 

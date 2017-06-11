@@ -2,13 +2,13 @@ package caustic.runtime
 
 import java.util.concurrent.{CountDownLatch, TimeUnit}
 import org.junit.runner.RunWith
+import org.mockito.Mockito._
+import org.mockito.internal.stubbing.answers.CallsRealMethods
+import org.mockito.invocation.InvocationOnMock
 import org.scalatest.{Matchers, Outcome, fixture}
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.concurrent.ScalaFutures
-import org.mockito.Mockito._
 import org.scalatest.mockito.MockitoSugar
-import org.mockito.internal.stubbing.answers.CallsRealMethods
-import org.mockito.invocation.InvocationOnMock
 import org.scalatest.time.{Millis, Seconds, Span}
 import scala.concurrent.ExecutionContext.Implicits.global
 

@@ -1,7 +1,7 @@
 package caustic.runtime
 package syntax
 
-import caustic.runtime.local.InMemoryDatabase$
+import caustic.runtime.local.InMemoryDatabase
 import org.junit.runner.RunWith
 import org.mockito.ArgumentCaptor
 import org.scalatest.concurrent.ScalaFutures

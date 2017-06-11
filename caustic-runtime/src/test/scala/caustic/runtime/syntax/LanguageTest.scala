@@ -1,7 +1,7 @@
 package caustic.runtime
 package syntax
 
-import caustic.runtime.local.SynchronizedDatabase
+import caustic.runtime.local.InMemoryDatabase$
 import org.junit.runner.RunWith
 import org.mockito.ArgumentCaptor
 import org.scalatest.concurrent.ScalaFutures
@@ -19,7 +19,7 @@ class LanguageTest extends AsyncFunSuite
   with Matchers {
 
   test("Stitch is correctly generated.") {
-    val db = spy(SynchronizedDatabase.empty)
+    val db = spy(InMemoryDatabase.empty)
 
     db.execute { implicit ctx =>
       val x = Select("id")
@@ -35,7 +35,7 @@ class LanguageTest extends AsyncFunSuite
   }
 
   test("Delete is correctly generated.") {
-    val db = spy(SynchronizedDatabase.empty)
+    val db = spy(InMemoryDatabase.empty)
 
     db.execute { implicit ctx =>
       val x = Select("id")
@@ -56,7 +56,7 @@ class LanguageTest extends AsyncFunSuite
   }
 
   test("While is correctly generated.") {
-    val db = spy(SynchronizedDatabase.empty)
+    val db = spy(InMemoryDatabase.empty)
 
     db.execute { implicit ctx =>
       val x = Select("id")
@@ -75,7 +75,7 @@ class LanguageTest extends AsyncFunSuite
   }
 
   test("For is correctly generated.") {
-    implicit val db = spy(SynchronizedDatabase.empty)
+    implicit val db = spy(InMemoryDatabase.empty)
 
     db.execute { implicit ctx =>
       val x = Select("id")
@@ -94,7 +94,7 @@ class LanguageTest extends AsyncFunSuite
   }
 
   test("Foreach is correctly generated.") {
-    implicit val db = spy(SynchronizedDatabase.empty)
+    implicit val db = spy(InMemoryDatabase.empty)
 
     db.execute { implicit ctx =>
       val x = Select("id")

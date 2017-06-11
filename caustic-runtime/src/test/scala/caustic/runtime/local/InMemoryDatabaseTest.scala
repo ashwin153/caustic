@@ -6,9 +6,9 @@ import org.scalatest.Outcome
 import org.scalatest.junit.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
-class SynchronizedDatabaseTest extends DatabaseTest {
+class InMemoryDatabaseTest extends DatabaseTest {
 
   override def withFixture(test: OneArgTest): Outcome =
-    test(SynchronizedDatabase.empty)
+    test(InMemoryDatabase.empty)
 
 }

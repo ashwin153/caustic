@@ -9,7 +9,7 @@ import scala.concurrent.{ExecutionContext, Future}
  *
  * @param underlying Underlying mutable map.
  */
-class SynchronizedDatabase(
+class InMemoryDatabase(
   underlying: TrieMap[Key, (Revision, Value)]
 ) extends Database {
 
@@ -34,14 +34,14 @@ class SynchronizedDatabase(
 
 }
 
-object  SynchronizedDatabase {
+object  InMemoryDatabase {
 
   /**
    * Constructs an empty database.
    *
    * @return Empty database.
    */
-  def empty: SynchronizedDatabase = new SynchronizedDatabase(TrieMap.empty)
+  def empty: InMemoryDatabase = new InMemoryDatabase(TrieMap.empty)
 
   /**
    * Constructs a database with the initial key-value pairs.
@@ -49,9 +49,9 @@ object  SynchronizedDatabase {
    * @param initial Initial key-value pairs.
    * @return Initialized database.
    */
-  def apply(initial: (Key, Value)*): SynchronizedDatabase = {
+  def apply(initial: (Key, Value)*): InMemoryDatabase = {
     val underlying = initial.map { case (k, v) => (k, (0L, v)) }
-    new SynchronizedDatabase(TrieMap(underlying: _*))
+    new InMemoryDatabase(TrieMap(underlying: _*))
   }
 
 }

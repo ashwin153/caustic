@@ -2,6 +2,7 @@ package caustic.distribute
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
+import scala.concurrent.ExecutionContext.Implicits.global
 
 /**
  * An asynchronous, uni-directional log cursor. Cursors are not thread-safe.

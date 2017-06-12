@@ -1,6 +1,6 @@
 package caustic.distribute
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 /**
  * An asynchronous log. Logs are thread-safe.
@@ -17,7 +17,7 @@ trait Log[T] {
    * @param data Data to be appended.
    * @return Future containing the lsn number of the appended entry.
    */
-  def append(data: T): Future[Record[T]]
+  def append(data: T)(implicit ec: ExecutionContext): Future[Record[T]]
 
   /**
    * Returns an [[Cursor]] beginning from the specified lsn. Traversal of this cursor asynchronously

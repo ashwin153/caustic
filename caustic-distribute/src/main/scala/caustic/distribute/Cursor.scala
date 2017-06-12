@@ -1,8 +1,7 @@
 package caustic.distribute
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
-import scala.concurrent.ExecutionContext.Implicits.global
 
 /**
  * An asynchronous, uni-directional log cursor. Cursors are not thread-safe.
@@ -11,7 +10,9 @@ import scala.concurrent.ExecutionContext.Implicits.global
  */
 trait Cursor[T] { self =>
 
-  def next(): Future[Entry[T]]
+  def next()(
+    implicit ec: ExecutionContext
+  ): Future[Entry[T]]
 
   /**
    * Advances the cursor until an entry that satisfies the specified predicate is found. Returns a
@@ -21,7 +22,9 @@ trait Cursor[T] { self =>
    * @param p Predicate function.
    * @return Future containing all records up to the entry that satisfies the predicate.
    */
-  def advance(p: Entry[T] => Boolean): Future[Seq[Record[T]]] =
+  def advance(p: Entry[T] => Boolean)(
+    implicit ec: ExecutionContext
+  ): Future[Seq[Record[T]]] =
     next().flatMap {
       case e: Record[T]  => if (p(e)) Future(Seq(e)) else advance(p).map(_.+:(e))
       case e: Pending[T] => if (p(e)) Future(Seq.empty) else advance(p)
@@ -34,7 +37,9 @@ trait Cursor[T] { self =>
    * @param n Number of records to advance.
    * @return Future containing all n records.
    */
-  def advance(n: Long): Future[Seq[Record[T]]] =
+  def advance(n: Long)(
+    implicit ec: ExecutionContext
+  ): Future[Seq[Record[T]]] =
     if (n <= 0)
       Future(Seq.empty)
     else
@@ -49,7 +54,9 @@ trait Cursor[T] { self =>
    *
    * @return Future containing all records until the first pending entry.
    */
-  def advance(): Future[Seq[Record[T]]] =
+  def advance()(
+    implicit ec: ExecutionContext
+  ): Future[Seq[Record[T]]] =
     advance {
       e => e match {
         case _: Pending[T] => true
@@ -66,7 +73,9 @@ trait Cursor[T] { self =>
    * @tparam U Type of function result.
    * @return Future that completes when the function has been applied to all records.
    */
-  def foreach[U](f: Record[T] => U): Future[Unit] =
+  def foreach[U](f: Record[T] => U)(
+    implicit ec: ExecutionContext
+  ): Future[Unit] =
     advance().map(_.foreach(f))
 
   /**
@@ -79,8 +88,10 @@ trait Cursor[T] { self =>
    * @tparam U Type of transformation result.
    * @return Cursor containing transformed records.
    */
-  def transform[U](f: PartialFunction[Record[T], U]): Cursor[U] = new Cursor[U] {
-    override def next(): Future[Entry[U]] =
+  def transform[U](f: PartialFunction[Record[T], U])(
+    implicit ec: ExecutionContext
+  ): Cursor[U] = new Cursor[U] {
+    override def next()(implicit ec: ExecutionContext): Future[Entry[U]] =
       self.next().flatMap {
         case e: Pending[T] => Future(Pending(e.offset))
         case e: Record[T]  => Future(f(e)).transformWith {
@@ -99,7 +110,9 @@ trait Cursor[T] { self =>
    * @tparam U Type of mapped cursor.
    * @return Cursor containing mapped records.
    */
-  def map[U](f: Record[T] => U): Cursor[U] =
+  def map[U](f: Record[T] => U)(
+    implicit ec: ExecutionContext
+  ): Cursor[U] =
     transform { case t => f(t) }
 
   /**
@@ -111,7 +124,9 @@ trait Cursor[T] { self =>
    * @param f Filtration function.
    * @return Cursor containing filtered records.
    */
-  def filter(f: Record[T] => Boolean): Cursor[T] =
+  def filter(f: Record[T] => Boolean)(
+    implicit ec: ExecutionContext
+  ): Cursor[T] =
     transform { case t if f(t) => t.payload }
 
 }

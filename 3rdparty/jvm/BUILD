@@ -13,6 +13,11 @@ jar_library(name='postgres', jars=[
   jar(org='postgresql', name='postgresql', rev='9.1-901.jdbc4'),
 ])
 
+# Thrift
+jar_library(name='thrift', jars=[
+  jar(org='org.apache.thrift', name='libthrift', rev='0.10.0')
+])
+
 # JUnit
 jar_library(name='junit', jars=[
   jar(org='junit', name='junit', rev='4.12'),

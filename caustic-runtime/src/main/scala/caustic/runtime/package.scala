@@ -1,180 +1,139 @@
 package caustic
 
-import runtime.Operation._
+import runtime.thrift.Operator._
 
+import scala.annotation.tailrec
+import scala.collection.JavaConverters._
+import scala.language.implicitConversions
+
+/**
+ * Until Scrooge updates its Thrift version in issue #85, it will be incompatible with the current
+ * Thrift IDLs. Instead, we'll rely on the Apache Thrift code generator to generate Java files and
+ * manually convert them to use immutable Scala collections and case classes.
+ */
 package object runtime {
 
-  // We may assume without loss of generality that all keys and values are strings, because all
-  // digital information must be representable as a string of ones and zeroes. Each key and value is
-  // associated with a revision number, which the database uses to detect transaction conflicts.
+  // We may assume without loss of generality that all keys are strings, because all digital
+  // information must be encodable as a binary string of ones and zeroes. Each key is associated
+  // with a version number, which databases use to detect transaction conflicts during execution.
   type Key = String
-  type Revision = Long
-  type Value = String
+  type Version = Long
+  type Operator = thrift.Operator
+  val Operator = thrift.Operator
 
-  private def num(x: String): Double = if (x.isEmpty) 0.0 else x.toDouble
-  private def str[T](x: T)(implicit n: Numeric[T]): String = n.toDouble(x).toString
+  case class ExecutionException(message: String) extends thrift.ExecutionException(message)
+  case class WriteException(message: String) extends thrift.WriteException(message)
+  case class ReadException(message: String) extends thrift.ReadException(message)
 
-  // Remote Key-Value Pairs.
-  def read(key: Transaction): Transaction = Operation(Read, List(key))
-  def write(key: Transaction, value: Transaction): Transaction = Operation(Write, List(key, value))
+  /**
+   * A versioned value. Revisions of a key are totally ordered by their associated version.
+   * Revisions are the mechanism through which transactional consistency is achieved; if a newer
+   * revision exists for a key that is read or written, then a transaction is rejected.
+   */
+  @SerialVersionUID(1L)
+  case class Revision(version: Version, value: Literal) extends Serializable
 
-  // Literals.
-  def literal(x: Boolean): Literal = if (x) Literal.True else Literal.False
-  def literal(x: String): Literal = Literal(x)
-  def literal[T](x: T)(implicit num: Numeric[T]): Literal = Literal(str(x))
+  /**
+   * A database transaction. Transactions form an implicit abstract syntax tree, in which the nodes
+   * are expressions and the leaves are literals. Transactions may be executed by a database.
+   */
+  sealed trait Transaction {
 
-  // Local Variables.
-  def load(name: Transaction): Transaction = Operation(Load, List(name))
-  def store(name: Transaction, value: Transaction): Transaction = Operation(Store, List(name, value))
+    /**
+     * Returns the set of all keys that are read by the transaction. Each time a transaction is
+     * partially evaluated its readset may change. Transactions depend on all of its readsets
+     * throughout its execution.
+     *
+     * @return Read set.
+     */
+    def readset: Set[Key] = {
+      @tailrec
+      def fold(stack: List[Transaction], rset: Set[Key]): Set[Key] = stack match {
+        case Nil => rset
+        case Expression(READ, Text(key) :: Nil) :: rest => fold(rest, rset + key)
+        case Expression(_, operands) :: rest => fold(operands ::: rest, rset)
+        case _ :: rest => fold(rest, rset)
+      }
 
-  // Traps.
-  def rollback(message: Transaction): Transaction = Operation(Rollback, List(message))
+      fold(List(this), Set.empty)
+    }
 
-  // Control Flow Operations.
-  def cons(first: Transaction, second: Transaction): Transaction = (first, second) match {
-    case (_: Literal, y) => y
-    case _ => Operation(Cons, List(first, second))
+    /**
+     * Returns the set of all keys that may be modified by the transaction. Each time a transaction
+     * is partially evaluated its writeset may change. Transactions depend on all of its writesets
+     * throughout its execution.
+     *
+     * @return Write set.
+     */
+    def writeset: Set[Key] = {
+      @tailrec
+      def fold(stack: List[Transaction], wset: Set[Key]): Set[Key] = stack match {
+        case Nil => wset
+        case Expression(WRITE, Text(key) :: _ :: Nil) :: rest => fold(rest, wset + key)
+        case Expression(_, operands) :: rest=> fold(operands ::: rest, wset)
+        case _ :: rest => fold(rest, wset)
+      }
+
+      fold(List(this), Set.empty)
+    }
+
   }
 
-  def block(first: Transaction, second: Transaction, rest: Transaction*): Transaction = {
-    rest.foldLeft(cons(first, second))((a, b) => cons(a, b))
+  implicit def ttxn2stxn(txn: thrift.Transaction): Transaction = {
+    @tailrec
+    def convert(stack: List[Any], operands: List[Transaction]): Transaction = stack match {
+      case Nil =>
+        operands.head
+      case (txn: thrift.Transaction) :: rest if txn.isSetLiteral =>
+        convert(rest, txn.getLiteral :: operands)
+      case (txn: thrift.Transaction) :: rest if txn.isSetExpression =>
+        val expr = txn.getExpression
+        convert(expr.operands.asScala.reverse :: expr.operator :: rest, operands)
+      case (op: thrift.Operator) :: rest =>
+        val arity = (op.getValue >> 8) & 0xFFF
+        if (operands.length < arity)
+          throw new thrift.ExecutionException(s"Not enough operands for $op")
+        else
+          convert(rest, Expression(op, operands.take(arity)) :: operands.drop(arity))
+    }
+
+    convert(List(txn), List.empty)
   }
 
-  def branch(cond: Transaction, pass: Transaction, fail: Transaction): Transaction = (cond, pass, fail) match {
-    case (x: Literal, y, z) => if (x != Literal.False) y else z
-    case _ => Operation(Branch, List(cond, pass, fail))
+  /**
+   * A literal value. Literals are the only way to specify explicit values within a transaction.
+   * Therefore, literals form the "leaves" of the abstract syntax tree in a transaction. Literals
+   * may be pattern matched and
+   */
+  sealed trait Literal extends Transaction
+  case class Flag(value: Boolean) extends Literal
+  case class Real(value: Double) extends Literal
+  case class Text(value: String) extends Literal
+
+  implicit def slit2tlit(literal: Literal): thrift.Literal = literal match {
+    case Flag(value) => thrift.Literal.flag(value)
+    case Real(value) => thrift.Literal.real(value)
+    case Text(value) => thrift.Literal.text(value)
   }
 
-  def prefetch(keys: Transaction): Transaction = keys match {
-    case l: Literal => l.value.split(",")
-      .map(k => read(literal(k)))
-      .reduceLeftOption((a, b) => cons(a, b))
-      .getOrElse(Literal.Empty)
-    case _ => Operation(Prefetch, List(keys))
+  implicit def tlit2slit(literal: thrift.Literal): Literal = literal match {
+    case l if l.isSetFlag => Flag(l.getFlag)
+    case l if l.isSetReal => Real(l.getReal)
+    case l if l.isSetText => Text(l.getText)
   }
 
-  def repeat(cond: Transaction, body: Transaction): Transaction = (cond, body) match {
-    case (x: Literal, _) =>
-      require(x != Literal.False && x != Literal.Empty, "Infinite loop detected.")
-      Literal.Empty
-    case _ => Operation(Repeat, List(cond, body))
-  }
-
-  // Math Operations.
-  def add(x: Transaction, y: Transaction): Transaction = (x, y) match {
-    case (Literal(a), Literal(b)) => literal(num(a) + num(b))
-    case _ => Operation(Add, List(x, y))
-  }
-
-  def sub(x: Transaction, y: Transaction): Transaction = (x, y) match {
-    case (Literal(a), Literal(b)) => literal(num(a) - num(b))
-    case _ => Operation(Sub, List(x, y))
-  }
-
-  def mul(x: Transaction, y: Transaction): Transaction = (x, y) match {
-    case (Literal(a), Literal(b)) => literal(num(a) * num(b))
-    case _ => Operation(Mul, List(x, y))
-  }
-
-  def div(x: Transaction, y: Transaction): Transaction = (x, y) match {
-    case (Literal(a), Literal(b)) => literal(num(a) / num(b))
-    case _ => Operation(Div, List(x, y))
-  }
-
-  def mod(x: Transaction, y: Transaction): Transaction = (x, y) match {
-    case (Literal(a), Literal(b)) => literal(num(a) % num(b))
-    case _ => Operation(Mod, List(x, y))
-  }
-
-  def pow(x: Transaction, y: Transaction): Transaction = (x, y) match {
-    case (Literal(a), Literal(b)) => literal(math.pow(num(a), num(b)))
-    case _ => Operation(Pow, List(x, y))
-  }
-
-  def log(x: Transaction): Transaction = x match {
-    case Literal(a) => literal(math.log(num(a)))
-    case _ => Operation(Log, List(x))
-  }
-
-  def sin(x: Transaction): Transaction = x match {
-    case Literal(a) => literal(math.sin(num(a)))
-    case _ => Operation(Sin, List(x))
-  }
-
-  def cos(x: Transaction): Transaction = x match {
-    case Literal(a) => literal(math.cos(num(a)))
-    case _ => Operation(Cos, List(x))
-  }
-
-  def floor(x: Transaction): Transaction = x match {
-    case Literal(a) => literal(math.floor(num(a)))
-    case _ => Operation(Floor, List(x))
-  }
-
-  // String Operations.
-  def length(str: Transaction): Transaction = str match {
-    case Literal(x) => literal(x.length)
-    case _ => Operation(Length, List(str))
-  }
-
-  def concat(x: Transaction, y: Transaction): Transaction = (x, y) match {
-    case (Literal(a), Literal(b)) => literal(a + b)
-    case _ => Operation(Concat, List(x, y))
-  }
-
-  def slice(str: Transaction, low: Transaction, high: Transaction): Transaction = (str, low, high) match {
-    case (Literal(x), Literal(y), Literal(z)) => literal(x.substring(num(y).toInt, num(z).toInt))
-    case _ => Operation(Slice, List(str, low, high))
-  }
-
-  def matches(str: Transaction, regex: Transaction): Transaction = (str, regex) match {
-    case (Literal(x), Literal(y)) => if (x.matches(y)) Literal.True else Literal.False
-    case _ => Operation(Matches, List(str, regex))
-  }
-
-  def contains(str: Transaction, sub: Transaction): Transaction = (str, sub) match {
-    case (Literal(x), Literal(y)) => if (x.contains(y)) Literal.True else Literal.False
-    case _ => Operation(Contains, List(str, sub))
-  }
-
-  // Logical Operations.
-  def and(a: Transaction, b: Transaction): Transaction = (a, b) match {
-    case (x: Literal, y: Literal) => if (x != Literal.False && y != Literal.False) Literal.True else Literal.False
-    case _ => Operation(And, List(a, b))
-  }
-
-  def or(a: Transaction, b: Transaction): Transaction = (a, b) match {
-    case (x: Literal, y: Literal) => if (x != Literal.False || y != Literal.False) Literal.True else Literal.False
-    case _ => Operation(Or, List(a, b))
-  }
-
-  def not(a: Transaction): Transaction = a match {
-    case x: Literal => if (x != Literal.False) Literal.False else Literal.True
-    case _ => Operation(Not, List(a))
-  }
-
-  def equal(a: Transaction, b: Transaction): Transaction = (a, b) match {
-    case (Literal(x), Literal(y)) if x.isEmpty && y.matches("^[+-]?([0-9]*[.])?[0-9]+$") =>
-      if (num(y) == 0) Literal.True else Literal.False
-    case (Literal(x), Literal(y)) if x.matches("^[+-]?([0-9]*[.])?[0-9]+$") && y.isEmpty =>
-      if (num(x) == 0) Literal.True else Literal.False
-    case (Literal(x), Literal(y)) if Seq(x, y).forall(_.matches("^[+-]?([0-9]*[.])?[0-9]+$")) =>
-      if (num(x) == num(y)) Literal.True else Literal.False
-    case (Literal(x), Literal(y)) =>
-      if (x == y) Literal.True else Literal.False
-    case _ => Operation(Equal, List(a, b))
-  }
-
-  def less(a: Transaction, b: Transaction): Transaction = (a, b) match {
-    case (Literal(x), Literal(y)) if x.isEmpty && y.matches("^[+-]?([0-9]*[.])?[0-9]+$") =>
-      if (num(y) > 0) Literal.True else Literal.False
-    case (Literal(x), Literal(y)) if x.matches("^[+-]?([0-9]*[.])?[0-9]+$") && y.isEmpty =>
-      if (num(x) < 0) Literal.True else Literal.False
-    case (Literal(x), Literal(y)) if Seq(x, y).forall(_.matches("^[+-]?([0-9]*[.])?[0-9]+$")) =>
-      if (num(x) < num(y)) Literal.True else Literal.False
-    case (Literal(x), Literal(y)) =>
-      if (x < y) Literal.True else Literal.False
-    case _ => Operation(Less, List(a, b))
-  }
+  /**
+   * A transactional operation. Expressions apply Operators to operands that are either Literals or
+   * the output of other Expressions. Expressions form the nodes of the abstract syntax tree in a
+   * Transaction.
+   *
+   * @param operator Thrift operator.
+   * @param operands List of transaction operands.
+   */
+  case class Expression(
+    operator: Operator,
+    operands: List[Transaction]
+  ) extends Transaction
 
 }
+

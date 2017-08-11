@@ -1,6 +1,6 @@
 package caustic.common.concurrent
 
-import Backoff._
+import caustic.common.concurrent.Backoff._
 
 import org.junit.runner.RunWith
 import org.scalatest.concurrent.ScalaFutures

@@ -6,11 +6,11 @@ import scala.concurrent.{ExecutionContext, Future}
 @SerialVersionUID(1)
 class FakeDatabase extends Database with Serializable {
 
-  override def get(keys: Iterable[Key])(
+  override def get(keys: Set[Key])(
     implicit ec: ExecutionContext
-  ): Future[Map[Key, (Revision, Value)]] = Future(Map.empty)
+  ): Future[Map[Key, Revision]] = Future(Map.empty)
 
-  override def put(depends: Map[Key, Revision], changes: Map[Key, (Revision, Value)])(
+  override def put(depends: Map[Key, Version], changes: Map[Key, Revision])(
     implicit ec: ExecutionContext
   ): Future[Unit] = Future.unit
 

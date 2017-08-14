@@ -1,5 +1,8 @@
 # Syntax
-An extensible syntax for expressing transactions on complex object graphs.
+The ```caustic-runtime``` enables transactional accesses and modifications to any key-value store. However, key-value stores provide an extremely unintuitive interface for working with complex object models. The purpose of ```caustic-syntax``` is to define a more convenient language for expressing transactions on complex object models.
+
+## Tries
+The key idea behind the ```caustic-syntax``` library is that *all tries can be represented by a key-value store*. Therefore, we can perform familiar object interactions tries that map down to operations on a key-value store.
 
 # Specification
 ## Objects

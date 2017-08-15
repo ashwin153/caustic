@@ -15,7 +15,7 @@ case class Bar(
 )
 ```
 
-Suppose instance ```val x = Foo(Bar(1), "Hello")``` is inserted into the underlying key-value store with key ```id```. Then, it would correspond to the following representation.
+Suppose ```val x = Foo(Bar(1), "Hello")``` is inserted into the underlying key-value store with key ```id```. Then, it would correspond to the following representation.
 
 | Key                         | Value          |
 |:----------------------------|:--------------:|

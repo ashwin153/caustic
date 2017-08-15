@@ -2,7 +2,6 @@
 The ```caustic-runtime``` package permits transactional operations on arbitrary key-value stores. However, key-value pairs are an extremely unintuitive interface for working with complex object graphs. The ```caustic-syntax``` package introduces a more convenient language for expressing transactions, which relies on the ```caustic-runtime``` to guarantee transactional safety.
 
 # Specification
-## Records
 Every key is associated with a ```__type__``` field which may be ```struct``` or ```attr```. A value of a key of type ```struct``` contains a ```,```-delimited list of field names, and the value of key of type ```attr``` corresponds to the value of the field identified by the key. For example, consider the following object model.
 
 ```scala

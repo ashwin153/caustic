@@ -1,4 +1,4 @@
-# Caustic Runtime
+# Runtime
 The ```caustic-runtime``` provides a cross-language service for optimistically executing transactions over arbitrary key-value stores.
 
 ## Features

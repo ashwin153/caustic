@@ -1,4 +1,5 @@
 #!/bin/bash
+# Release Guidelines: https://github.com/ashwin153/caustic/wiki/Release
 read -p "Artifact version (defaults to incrementing patch version): " version
 read -r -p "Are you sure? [y/N] " response
 

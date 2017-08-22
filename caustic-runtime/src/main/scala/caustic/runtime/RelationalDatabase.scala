@@ -1,11 +1,8 @@
 package caustic.runtime
 
-import java.sql.{Connection, ResultSet, Statement}
-
-import RelationalDatabase._
+import java.sql.Connection
 import javax.sql.DataSource
 
-import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future, blocking}
 
 /**
@@ -13,7 +10,7 @@ import scala.concurrent.{ExecutionContext, Future, blocking}
  *
  * @param underlying Underlying store.
  */
-abstract class RelationalDatabase(underlying: DataSource) extends TransactionalDatabase {
+abstract class RelationalDatabase(underlying: DataSource) extends Database {
 
   /**
    * A select query for the key, versions and values of the specified keys.
@@ -80,18 +77,14 @@ abstract class RelationalDatabase(underlying: DataSource) extends TransactionalD
     transaction { con =>
       // Determine whether or not the transaction conflicts.
       val current = select(con, depends.keySet)
-      val conflicts = depends.exists { case (key, version) =>
-        current.get(key).map(_.version).getOrElse(0L) > version
-      }
+      val conflicts = depends.exists { case (k, v) => current.get(k).exists(_.version > v) }
 
       if (!conflicts) {
         // If the transaction does not conflict, then perform changes.
-        changes.foreach { case (key, revision) =>
-          upsert(con, key, revision)
-        }
+        changes.foreach { case (k, r) => upsert(con, k, r) }
       } else {
         // Otherwise, fail the put operation.
-        throw WriteException("Transaction conflicts.")
+        throw new Exception("Transaction conflicts.")
       }
     }
 

@@ -1,9 +1,12 @@
 package caustic.mysql
 
-import caustic.runtime._
 import javax.sql.DataSource
 import java.sql.Connection
+
 import scala.collection.mutable
+
+import caustic.runtime._
+import caustic.runtime.parser._
 
 /**
  * A MySQL-backed database.
@@ -36,9 +39,9 @@ class MySQLDatabase private[mysql](
       val version = results.getLong("version")
 
       val value = results.getInt("type") match {
-        case 0 => Flag(results.getBoolean("value"))
-        case 1 => Real(results.getDouble("value"))
-        case 2 => Text(results.getString("value"))
+        case 0 => flag(results.getBoolean("value"))
+        case 1 => real(results.getDouble("value"))
+        case 2 => text(results.getString("value"))
       }
 
       buffer += (key -> Revision(version, value))

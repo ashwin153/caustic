@@ -1,43 +1,41 @@
 package caustic.syntax
 
-import Context._
-import syntax._
-import caustic.runtime.thrift
-
 import scala.language.dynamics
 
+
 /**
- * A mutable, transactional context.
  *
- * @param txn Underlying transaction.
+ * @param txn
  */
-case class Context(
-  private[syntax] var txn: thrift.Transaction
-) extends Dynamic {
+class Context(private[syntax] var txn: Transaction) extends Dynamic {
 
   /**
-   * Returns the local variable with the specified name.
    *
-   * @param name Variable name.
-   * @return Corresponding variable.
+   * @param name
+   * @return
    */
-  def selectDynamic(name: String): Variable = Variable(name)
+  def get(name: String): Variable =
+    Variable(name)
+
+  def selectDynamic(name: String): Variable =
+    get(name)
 
   /**
-   * Updates the variable with the specified name to the specified value.
    *
-   * @param name Variable name.
-   * @param value New value.
+   * @param name
+   * @param value
    */
-  def updateDynamic(name: String)(value: thrift.Transaction): Unit =
-    this.append(store(name, value))
+  def set(name: String, value: Transaction): Unit =
+    append(store(name, value))
+
+  def updateDynamic(name: String)(value: Transaction): Unit =
+    set(name, value)
 
   /**
-   * Appends the specified transaction to the underlying state.
    *
-   * @param that Transaction to append.
+   * @param that
    */
-  def append(that: thrift.Transaction): Unit =
+  private[syntax] def +=(that: Transaction): Unit =
     this.txn = cons(this.txn, that)
 
 }
@@ -45,17 +43,9 @@ case class Context(
 object Context {
 
   /**
-   * A local variable.
    *
-   * @param name Variable name.
+   * @return
    */
-  final case class Variable(name: String)
-
-  /**
-   * Constructs an empty transaction context.
-   *
-   * @return Empty context.
-   */
-  def empty: Context = new Context(Literal.Empty)
+  def empty: Context = new Context(text(""))
 
 }

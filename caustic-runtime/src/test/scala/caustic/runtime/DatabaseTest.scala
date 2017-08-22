@@ -1,6 +1,9 @@
 package caustic.runtime
 
+import caustic.runtime.parser._
+
 import java.util.concurrent.{CountDownLatch, TimeUnit}
+
 import org.junit.runner.RunWith
 import org.mockito.Mockito._
 import org.mockito.internal.stubbing.answers.CallsRealMethods
@@ -10,6 +13,7 @@ import org.scalatest.junit.JUnitRunner
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.time.{Millis, Seconds, Span}
+
 import scala.concurrent.ExecutionContext.Implicits.global
 
 @RunWith(classOf[JUnitRunner])
@@ -29,22 +33,22 @@ abstract class DatabaseTest extends fixture.FunSuite
 
   test("Execute is strongly consistent.") { db =>
     // Get on an unknown key returns the empty string.
-    whenReady(db.execute(read(literal("x"))))(_ shouldEqual "")
+    whenReady(db.execute(read(text("x"))))(_ shouldEqual text(""))
 
     // Get on a inserted key returns the inserted value.
-    whenReady(db.execute(write(literal("x"), literal("1"))))(_ shouldEqual "1")
-    whenReady(db.execute(read(literal("x"))))(_ shouldEqual "1")
+    whenReady(db.execute(write(text("x"), real(1))))(_ shouldEqual real(1))
+    whenReady(db.execute(read(text("x"))))(_ shouldEqual real(1))
 
     // Get on a modified key within a transaction returns the modified value.
-    whenReady(db.execute(cons(write(literal("x"), literal("2")), read(literal("x")))))(_ shouldEqual "2")
+    whenReady(db.execute(cons(write(text("x"), real(2)), read(text("x")))))(_ shouldEqual real(2))
   }
 
-  test("Execute is thread-safe.") { db =>
+  test("Execute detects conflicts.") { db =>
     // Spy the underlying database to insert latches inside its put method that will enable
     // deterministic injection of race conditions into transaction execution.
     val ready = new CountDownLatch(1)
     val block = new CountDownLatch(1)
-    val fake  = spy[Database](db)
+    val fake = spy[Database](db)
 
     doAnswer(new CallsRealMethods {
       override def answer(invocation: InvocationOnMock): Object = {
@@ -58,23 +62,25 @@ abstract class DatabaseTest extends fixture.FunSuite
     // construct a second transaction that updates the value of the field and unblocks the first
     // transaction after it completes execution. This introduces a conflict that should cause the
     // first transaction to fail.
-    val exec = fake.execute(read(literal("x")))
+    val exec = fake.execute(read(text("x")))
     assert(ready.await(10, TimeUnit.SECONDS))
-    fake.execute(write(literal("x"), literal("foo"))).onComplete(_ => block.countDown())
+    fake.execute(write(text("x"), text("foo"))).onComplete(_ => block.countDown())
     whenReady(exec.failed)(_ shouldBe an [Exception])
-    whenReady(db.get(Set("x")))(_ should contain theSameElementsAs Seq("x" -> ((1L, "foo"))))
+    whenReady(db.get(Set("x")))(_ should contain theSameElementsAs Seq("x" -> Revision(1L, text("foo"))))
   }
 
   test("Execute maintains mutable state.") { db =>
     // Verifies that local variables and loops are properly handled by the database execution logic.
     whenReady(db.execute(cons(
-      store(literal("$i"), literal(0)),
+      store(text("i"), real(0)),
       cons(
         repeat(
-          less(load(literal("$i")), literal(3)),
-          store(literal("$i"), add(load(literal("$i")), literal(1)))),
-        load(literal("$i"))))
-    ))(_ shouldEqual "3.0")
+          less(load(text("i")), real(3)),
+          store(text("i"), add(load(text("i")), real(1)))
+        ),
+        load(text("i"))
+      )
+    )))(_ shouldEqual real(3))
   }
 
 }

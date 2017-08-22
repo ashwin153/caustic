@@ -1,8 +1,8 @@
 namespace * caustic.runtime.thrift
 
 /**
- * A database transaction. Transactions form an implicit abstract syntax tree, in which the nodes
- * are Expressions and the leaves are Literals. Transactions may be executed by a Database.
+ * A database transaction. Transactions are composed of Literals and Expressions, which may be
+ * combined to form complex abstract-syntax-trees and may be executed on any Database.
  */
 union Transaction {
   1: Literal literal,
@@ -10,8 +10,8 @@ union Transaction {
 }
 
 /**
- * A literal value. Literals are the only way to specify explicit values within a Transaction.
- * Therefore, Literals form the leaves of the abstract syntax tree in a Transaction.
+ * An explicit value. Literals may be one of three primitive types: flag, real, or text. All other
+ * types may be formed from compositions as them. Literals form the "leaves" of a Transaction.
  */
 union Literal {
   1: bool flag,
@@ -20,44 +20,351 @@ union Literal {
 }
 
 /**
- * A transactional operation. Expressions apply Operators to operands that are either Literals or
- * the output of other Expressions. Expressions form the nodes of the abstract syntax tree in a
- * Transaction.
+ * A value transformation. Expressions apply a transformation to Literals or the results of other
+ * Expressions. Expressions form the "nodes" of a Transaction.
  */
-struct Expression {
-  1: required Operator operator,
-  2: required list<Transaction> operands,
+union Expression {
+  1: Read read,
+  2: Write write,
+  3: Load load,
+  4: Store store,
+  5: Cons cons,
+  6: Prefetch prefetch,
+  7: Repeat repeat,
+  8: Branch branch,
+  9: Rollback rollback,
+  10: Add add,
+  11: Sub sub,
+  12: Mul mul,
+  13: Div div,
+  14: Mod mod,
+  15: Pow pow,
+  16: Log log,
+  17: Sin sin,
+  18: Cos cos,
+  19: Floor floor,
+  20: Both both,
+  21: Either either,
+  22: Negate negate,
+  23: Length length,
+  24: Slice slice,
+  25: Matches matches,
+  26: Contains contains,
+  27: IndexOf indexOf,
+  28: Equal equal,
+  29: Less less,
 }
 
-enum Operator {
-  READ        = 0x100, // Lookup the latest revision of a remote key(s).
-  WRITE       = 0x201, // Update the latest revision of a remote key.
-  LOAD        = 0x102, // Lookup the value of a local key.
-  STORE       = 0x203, // Update the value of a local key.
-  CONS        = 0x204, // Sequentially evaluate arguments.
-  PREFETCH    = 0x105, // Prefetches the comma delimited list of keys.
-  REPEAT      = 0x206, // Repeat while the condition is not satisfied.
-  BRANCH      = 0x307, // Jump to third if first is empty,and second otherwise.
-  ROLLBACK    = 0x108, // Converts the transaction into a read-only transaction.
-  ADD         = 0x209, // Sum of the two arguments.
-  SUB         = 0x20A, // Difference of the two arguments.
-  MUL         = 0x20B, // Product of the two arguments.
-  DIV         = 0x20C, // Quotient of the two arguments.
-  MOD         = 0x20D, // Modulo of the two arguments.
-  POW         = 0x20E, // Power of the first argument to the second.
-  LOG         = 0x10F, // Natural logarithm of the argument.
-  SIN         = 0x110, // Sine of the argument.
-  COS         = 0x111, // Cosine of the argument.
-  FLOOR       = 0x112, // Largest integer less than the argument.
-  AND         = 0x213, // Checks that both arguments are non-empty.
-  NOT         = 0x114, // Opposite of the argument.
-  OR          = 0x215, // Checks that either argument is non-empty.
-  LENGTH      = 0x116, // Number of characters in the argument.
-  SLICE       = 0x317, // Substring of the first argument bounded by  others.
-  CONCAT      = 0x218, // Concatenation of the two arguments.
-  MATCHES     = 0x219, // Regular expression of second argument matches first.
-  CONTAINS    = 0x21A, // Checks that the first argument contains the second.
-  EQUAL       = 0x21B, // Checks that the two arguments are equal.
-  LESS        = 0x21C, // Checks that the first argument is less than the other.
+/**
+ * Returns the value of the database key.
+ *
+ * @param key Text.
+ */
+struct Read {
+  1: required Transaction key,
 }
 
+/**
+ * Updates the value of the database key.
+ *
+ * @param key Text.
+ * @param value Any.
+ */
+struct Write {
+  1: required Transaction key,
+  2: required Transaction value,
+}
+
+/**
+ * Returns the value of the local variable.
+ *
+ * @param variable Text.
+ */
+struct Load {
+  1: required Transaction variable,
+}
+
+/**
+ * Updates the value of the local variable.
+ *
+ * @param variable Text.
+ * @param value Any.
+ */
+struct Store {
+  1: required Transaction variable,
+  2: required Transaction value,
+}
+
+/**
+ * Performs first and then second.
+ *
+ * @param first Any.
+ * @param second Any.
+ */
+struct Cons {
+  1: required Transaction first,
+  2: required Transaction second,
+}
+
+/**
+ * Prefetches the array-delimited list of keys.
+ *
+ * @param keys Text.
+ */
+struct Prefetch {
+  1: required Transaction keys,
+}
+
+/**
+ * Performs the body until the condition is not satisfied.
+ *
+ * @param condition Flag.
+ * @param body Any.
+ */
+struct Repeat {
+  1: required Transaction condition,
+  2: required Transaction body,
+}
+
+/**
+ * Performs success if the condition is satisfied, or failure otherwise.
+ *
+ * @param condition Flag.
+ * @param success Any.
+ * @param failure Any.
+ */
+struct Branch {
+  1: required Transaction condition,
+  2: required Transaction success,
+  3: required Transaction failure,
+}
+
+/**
+ * Discards any changes performed by the transaction, and terminates execution.
+ *
+ * @param message Text.
+ */
+struct Rollback {
+  1: required Transaction message,
+}
+
+/**
+ * Returns x plus y.
+ *
+ * @param x Real.
+ * @param y Real.
+ */
+struct Add {
+  1: required Transaction x,
+  2: required Transaction y,
+}
+
+/**
+ * Returns x minus y.
+ *
+ * @param x Real.
+ * @param y Real.
+ */
+struct Sub {
+  1: required Transaction x,
+  2: required Transaction y,
+}
+
+/**
+ * Returns x times y.
+ *
+ * @param x Real.
+ * @param y Real.
+ */
+struct Mul {
+  1: required Transaction x,
+  2: required Transaction y,
+}
+
+/**
+ * Returns x divided by y.
+ *
+ * @param x Real.
+ * @param y Real.
+ */
+struct Div {
+  1: required Transaction x,
+  2: required Transaction y,
+}
+
+/**
+ * Returns x modulo y.
+ *
+ * @param x Real.
+ * @param y Real.
+ */
+struct Mod {
+  1: required Transaction x,
+  2: required Transaction y,
+}
+
+/**
+ * Returns x to the power of y.
+ *
+ * @param x Real.
+ * @param y Real.
+ */
+struct Pow {
+  1: required Transaction x,
+  2: required Transaction y,
+}
+
+/**
+ * Returns the natural log of x.
+ *
+ * @param x Real.
+ */
+struct Log {
+  1: required Transaction x,
+}
+
+/**
+ * Returns the sine of x.
+ *
+ * @param x Real.
+ */
+struct Sin {
+  1: required Transaction x,
+}
+
+/**
+ * Returns the cosine of x.
+ *
+ * @param x Real.
+ */
+struct Cos {
+  1: required Transaction x,
+}
+
+/**
+ * Returns the floor of x.
+ *
+ * @param x Real.
+ */
+struct Floor {
+  1: required Transaction x,
+}
+
+/**
+ * Returns a flag containing the bitwise and of x and y.
+ *
+ * @param x Flag.
+ * @param y Flag.
+ */
+struct Both {
+  1: required Transaction x,
+  2: required Transaction y,
+}
+
+/**
+ * Returns a flag containing the bitwise or of x and y.
+ *
+ * @param x Flag.
+ * @param y Flag.
+ */
+struct Either {
+  1: required Transaction x,
+  2: required Transaction y,
+}
+
+/**
+ * Returns a flag containing bitwise negation of x.
+ *
+ * @param x Flag.
+ */
+struct Negate {
+  1: required Transaction x,
+}
+
+/**
+ * Returns the length of x.
+ *
+ * @param x Text.
+ */
+struct Length {
+  1: required Transaction x,
+}
+
+/**
+ * Returns the substring of x within [lower, higher).
+ *
+ * @param x Text.
+ * @param lower Real.
+ * @param higher Real.
+ */
+struct Slice {
+  1: required Transaction x,
+  2: required Transaction lower,
+  3: required Transaction higher,
+}
+
+/**
+ * Returns the string concatenation of x and y.
+ *
+ * @param x Any.
+ * @param y Any.
+ */
+struct Concat {
+  1: required Transaction x,
+  2: required Transaction y,
+}
+
+/**
+ * Returns whether or not x matches the specified regular expression.
+ *
+ * @param x Text.
+ * @param regex Text.
+ */
+struct Matches {
+  1: required Transaction x,
+  2: required Transaction regex,
+}
+
+/**
+ * Returns a flag indicating whether or not y is contained in x.
+ *
+ * @param x Text.
+ * @param y Text.
+ */
+struct Contains {
+  1: required Transaction x,
+  2: required Transaction y,
+}
+
+/**
+ * Returns the index of y in x.
+ *
+ * @param x Text.
+ * @param y Text.
+ */
+struct IndexOf {
+  1: required Transaction x,
+  2: required Transaction y,
+}
+
+/**
+ * Returns a flag indicating whether or not x and y have the same type and value.
+ *
+ * @param x Any.
+ * @param y Any.
+ */
+struct Equal {
+  1: required Transaction x,
+  2: required Transaction y,
+}
+
+/**
+ * Returns a flag indicating whether or not x is strictly less than y.
+ *
+ * @param x Any.
+ * @param y Any.
+ */
+struct Less {
+  1: required Transaction x,
+  2: required Transaction y,
+}

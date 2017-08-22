@@ -1,7 +1,10 @@
 package caustic.benchmark
 
 import caustic.runtime._
+import caustic.runtime.parser._
+
 import org.scalameter.api._
+
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -14,7 +17,7 @@ object TransactionBenchmark extends Bench.OfflineReport {
   // Benchmark transactions containing sequential reads.
   val transactions: Gen[Transaction] = Gen
     .exponential("size")(2, 1 << 10, 2)
-    .map(size => Seq.fill(size)(read(literal("x"))).reduce((a, b) => cons(a, b)))
+    .map(size => Seq.fill(size)(read(text("x"))).reduce((a, b) => cons(a, b)))
 
   performance of "Database" in {
     measure method "execute" in {

@@ -1,11 +1,10 @@
 package caustic.common.concurrent
 
-import java.util.{Timer, TimerTask}
 import java.util.concurrent.ThreadLocalRandom
+import java.util.{Timer, TimerTask}
 
 import scala.concurrent.duration.{Duration, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future, Promise}
-
 
 object Backoff {
 

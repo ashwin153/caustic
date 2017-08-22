@@ -86,13 +86,6 @@ class Trie[K, V] private (
       case _ => prev
     })
 
-
-  override def +=(kv: (K, V)): Trie.this.type = ???
-
-  override def -=(key: K): Trie.this.type = ???
-
-  override def get(key: K): Option[V] = ???
-
   /**
    * Recursively removes this node and all its children, by removing the trie from its parent's list
    * of children. Implementation is thread-safe, but requires an exclusive write-lock. O(h), where

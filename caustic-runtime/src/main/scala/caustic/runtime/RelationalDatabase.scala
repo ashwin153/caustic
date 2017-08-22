@@ -76,7 +76,7 @@ abstract class RelationalDatabase(underlying: DataSource) extends Database {
   ): Future[Unit] =
     transaction { con =>
       // Determine whether or not the transaction conflicts.
-      val current = select(con, depends.keySet)
+      val current = if (depends.isEmpty) Map.empty[Key, Revision] else select(con, depends.keySet)
       val conflicts = depends.exists { case (k, v) => current.get(k).exists(_.version > v) }
 
       if (!conflicts) {

@@ -47,8 +47,4 @@ case class TransactionOps(x: Transaction) {
   def startsWith(y: Transaction): Transaction = y === x.substring(0, y.length)
   def indexOf(y: Transaction): Transaction = syntax.indexOf(x, y)
 
-  // Interval Operations.
-  def to(y: Transaction): Interval = Interval(x, y, One, inclusive = true)
-  def until(y: Transaction): Interval = Interval(x, y, One, inclusive = false)
-
 }

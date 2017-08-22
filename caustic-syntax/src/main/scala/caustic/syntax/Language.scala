@@ -1,7 +1,5 @@
 package caustic.syntax
 
-import Language._
-
 trait Language {
 
   /**
@@ -48,34 +46,7 @@ trait Language {
     block
     val body = ctx.txn
     ctx.txn = before
-    ctx.append(repeat(condition, body))
-  }
-
-  /**
-   * Repeatedly performs the specified block over the interval, storing the value of the loop index
-   * in the provided variable.
-   *
-   * @param variable Loop variable.
-   * @param in Loop interval.
-   * @param block Loop body.
-   * @param ctx Implicit transaction context.
-   */
-  def For(variable: Variable, in: Interval)(block: => Unit)(
-    implicit ctx: Context
-  ): Unit = {
-    ctx.append(store(variable.name, in.start))
-    val condition = in match {
-      case Interval(_, end, _, true)  => load(variable.name) <= end
-      case Interval(_, end, _, false) => load(variable.name) <  end
-    }
-
-    val before = ctx.txn
-    ctx.txn = Empty
-    block
-    ctx.append(store(variable.name, load(variable.name) + in.step))
-    val body = ctx.txn
-    ctx.txn = before
-    ctx.append(repeat(condition, body))
+    ctx += repeat(condition, body)
   }
 
   /**
@@ -89,36 +60,13 @@ trait Language {
     implicit ctx: Context
   ): Unit =
     if (rest.isEmpty)
-      ctx.append(first)
+      ctx += first
     else
-      ctx.append(concat("[", concat(
+      ctx += concat("[", concat(
         rest.+:(first)
           .map(t => concat("\"", concat(t, "\"")))
           .reduceLeft((a, b) => a ++ "," ++ b),
         "]"
-      )))
-
-}
-
-object Language {
-
-  /**
-   * A loop interval.
-   *
-   * @param start Starting value.
-   * @param end Ending value.
-   * @param step Iteration step size.
-   * @param inclusive Whether or not end value is inclusive.
-   */
-  case class Interval(
-    start: Transaction,
-    end: Transaction,
-    step: Transaction,
-    inclusive: Boolean
-  ) {
-
-    def by(s: Transaction): Interval = this.copy(step=s)
-
-  }
+      ))
 
 }

@@ -2,38 +2,37 @@ package caustic.syntax
 
 import scala.language.dynamics
 
-
 /**
  *
- * @param txn
+ * @param txn Transaction builder.
  */
 class Context(private[syntax] var txn: Transaction) extends Dynamic {
 
   /**
    *
-   * @param name
+   * @param name Variable name.
    * @return
    */
-  def get(name: String): Variable =
-    Variable(name)
+  def get(name: Transaction): Transaction =
+    load(name)
 
-  def selectDynamic(name: String): Variable =
+  def selectDynamic(name: String): Transaction =
     get(name)
 
   /**
    *
-   * @param name
-   * @param value
+   * @param name Variable name.
+   * @param value Updated value.
    */
-  def set(name: String, value: Transaction): Unit =
-    append(store(name, value))
+  def set(name: Transaction, value: Transaction): Unit =
+    this += store(name, value)
 
   def updateDynamic(name: String)(value: Transaction): Unit =
     set(name, value)
 
   /**
    *
-   * @param that
+   * @param that Transaction to append.
    */
   private[syntax] def +=(that: Transaction): Unit =
     this.txn = cons(this.txn, that)
@@ -43,8 +42,9 @@ class Context(private[syntax] var txn: Transaction) extends Dynamic {
 object Context {
 
   /**
+   * Constructs an empty transaction context.
    *
-   * @return
+   * @return Empty Context.
    */
   def empty: Context = new Context(text(""))
 

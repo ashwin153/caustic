@@ -40,7 +40,7 @@ case class Record(key: Transaction)(implicit ctx: Context) extends Dynamic {
     // x.foo -> x.get("foo")
     get(name)
 
-  def applyDynamic(name: String)(rest: String*): Record =
+  def applyDynamic(name: String)(rest: Transaction*): Record =
     // x.foo("bar", "car") -> x.get("foo").get("bar").get("car")
     rest.foldLeft(get(name))((r, f) => r.get(f))
 

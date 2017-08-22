@@ -22,7 +22,7 @@ class PostgresDatabase private[postgres](
     val statement = connection.prepareStatement(
       s""" SELECT key, version, type, value
          | FROM schema
-         | WHERE key IN (${"?" * keys.size})
+         | WHERE key IN (${List.fill(keys.size)("?").mkString(",")})
        """.stripMargin
     )
 
@@ -58,7 +58,7 @@ class PostgresDatabase private[postgres](
     val statement = connection.prepareStatement(
       s""" INSERT INTO schema (key, version, type, value)
          | VALUES (?, ?, ?, ?) ON CONFLICT (key)
-         | DO UPDATE SET version = ?, type = ?, value = ?,
+         | DO UPDATE SET version = ?, type = ?, value = ?
      """.stripMargin
     )
 

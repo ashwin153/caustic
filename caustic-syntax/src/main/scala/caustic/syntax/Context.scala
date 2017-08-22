@@ -14,10 +14,10 @@ class Context(private[syntax] var txn: Transaction) extends Dynamic {
    * @param name
    * @return
    */
-  def get(name: String): Variable =
-    Variable(name)
+  def get(name: Transaction): Transaction =
+    load(name)
 
-  def selectDynamic(name: String): Variable =
+  def selectDynamic(name: String): Transaction =
     get(name)
 
   /**
@@ -25,8 +25,8 @@ class Context(private[syntax] var txn: Transaction) extends Dynamic {
    * @param name
    * @param value
    */
-  def set(name: String, value: Transaction): Unit =
-    append(store(name, value))
+  def set(name: Transaction, value: Transaction): Unit =
+    this += store(name, value)
 
   def updateDynamic(name: String)(value: Transaction): Unit =
     set(name, value)

@@ -22,7 +22,7 @@ class PostgresDatabase private[postgres](
     val statement = connection.prepareStatement(
       s""" SELECT key, version, type, value
          | FROM schema
-         | WHERE key IN (${"?" * keys.size})
+         | WHERE key IN (${List.fill(keys.size)("?").mkString(",")})
        """.stripMargin
     )
 

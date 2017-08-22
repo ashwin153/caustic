@@ -3,10 +3,15 @@ import math
 from caustic.runtime.thrift.ttypes import *
 
 
-# Constants.
+# Record kinds.
+Structure = 'S'
+Attribute = 'A'
+Reference = 'R'
+
+
+# Reserved delimiters.
 FieldDelimiter = '@'
 ListDelimiter = ','
-InternalDelimiter = '$'
 
 
 # Literal Values.

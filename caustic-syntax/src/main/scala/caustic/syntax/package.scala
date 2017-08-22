@@ -17,8 +17,6 @@ package object syntax extends Language {
 
   // Language.
   implicit def txn2ops(x: Transaction): TransactionOps = TransactionOps(x)
-  implicit def var2txn(x: Variable): Transaction = load(x.name)
-  implicit def var2top(x: Variable): TransactionOps = TransactionOps(x)
   implicit def rec2txn(x: Record): Transaction = read(x.key)
   implicit def rec2top(x: Record): TransactionOps = TransactionOps(x)
   implicit def rec2ops(x: Record): RecordOps = RecordOps(x)

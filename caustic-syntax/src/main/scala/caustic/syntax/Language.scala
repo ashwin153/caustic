@@ -48,7 +48,7 @@ trait Language {
     block
     val body = ctx.txn
     ctx.txn = before
-    ctx.append(repeat(condition, body))
+    ctx += repeat(condition, body)
   }
 
   /**
@@ -60,22 +60,22 @@ trait Language {
    * @param block Loop body.
    * @param ctx Implicit transaction context.
    */
-  def For(variable: Variable, in: Interval)(block: => Unit)(
+  def For(variable: Transaction, in: Interval)(block: => Unit)(
     implicit ctx: Context
   ): Unit = {
-    ctx.append(store(variable.name, in.start))
+    ctx.set(variable, in.start)
     val condition = in match {
-      case Interval(_, end, _, true)  => load(variable.name) <= end
-      case Interval(_, end, _, false) => load(variable.name) <  end
+      case Interval(_, end, _, true)  => load(variable) <= end
+      case Interval(_, end, _, false) => load(variable) <  end
     }
 
     val before = ctx.txn
     ctx.txn = Empty
     block
-    ctx.append(store(variable.name, load(variable.name) + in.step))
+    ctx.set(variable, load(variable) + in.step)
     val body = ctx.txn
     ctx.txn = before
-    ctx.append(repeat(condition, body))
+    ctx += repeat(condition, body)
   }
 
   /**
@@ -89,14 +89,14 @@ trait Language {
     implicit ctx: Context
   ): Unit =
     if (rest.isEmpty)
-      ctx.append(first)
+      ctx += first
     else
-      ctx.append(concat("[", concat(
+      ctx += concat("[", concat(
         rest.+:(first)
           .map(t => concat("\"", concat(t, "\"")))
           .reduceLeft((a, b) => a ++ "," ++ b),
         "]"
-      )))
+      ))
 
 }
 

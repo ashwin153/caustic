@@ -1,4 +1,4 @@
-package caustic.runtime.parser
+package caustic.runtime.interpreter
 
 import caustic.runtime.thrift
 import org.junit.runner.RunWith

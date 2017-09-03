@@ -1,4 +1,4 @@
-package caustic.runtime.parser
+package caustic.runtime.interpreter
 
 /**
  * An enumeration of the various operators supported by the library. Ensure that this enumeration

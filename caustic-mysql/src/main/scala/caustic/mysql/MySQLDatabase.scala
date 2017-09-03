@@ -6,7 +6,7 @@ import java.sql.Connection
 import scala.collection.mutable
 
 import caustic.runtime._
-import caustic.runtime.parser._
+import caustic.runtime.interpreter._
 
 /**
  * A MySQL-backed database.

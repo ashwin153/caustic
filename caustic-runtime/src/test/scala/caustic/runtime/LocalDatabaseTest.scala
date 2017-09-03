@@ -5,9 +5,9 @@ import org.scalatest.Outcome
 import org.scalatest.junit.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
-class CachedDatabaseTest extends DatabaseTest {
+class LocalDatabaseTest extends DatabaseTest {
 
   override def withFixture(test: OneArgTest): Outcome =
-    test(CachedDatabase.empty)
+    test(LocalDatabase.empty)
 
 }

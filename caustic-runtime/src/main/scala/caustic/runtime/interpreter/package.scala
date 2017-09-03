@@ -1,6 +1,6 @@
 package caustic.runtime
 
-package object parser {
+package object interpreter {
 
   // Cache Symbols.
   private val True = Flag(true)

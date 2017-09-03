@@ -1,7 +1,7 @@
 package caustic.benchmark
 
 import caustic.runtime._
-import caustic.runtime.parser._
+import caustic.runtime.interpreter._
 
 import org.scalameter.api._
 

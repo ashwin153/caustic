@@ -13,9 +13,26 @@ jar_library(name='postgres', jars=[
   jar(org='postgresql', name='postgresql', rev='9.1-901.jdbc4'),
 ])
 
+# Caffeine
+jar_library(name='caffeine', jars=[
+  jar(org='com.github.ben-manes.caffeine', name='caffeine', rev='2.5.5')
+])
+
 # Thrift
 jar_library(name='thrift', jars=[
   jar(org='org.apache.thrift', name='libthrift', rev='0.10.0')
+])
+
+# Finagle
+jar_library(name='finagle', jars=[
+  jar(org='com.twitter', name='finagle-core_2.12', rev='7.0.0'),
+  jar(org='com.twitter', name='finagle-http_2.12', rev='7.0.0'),
+  jar(org='com.twitter', name='finagle-thrift_2.12', rev='7.0.0'),
+])
+
+# Shapeless
+jar_library(name='shapeless', jars=[
+  jar(org='com.chuusai', name='shapeless_2.12', rev='2.3.2'),
 ])
 
 # JUnit

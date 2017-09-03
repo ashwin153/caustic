@@ -1,6 +1,6 @@
-package caustic.runtime.parser
+package caustic.runtime.interpreter
 
-import caustic.runtime.parser
+import caustic.runtime.interpreter
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.{FunSuite, Matchers}
@@ -48,7 +48,7 @@ class ParserTest extends FunSuite with Matchers {
     negate(text("foo")) shouldEqual flag(false)
 
     // String Operations.
-    parser.length(text("Hello")) shouldEqual real(5.0)
+    interpreter.length(text("Hello")) shouldEqual real(5.0)
     slice(text("Hello"), real(1), real(3)) shouldEqual text("el")
     matches(text("a41i3"), text("[a-z1-4]+")) shouldEqual flag(true)
     matches(text("a41i3"), text("[a-z1-4]")) shouldEqual flag(false)
@@ -57,10 +57,10 @@ class ParserTest extends FunSuite with Matchers {
     indexOf(text("Hello"), text("l")) shouldEqual real(2)
 
     // Comparison Operations.
-    parser.equal(real(0), real(0.0)) shouldEqual flag(true)
-    parser.equal(text("a"), text("a")) shouldEqual flag(true)
-    parser.equal(text(""), real(0)) shouldEqual flag(false)
-    parser.equal(flag(true), flag(false)) shouldEqual flag(false)
+    interpreter.equal(real(0), real(0.0)) shouldEqual flag(true)
+    interpreter.equal(text("a"), text("a")) shouldEqual flag(true)
+    interpreter.equal(text(""), real(0)) shouldEqual flag(false)
+    interpreter.equal(flag(true), flag(false)) shouldEqual flag(false)
     less(real(2), real(10)) shouldEqual flag(true)
     less(real(-1), real(1)) shouldEqual flag(true)
     less(text("a"), text("ab")) shouldEqual flag(true)

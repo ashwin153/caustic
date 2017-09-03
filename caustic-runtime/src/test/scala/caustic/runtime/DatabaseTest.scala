@@ -1,6 +1,6 @@
 package caustic.runtime
 
-import caustic.runtime.parser._
+import caustic.runtime.interpreter._
 
 import java.util.concurrent.{CountDownLatch, TimeUnit}
 

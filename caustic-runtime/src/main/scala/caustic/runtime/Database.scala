@@ -1,6 +1,6 @@
 package caustic.runtime
 
-import caustic.runtime.parser._
+import caustic.runtime.interpreter._
 import caustic.runtime.Database._
 import org.apache.thrift.TException
 import org.apache.thrift.async.AsyncMethodCallback
@@ -20,7 +20,7 @@ trait Database extends thrift.Database.AsyncIface {
    *
    * @param keys Keys to lookup.
    * @param ec Implicit execution context.
-   * @return Latest of specified keys.
+   * @return Latest revisions of the specified keys.
    */
   def get(keys: Set[Key])(
     implicit ec: ExecutionContext

@@ -1,5 +1,5 @@
 package caustic.runtime
-package parser
+package interpreter
 
 import scala.annotation.tailrec
 

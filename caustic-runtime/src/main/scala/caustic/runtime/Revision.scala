@@ -1,6 +1,6 @@
 package caustic.runtime
 
-import caustic.runtime.parser._
+import caustic.runtime.interpreter._
 
 /**
  * A versioned value. Revisions of a key are totally ordered by their associated version. Revisions

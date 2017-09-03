@@ -33,7 +33,6 @@ package caustic.syntax.core
  *
  */
 sealed trait Symbol
-case class Value(get: Transaction) extends Symbol
 case class Reference(key: Transaction, datatype: Symbol) extends Symbol
 case class Variable(name: String, datatype: Symbol) extends Symbol
 case class Function(returns: Symbol, args: List[Variable]) extends Symbol

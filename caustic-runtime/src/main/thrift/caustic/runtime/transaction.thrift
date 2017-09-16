@@ -304,17 +304,6 @@ struct Slice {
 }
 
 /**
- * Returns the string concatenation of x and y.
- *
- * @param x Any.
- * @param y Any.
- */
-struct Concat {
-  1: required Transaction x,
-  2: required Transaction y,
-}
-
-/**
  * Returns whether or not x matches the specified regular expression.
  *
  * @param x Text.

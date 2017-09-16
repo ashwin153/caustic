@@ -1,13 +1,16 @@
 scala_library(
-  name='scala',
-  sources=rglobs('*.scala'),
-  dependencies = [
-    'caustic-runtime/src/main/thrift:java',
-  ],
-  provides=artifact(
-    org='com.madavan',
-    name='caustic-syntax_2.12',
-    repo=public,
-    publication_metadata=describe,
-  ),
+    name='scala',
+    sources=rglobs('*.scala'),
+    dependencies=[
+        'caustic-runtime/src/main/thrift:java',
+        'caustic-syntax/src/main/antlr:java',
+        '3rdparty/jvm:finagle',
+        '3rdparty/jvm:shapeless',
+    ],
+    provides=artifact(
+        org='com.madavan',
+        name='caustic-syntax_2.12',
+        repo=public,
+        publication_metadata=describe,
+    ),
 )

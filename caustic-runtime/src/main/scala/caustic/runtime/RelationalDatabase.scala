@@ -2,7 +2,6 @@ package caustic.runtime
 
 import java.sql.Connection
 import javax.sql.DataSource
-
 import scala.concurrent.{ExecutionContext, Future, blocking}
 
 /**
@@ -10,7 +9,23 @@ import scala.concurrent.{ExecutionContext, Future, blocking}
  *
  * @param underlying Underlying store.
  */
-abstract class RelationalDatabase(underlying: DataSource) extends Database {
+abstract class RelationalDatabase(underlying: DataSource)(
+  implicit ec: ExecutionContext
+) extends Database {
+
+  // Ensure that the table schema exists.
+  this.transaction { con =>
+    val smt = con.createStatement()
+    smt.execute(this.schema)
+    smt.close()
+  }
+
+  /**
+   * Returns the SQL query that creates the table schema if and only if it doesn't already exist.
+   *
+   * @return SQL create table if not exists query.
+   */
+  def schema: String
 
   /**
    * A select query for the key, versions and values of the specified keys.
@@ -71,7 +86,7 @@ abstract class RelationalDatabase(underlying: DataSource) extends Database {
     else
       transaction(select(_, keys))
 
-  override def put(depends: Map[Key, Version], changes: Map[Key, Revision])(
+  override def cput(depends: Map[Key, Version], changes: Map[Key, Revision])(
     implicit ec: ExecutionContext
   ): Future[Unit] =
     transaction { con =>

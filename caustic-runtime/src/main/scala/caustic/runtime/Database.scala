@@ -1,7 +1,7 @@
 package caustic.runtime
 
-import caustic.runtime.parser._
-import caustic.runtime.Database._
+import Database._
+
 import org.apache.thrift.TException
 import org.apache.thrift.async.AsyncMethodCallback
 
@@ -20,14 +20,13 @@ trait Database extends thrift.Database.AsyncIface {
    *
    * @param keys Keys to lookup.
    * @param ec Implicit execution context.
-   * @return Latest of specified keys.
+   * @return Latest revisions of the specified keys.
    */
   def get(keys: Set[Key])(
     implicit ec: ExecutionContext
   ): Future[Map[Key, Revision]]
 
   /**
-   *
    * Asynchronously applies the specified changes if and only if the revisions of the specified
    * dependent keys remain their expected values and returns an exception on conflict. The
    * consistency, durability, and availability of the system depends on the implementation of this
@@ -38,7 +37,7 @@ trait Database extends thrift.Database.AsyncIface {
    * @param ec Implicit execution context.
    * @return Future that completes when successful, or an exception otherwise.
    */
-  def put(depends: Map[Key, Version], changes: Map[Key, Revision])(
+  def cput(depends: Map[Key, Version], changes: Map[Key, Revision])(
     implicit ec: ExecutionContext
   ): Future[Unit]
 
@@ -179,7 +178,7 @@ trait Database extends thrift.Database.AsyncIface {
         buffer.clear()
         e.result
     } flatMap { r =>
-      put(snapshot.mapValues(_.version).toMap, buffer.toMap).transformWith {
+      cput(snapshot.mapValues(_.version).toMap, buffer.toMap).transformWith {
         case Success(_) => Future(r)
         case Failure(e) => Future.failed(new thrift.WriteException(e.getMessage))
       }

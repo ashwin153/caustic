@@ -25,3 +25,9 @@ dist
 
 # Benchmarks
 target/
+
+# LaTeX
+*.log
+*.aux
+*.dvi
+*.out

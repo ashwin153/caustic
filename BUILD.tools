@@ -5,16 +5,22 @@ jar_library(name='scala-library', scope='forced', jars=[
 
 # Scala Reflection
 jar_library(name='scala-reflect', jars=[
-	jar(org='org.scala-lang', name='scala-reflect', rev='2.12.1', intransitive=True)
+	  jar(org='org.scala-lang', name='scala-reflect', rev='2.12.1', intransitive=True)
 ])
 
 # Scala Compiler
 jar_library(
     name='scalac',
-	jars=[jar(org='org.scala-lang', name='scala-compiler', rev='2.12.1')],
-	dependencies=[':scala-reflect', ':scala-library'],
+	  jars=[jar(org='org.scala-lang', name='scala-compiler', rev='2.12.1')],
+	  dependencies=[':scala-reflect', ':scala-library'],
 )
 
 # Scala REPL
 target(name='scala-repl', dependencies=[':scalac', ':scala-reflect', ':scala-library'])
+
+# ANTLR
+jar_library(name='antlr-4', jars=[
+    jar(org='org.antlr', name='antlr4', rev='4.7'),
+    jar(org='org.antlr', name='antlr4-runtime', rev='4.7'),
+])
 

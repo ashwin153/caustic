@@ -1,56 +1,45 @@
 package caustic.runtime
 
-import caustic.common.concurrent.Lock
-
-import scala.collection.mutable
-import scala.concurrent.{ExecutionContext, Future, blocking}
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Success}
 
 /**
- * An in-memory, thread-safe database. Provides transactional accesses and modifications to the data
- * stored in the underlying mutable map. Permits concurrent reads, but requires exclusive writes.
+ * A transactional, cached key-value store. CachedDatabases maintain a write-through cache, that is
+ * kept consistent with the underlying database by automatically invalidating keys that participate
+ * in failed transactions and updating keys that are modified in successful ones.
  *
- * @param underlying Underlying data store.
+ * @param cache Write-through cache.
+ * @param database Underlying storage.
  */
-case class CachedDatabase(underlying: mutable.Map[Key, Revision]) extends Database {
-
-  private[this] val lock = Lock()
+case class CachedDatabase(cache: Cache, database: Database) extends Database {
 
   override def get(keys: Set[Key])(
     implicit ec: ExecutionContext
   ): Future[Map[Key, Revision]] =
-    Future {
-      blocking {
-        this.lock.shared {
-          keys.map(k => k -> this.underlying.get(k))
-            .collect { case (k, Some(v)) => k -> v }
-            .toMap
+    // Determine if there are any cache misses.
+    this.cache.get(keys) flatMap { hits =>
+      val misses = hits.keySet diff keys
+      if (misses.nonEmpty) {
+        // Reload any cache misses from the underlying database.
+        this.database.get(misses) flatMap  { updates =>
+          this.cache.put(updates).map(_ => hits ++ updates)
         }
+      } else {
+        // Return the cache hits otherwise.
+        Future(hits)
       }
     }
 
-  override def put(depends: Map[Key, Version], changes: Map[Key, Revision])(
+  override def cput(depends: Map[Key, Version], changes: Map[Key, Revision])(
     implicit ec: ExecutionContext
   ): Future[Unit] =
-    Future {
-      blocking {
-        this.lock.exclusive {
-          if (depends.exists { case (k, v) => this.underlying.get(k).exists(_.version > v) })
-            throw new Exception("Transaction conflicts.")
-          else
-            this.underlying ++= changes
-        }
-      }
+    this.database.cput(depends, changes) transformWith {
+      case Success(_) =>
+        // Update the values of changed keys.
+        this.cache.put(changes)
+      case Failure(e) =>
+        // Invalidate cached keys to force them to reload from the database.
+        this.cache.invalidate(depends.keySet union changes.keySet).transform(_ => Failure(e))
     }
-
-}
-
-object CachedDatabase {
-
-  /**
-   * Constructs an empty, in-memory database backed by an empty mutable map.
-   *
-   * @return Empty CachedDatabase.
-   */
-  def empty: CachedDatabase = CachedDatabase(mutable.Map.empty)
 
 }

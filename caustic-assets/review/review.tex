@@ -1,0 +1,92 @@
+\documentclass[journal]{../styles/IEEEtran}
+
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+
+\begin{document}
+
+% Title
+\title{Caustic: Literature Review}
+\author{Ashwin Madavan}
+\date{15 September 2017}
+\maketitle
+
+% HyperDex
+\section{HyperDex}
+
+  \subsection{Hyperspace Hashing}
+  Hyperspace Hashing colocates regions of the n-dimensional hyperspace induced by the attributes of 
+  an object in order to perform efficient secondary indexing. Each column of a table corresponds to 
+  a different dimension in a hyperspace. Each physical server is responsible for storing data within 
+  a particular region in the hyperspace. By partitioning data in this manner, you can optimize 
+  searches (which correspond to hyperplanes) by reducing the number of server that they need to 
+  contact.
+
+  \subsection{Value Dependent Chaining}
+  Object updates occur in two linear passes over all servers containing an object. In the first 
+  pass, each server creates a pending update and propagates the change to the next server. In the 
+  second pass, each server commits the pending update. Linear object updates means that updates to 
+  an object have to *sequentially* pass through every server that it is physically stored on. While 
+  this commit protocol ensures consistency, it will not be as performant for larger objects.
+
+  \subsection{Performance}
+  I don't understand how the performance of their system is so significantly better than Cassandra. 
+  I'm always skeptical of benchmarks, particularly when they show such significant improvements over 
+  high-performance, enterprise-grade solutions. Something about these benchmarks just feels wrong. 
+  Both HyperDex and Cassandra use a log-based storage engine (HyperDex stores a log file for each 
+  object, and Cassandra uses LSM trees), so it probably isn't the on-disk representation that causes 
+  the difference in performance.
+
+  A closer look at the benchmarks reveals that Cassandra actually performs better on writes than 
+  HyperDex (which is unsurprising given that HyperDex uses a linear commit protocol) and that the 
+  higher read performance of HyperDex causes it benchmark better. Why might HyperDex have higher 
+  read performance? In Cassandra, key-value pairs are replicated $f$ times, and, by default, 
+  Cassandra returns the result of a read on one of the replicas of a key. In HyperDex, objects are 
+  replicated $f$ times across $n$ subspaces. Therefore, there are $n$ times as many replicas of an 
+  object as there are in Cassandra. Cassandra read throughput scales linearly with the number of 
+  nodes. In the benchmark, objects in HyperDex are replicated to three subspaces (key subspace + two 
+  attribute subspaces). If Cassandra had three times as many replicas, it would have three times the 
+  read throughput. Clearly, the benchmarks seem biased toward HyperDex, because they are replicating 
+  objects many more times than Cassandra.
+
+% Yesquel
+\section{Yesquel}
+
+  \subsection{Decoupling Query Processor and Storage Engines}
+  One of the main achievements of Yesquel is that it shows that dropping the SQL front end and 
+  compromising consistency are not fundamentally necessary to achieve performance at scale. The
+  paper acknowledges that, 
+  
+    \begin{quote}
+    Traditionally, the storage system had been a SQL database system, which is convenient for the
+    developer. However, with the emergence of large Web applications in the past decade, the SQL
+    database became a scalability bottleneck. Developers reacted in two ways. They used application
+    specific techniques to improve scalability - which is a laborious and complicates application
+    code. Or they replaced database systems with specialized NoSQL systems that scaled well by
+    shedding functionality.
+    \end{quote}
+
+  However, by decoupling the query processor from the underlying storage engine, Yesquel was able to
+  preserve a relational interface over a denormalized key-value store without sacrificing
+  performance. I'm not convinced of the novelty of this, because it has been demonstrated before in
+  a number of projects (Cassandra, CockroachDB, Aerospike, ArangoDB, etc.). Nonetheless, it is an
+  important feature that deserves mention.  
+
+  \subsection{YDBT}
+  Perhaps the most novel aspect of Yesquel is the Yesquel Distributed Balanced Tree (YDBT). My
+  understanding is that it is functionally similar to a B+ tree, except that its nodes are split
+  both when they grow too large and when they are under too high load.
+
+  \subsection{Integrated Caching}
+  This feature has already been implemented in Caustic, and it is reassuring that other people are
+  doing the same. The idea is that transactions can cache incoherently without compromising data
+  integrity, by speculating about the value of a key from a potentially stale version in cache and
+  then validating these cached version on commit.
+  
+  \subsection{Performance}
+  Benchmarks show that the system performs in the ballpark of Redis. While it is interesting that 
+  their YDBTs perform similarly to hash-table systems, I'm still not convinced that they provide any
+  additional functionality that cannot be directly encoded into a hash-table.
+
+\end{document}

@@ -2,7 +2,11 @@
 [![Build Status](https://travis-ci.org/ashwin153/caustic.svg?branch=master)](https://travis-ci.org/ashwin153/caustic)
 [![Maven Central](https://img.shields.io/maven-central/v/com.madavan/caustic-runtime_2.12.svg)]()
 
-Caustic provides a runtime that executes transactions on arbitrary databases, and defines an extensible syntax for expressing transactions on complex object graphs in a variety of common programming languages. It is intended to serve as an alternative for SQL, which has reigned as the language of choice for codifying database interactions for the past 43 years. As a motivating example, let's write the same transaction in MySQL and in Caustic. Both transactions atomically increment a counter ```x```; however, unlike MySQL, Caustic does not require an explicit table definition and runs on *any* [transactional key-value store][2] (including MySQL).
+Databases are either easy to use or easy to scale. For example, relational databases were popularized in large part because of the programmability of SQL. However, this programmability comes at an incredible expense. Relational databases are notoriously difficult to support at scale, and so developers have increasingly turned toward more specialized NoSQL systems that scale well be shedding functionality.
+
+Developers are not only forced to choose between productivity and performance, but also stark differences between query languages makes their choice of database effectively permanent. Even databases that claim to support the same SQL standard only implement incompatible subsets of its functionality. The lack of a truly uniform interface tightly couples databases and the procedures that are executed against it.
+
+Caustic is a language for expressing and executing transactions on arbitrary key-value stores that is both straightforward to use and simple to integrate. In this article, we’ll discuss the implementation and implications of the transaction runtime and syntax. As a motivating example, consider the following distributed counter implementation in MySQL and Caustic. Both transactions have identical functionality; however, the Caustic transaction is much simpler and will run on *any* [transactional key-value store][2] (including MySQL!).
 
 ```sql
 CREATE TABLE `counters` (
@@ -17,15 +21,24 @@ ON DUPLICATE KEY UPDATE `value` = `value` + 1
 COMMIT;
 ```
 
-```scala
-db.execute { implicit ctx =>
-  val counter = Select("x")
-  If (!counter.exists) {
-    counter.value = 1
-  } Else {
-    counter.value += 1
-  }
+```
+module caustic.example
+
+record Total {
+  value: Integer
 }
+
+service Counter {
+          
+  def increment(x: Total): Integer = {
+    if (x.exists) {
+      x.value += 1
+    } else {
+      x.value = 1
+    }
+  }
+
+} 
 ```
 
 # Requirements

@@ -100,6 +100,7 @@ deletion
 
 definition
     : Var Identifier Assign value // var x = 3
+    | Val Identifier Assign value // val x = "foo"
     ;
 
 assignment
@@ -135,7 +136,7 @@ block
  * object schemas that are persisted in the database and services consist of function definitions.
  */
 parameter
-    : Identifier ':' Identifier (Ampersand)? // x: String
+    : Identifier ':' Identifier // x: String
     ;
 
 parameters
@@ -143,7 +144,7 @@ parameters
     ;
 
 function
-    : Def Identifier '(' parameters ')' ':' Identifier (Ampersand)? '=' block // def foo(): Unit = 3
+    : Def Identifier '(' parameters ')' ':' Identifier '=' block // def foo(): Unit = 3
     ;
 
 record
@@ -160,7 +161,7 @@ declaration
     ;
 
 module
-    : Identifier ('.' Identifier)* Underscore? // caustic.example._
+    : Identifier ('.' Identifier)* ('.' Underscore)? // caustic.example._
     ;
 
 program
@@ -182,40 +183,42 @@ Rollback     : 'rollback';
 Service      : 'service';
 While        : 'while';
 True         : 'true';
+Val          : 'val';
 Var          : 'var';
 
-LessEqual    : '<=';
-LessThan     : '<';
-GreaterEqual : '>=';
-GreaterThan  : '>';
-NotEqual     : '!=';
-Equal        : '==';
-And          : '&&';
-Or           : '||';
-Not          : '!';
-
+Add          : '+';
+AddAssign    : '+=';
 Ampersand    : '&';
-Underscore   : '_';
+And          : '&&';
+Arrow        : '=>';
+Assign       : '=';
 Colon        : ':';
 Comma        : ',';
+Div          : '/';
+DivAssign    : '/=';
+Equal        : '==';
+GreaterEqual : '>=';
+GreaterThan  : '>';
+LeftBlock    : '[';
 LeftBracket  : '{';
 LeftParen    : '(';
+LessEqual    : '<=';
+LessThan     : '<';
+Mod          : '%';
+ModAssign    : '%=';
+Mul          : '*';
+MulAssign    : '*=';
+Not          : '!';
+NotEqual     : '!=';
+Or           : '||';
 Period       : '.';
+Question     : '?';
+RightBlock   : ']';
 RightBracket : '}';
 RightParen   : ')';
-
-Assign       : '=';
-AddAssign    : '+=';
-SubAssign    : '-=';
-MulAssign    : '*=';
-DivAssign    : '/=';
-ModAssign    : '%=';
-
-Add          : '+';
 Sub          : '-';
-Mul          : '*';
-Div          : '/';
-Mod          : '%';
+SubAssign    : '-=';
+Underscore   : '_';
 
 fragment
 Digit

@@ -1,4 +1,4 @@
-package caustic.syntax.core
+package caustic.syntax.scala
 package visitors
 
 import caustic.grammar.CausticBaseVisitor
@@ -10,7 +10,6 @@ import caustic.grammar.CausticParser._
  * @param symbols
  */
 case class BlockVisitor(
-  namespace: String,
   symbols: Map[String, Symbol]
 ) extends CausticBaseVisitor[Transaction] {
 
@@ -26,7 +25,14 @@ case class BlockVisitor(
   override def visitDefinition(ctx: DefinitionContext): Transaction =
     super.visitDefinition(ctx)
 
-  override def visitAssignment(ctx: AssignmentContext): Transaction = {
+  override def visitAssignment(ctx: AssignmentContext): String = {
+    // Update the left-hand side with the right-hand side.
+    this.symbols(ctx.symbol()) match {
+      case Variable(name, _) => s"store(add(load(text("__scope__"), text($name)), $rhs)"
+      case Reference(key, _) => s"write(text($key), $rhs)"
+    }
+
+
     // Determine the right-hand side of the assignment operation.
     val rhs = ctx match {
       case _ if ctx.Assign() != null =>
@@ -50,7 +56,15 @@ case class BlockVisitor(
     super.visitChildren(ctx)
   }
 
-  override def visitResult(ctx: ResultContext): Transaction = {
+  override def visitValue(ctx: ValueContext): Transaction = {
+    if (ctx.expression() != null)
+      ExpressionVisitor(this.symbols).visitExpression(ctx.expression())
+    else if (ctx.symbol() != null)
+      this.symbols(ctx.getText) match {
+        case x: Variable => s"""add(load(text("__scope__"), text(${x.name}))"""
+        case x: Reference => s"""read(text(${x.key}))"""
+        case _ => super.visitChildren(ctx)
+      }
     if (ctx.symbol() != null)
       this.expression.visitSymbol(ctx.symbol())
     else if (ctx.expression() != null)

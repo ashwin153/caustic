@@ -1,8 +1,8 @@
 package caustic.syntax
-package thrift
+package tcompiler
 
 import caustic.grammar.CausticParser._
-import caustic.syntax.thrift.ThriftCompiler._
+import caustic.syntax.tcompiler.ThriftCompiler._
 
 import org.antlr.v4.runtime.misc.ParseCancellationException
 import scala.collection.JavaConverters._

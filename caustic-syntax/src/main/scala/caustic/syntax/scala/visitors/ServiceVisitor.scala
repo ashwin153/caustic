@@ -1,4 +1,4 @@
-package caustic.syntax.core.visitors
+package caustic.syntax.scala.visitors
 
 import caustic.grammar.CausticBaseVisitor
 import caustic.grammar.CausticParser.{DeclarationContext, FunctionContext, ParameterContext, ParametersContext, RecordContext, ServiceContext}

@@ -3,6 +3,9 @@ scala_library(
     sources=rglobs('*.scala'),
     dependencies=[
         'caustic-runtime/src/main/thrift:java',
+        'caustic-common/src/main/scala',
+        scoped('3rdparty/jvm:mysql', scope='runtime'),
+        scoped('3rdparty/jvm:postgres', scope='runtime'),
     ],
     provides=artifact(
         org='com.madavan',

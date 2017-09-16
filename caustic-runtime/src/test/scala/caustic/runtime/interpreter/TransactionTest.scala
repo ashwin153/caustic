@@ -1,6 +1,6 @@
-package caustic.runtime.interpreter
+package caustic.runtime
+package interpreter
 
-import caustic.runtime.thrift
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.{FunSuite, Matchers}

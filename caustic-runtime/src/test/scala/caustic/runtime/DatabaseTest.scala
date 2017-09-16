@@ -1,6 +1,6 @@
 package caustic.runtime
 
-import caustic.runtime.interpreter._
+import interpreter._
 
 import java.util.concurrent.{CountDownLatch, TimeUnit}
 
@@ -56,7 +56,7 @@ abstract class DatabaseTest extends fixture.FunSuite
         assert(block.await(10, TimeUnit.SECONDS))
         super.answer(invocation)
       }
-    }).when(fake).put(Map("x" -> 0L), Map.empty)(global)
+    }).when(fake).cput(Map("x" -> 0L), Map.empty)(global)
 
     // Construct a read-only transaction and wait for it to reach the faked 'put' method. Then
     // construct a second transaction that updates the value of the field and unblocks the first

@@ -1,28 +1,38 @@
-package caustic.mysql
+package caustic.runtime
+package postgres
 
-import javax.sql.DataSource
 import java.sql.Connection
+import javax.sql.DataSource
 
 import scala.collection.mutable
-
-import caustic.runtime._
-import caustic.runtime.interpreter._
+import scala.concurrent.ExecutionContext
 
 /**
- * A MySQL-backed database.
+ * A PostgreSQL backed database.
  *
- * @param underlying Underlying database.
+ * @param underlying Underlying PostgreSQL DataSource.
+ * @param ec Implicit execution context.
  */
-class MySQLDatabase private[mysql](
-  underlying: DataSource
+case class PostgreSQLDatabase(underlying: DataSource)(
+  implicit ec: ExecutionContext
 ) extends RelationalDatabase(underlying) {
+
+  override def schema: String =
+    s""" CREATE TABLE IF NOT EXISTS schema(
+       |   key varchar (1000) NOT NULL,
+       |   version BIGINT DEFAULT 0,
+       |   type INT,
+       |   value TEXT,
+       |   PRIMARY KEY(key)
+       | )
+     """.stripMargin
 
   def select(connection: Connection, keys: Set[Key]): Map[Key, Revision] = {
     // Load all the rows that match the keys.
     val statement = connection.prepareStatement(
-      s""" SELECT `key`, `version`, `type`, `value`
-         | FROM `schema`
-         | WHERE `key` IN (${List.fill(keys.size)("?").mkString(",")})
+      s""" SELECT key, version, type, value
+         | FROM schema
+         | WHERE key IN (${List.fill(keys.size)("?").mkString(",")})
        """.stripMargin
     )
 
@@ -56,64 +66,38 @@ class MySQLDatabase private[mysql](
   def upsert(connection: Connection, key: Key, revision: Revision): Unit = {
     // Prepare the SQL statement.
     val statement = connection.prepareStatement(
-      s""" INSERT INTO `schema` (`key`, `version`, `type`, `value`)
-         | VALUES (?, ?, ?, ?)
-         | ON DUPLICATE KEY UPDATE
-         | `version` = VALUES(`version`),
-         | `type` = VALUES(`type`),
-         | `value` = VALUES(`value`)
-         """.stripMargin
+      s""" INSERT INTO schema (key, version, type, value)
+         | VALUES (?, ?, ?, ?) ON CONFLICT (key)
+         | DO UPDATE SET version = ?, type = ?, value = ?
+     """.stripMargin
     )
 
     // Set the values of the statement.
     statement.setString(1, key)
     statement.setLong(2, revision.version)
+    statement.setLong(5, revision.version)
 
     revision.value match {
       case Flag(value) =>
         statement.setInt(3, 0)
+        statement.setInt(6, 0)
         statement.setBoolean(4, value)
+        statement.setBoolean(7, value)
       case Real(value) =>
         statement.setInt(3, 1)
+        statement.setInt(6, 1)
         statement.setDouble(4, value)
+        statement.setDouble(7, value)
       case Text(value) =>
         statement.setInt(3, 2)
+        statement.setInt(6, 2)
         statement.setString(4, value)
+        statement.setString(7, value)
     }
 
     // Execute and close the statement.
     statement.executeUpdate()
     statement.close()
-  }
-
-}
-
-object MySQLDatabase {
-
-  /**
-   * Constructs a MySQL database backed by the specified data source.
-   *
-   * @param source Data source.
-   * @return MySQL database.
-   */
-  def apply(source: DataSource): MySQLDatabase = {
-    // Construct the database tables if they do not already exist.
-    val con = source.getConnection()
-    val smt = con.createStatement()
-
-    smt.execute(
-      s""" CREATE TABLE IF NOT EXISTS `schema`(
-         |   `key` varchar (200) NOT NULL,
-         |   `version` BIGINT DEFAULT 0,
-         |   `type` INT,
-         |   `value` TEXT,
-         |   PRIMARY KEY(`key`)
-         | )
-       """.stripMargin)
-
-    // Construct a MySQL Database.
-    con.close()
-    new MySQLDatabase(source)
   }
 
 }

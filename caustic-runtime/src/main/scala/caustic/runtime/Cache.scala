@@ -1,32 +1,44 @@
 package caustic.runtime
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 /**
- * A cached key-value store.
+ * An asynchronous, non-transactional key-value store.
  */
-trait Cache extends Database {
+trait Cache {
 
   /**
-   * Asynchronously retrieves the specified keys from the database.
+   * Asynchronously returns the cached revisions of the specified keys.
    *
-   * @param keys Keys to retrieve.
+   * @param keys Keys to fetch.
+   * @param ec Implicit execution context.
    * @return Cached revisions of the specified keys.
    */
-  def fetch(keys: Set[Key]): Future[Map[Key, Revision]]
+  def get(keys: Set[Key])(
+    implicit ec: ExecutionContext
+  ): Future[Map[Key, Revision]]
 
   /**
-   * Asynchronously applies the specified changes to the database.
+   * Asynchronously applies the specified changes to the cache.
    *
-   * @param changes Changes to apply.
+   * @param changes Updates to make.
+   * @param ec Implicit execution context.
+   * @return Future that completes when successful, or an exception otherwise.
    */
-  def update(changes: Map[Key, Revision]): Future[Unit]
+  def put(changes: Map[Key, Revision])(
+    implicit ec: ExecutionContext
+  ): Future[Unit]
 
   /**
    * Asynchronously removes the specified keys from the cache.
    *
-   * @param keys Keys to remove.
+   * @param keys Keys to purge.
+   * @param ec Implicit execution context.
+   * @return Future that completes when successful, or an exception otherwise.
    */
-  def invalidate(keys: Set[Key]): Future[Unit]
+  def invalidate(keys: Set[Key])(
+    implicit ec: ExecutionContext
+  ): Future[Unit]
 
 }
+

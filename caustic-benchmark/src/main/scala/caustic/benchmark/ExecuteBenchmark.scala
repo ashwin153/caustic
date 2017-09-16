@@ -9,10 +9,10 @@ import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 import scala.concurrent.ExecutionContext.Implicits.global
 
-object TransactionBenchmark extends Bench.OfflineReport {
+object ExecuteBenchmark extends Bench.OfflineReport {
 
   // Fake database to "mock" database performance.
-  val database: Database = new FakeDatabase
+  val database: Database = FakeDatabase
 
   // Benchmark transactions containing sequential reads.
   val transactions: Gen[Transaction] = Gen
@@ -21,8 +21,8 @@ object TransactionBenchmark extends Bench.OfflineReport {
 
   performance of "Database" in {
     measure method "execute" in {
-      using(transactions) curve "Execute Latency" in { txn =>
-        Await.result(database.execute(txn), Duration.Inf)
+      using(this.transactions) curve "Execute Latency" in { txn =>
+        Await.result(this.database.execute(txn), Duration.Inf)
       }
     }
   }

@@ -3,6 +3,8 @@ scala_library(
   sources=rglobs('*.scala'),
   dependencies=[
     'caustic-runtime/src/main/scala',
+    'caustic-runtime/src/main/thrift:java',
+    'caustic-syntax/src/main/scala',
     '3rdparty/jvm:scalameter',
   ]
 )

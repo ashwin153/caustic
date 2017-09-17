@@ -1,106 +1,49 @@
 # Syntax
-The ```caustic-runtime``` enables operations to be transactionally applied to any key-value store. 
+The ```caustic-runtime``` enables operations to be transactionally applied to any key-value store. Why is this useful? Inside of every computer is the simplest example of a key-value store - it's called memory. Memory maps each number, or address, to the value stored at the location. Despite this primitive storage system, a computer is capable of running extraordinarily complex programming languages complete with features like objects, variables, functions, and types. How is this possible? Eventually these high-level programming languages compile into a sequence of operations on memory addresses.
 
-Why is this useful? Inside of every computer is the simplest example of a key-value store - it's called memory. Memory maps each number, or address, to the value stored at the location. Despite this primitive storage system, a computer is capable of running extraordinarily complex programming languages complete with features like objects, variables, functions, and types. How is this possible? Eventually these high-level programming languages compile into a sequence of operations on memory addresses.
+However, the language exposed by the runtime is verbose and primitive. As transactions become larger in size and broader in scope, it becomes more challenging to write correct and maintainable programs in this manner. The ```caustic-runtim``` pacakge defines the ```Caustic``` programming language, that compiles into executable code on the ```caustic-runtime```. Therefore, programs written in ```Caustic``` may be transactionally run on *any* key-value store. This makes it incredibly easy to perform distributed computation. Say goodbye to locks, semaphores, synchronization, and race conditions. Stop worrying about thread-safety. Let ```Caustic``` take care of that for you.
 
-The purpose of ```caustic-language``` is to define a high-level programming language, called ```Caustic```, that compiles into a sequence of operations supported by the ```caustic-runtime```. Therefore, programs written in ```Caustic``` may be transactionally run on *any* key-value store. This makes it incredibly easy to perform distributed computation. Say goodbye to locks, semaphores, synchronization, and race conditions. Stop worrying about thread-safety. Let ```Caustic``` take care of that for you.
+## Grammar
+The grammar of the language is very similar to that of Scala and [Thrift][3]. In fact, the grammar is so similar that the compiler is able to rewrite programs as Scala implementations of Thrift interfaces. Therefore, programs are interoperable with any Thrift-compatible language and all existing JVM infrastructure. For example, consider the following distributed counter in Caustic. Because Caustic is entirely transactional, no synchronization mechanisms (locks, semaphores, etc.) are required to guarantee that the counter is distributable. __Concurrency is automatic!__ 
 
-## Motivation
-1. Concurrency is hard.
-   - Synchronization is hard to get write, and is a common source of bugs and performance bottlenecks. 
-2. Concurrency is important.
-   - Synchronization is a necessary component of any distributed system. Parallelization is a huge performance stimulant.
-3. Separation of code and data.
-   - Code is tightly coupled with the underlying storage engine (ex. rewrite your code to get it to work on different databases, and recompile it for different operating systems, etc.). However, you should be able to *retarget* your code to different storage engines without ever having to change the code itself.
-
-## Specification
-### Types
-There are four primitive types in Caustic: ```String```, ```Boolean```, ```Integer```, and ```Decimal```. A ```Record``` is the basic type in Caustic. There are three kinds of records: ```Structure```, ```Attribute```, and ```Reference```. Each kind of record contains a different ```value```. A structure contains other records, an attribute contains a primitive value, and a reference points to another record. Structures are returned as json strings, attributes as their equivalent value (eg. ```Flag -> Boolean```), and references as a ```String```. Every record has a ```key```, which uniquely identifies it in the underlying database, and the following attributes:
-
-- ```def key: Transaction```: Record key.
-- ```def kind: Transaction```: Record kind. (structure, attribute, or reference)
-- ```def value: Transaction```: Record contents. (depends on kind)
-- ```def get(name: Transaction): Record```: Field of structure or referenced structure.
-- ```def set(value: Transaction): Record```: Update value of record.
-- ```def copy(key: Transaction): Record```: Copy the record to the specified location in the database.
-- ```def delete(recursive: Boolean): Unit```: Delete the record and its contents, and optionally delete referenced records.
-
-How records get persisted in the database? Recall, the underlying database only knows about three types ```Flag```, ```Real```, and ```Text``` and only understands key-value pairs. In order to persist records into the database, they'll need to be flattened into a map containing only primitive types. Consider the following records described in Caustic.
-
-```
-record Foo {
-  bar: Bar,
-  car: Bar&
-}
-
-record Bar {
-  far: Integer
-}
-```
-
-Then, the database might contain the following entries for the record ```Foo(Bar(1), `somekey`)```. 
-
-| Key                          | Value             |
-|:-----------------------------|:------------------|
-| ```id@__kind__```            | ```"struct"```    |
-| ```id```                     | ```"bar,car,"```  |
-| ```id@bar@__kind__```        | ```"struct"```    |
-| ```id@bar```                 | ```"far,"```      |
-| ```id@bar@far@__kind__```    | ```"attr"```      |
-| ```id@bar@far```             | ```1```           |
-| ```id@car@__kind__```        | ```"ref"```       |
-| ```id@car```                 | ```"somekey"```   |
-
-### Variable
-In order to scope variables within blocks, Caustic mangles variable names to simulate a stack. The compiler assigns each basic block a unique identifier. Each time a block is entered, the global namespace is set to the concatenation of the current namespace and the block's identifier. Each time a block is exited, the block's identifier is removed from the namespace. All local variable names in a block are prefixed by the global namespace variable (```__namespace__```). 
-
-### Example
 ```
 module caustic.example
 
-import caustic.math._
-import caustic.collections.Set
+/**
+ * A total quantity.
+ * 
+ * @param value Current total.
+ */
+record Total {
+  value: Integer
+} 
 
 /**
- * Some record.
- *
- * @param x Some param.
- * @param y Some other param.
- * @param z Some other param.
+ * A distributed counting service.
  */
-record Foo {
-  x: String,
-  y: Foo&,
-  z: Foo,
-}
-
-service Bar {
-
-  def bar(foo: Foo&): Foo = {
-    // Last value in a function is returned.
-    if (foo.x == "Hello") {
-      foo.x = "Goodbye"
-      foo
+service Counter {
+  
+  /**
+   * Increments the total and returns the current value.
+   * 
+   * @param x Total reference.
+   * @return Current value.
+   */
+  def increment(x: Total): Integer = {
+    if (x.exists) {
+      x.value += 1
     } else {
-      foo.y.x = "Hello"
-      foo.y
-    }
+      x.value = 1
+    } 
   }
 
-  def car(foo: Foo&): Foo = {
-    // All arguments are passed by value.
-    bar(foo)
-    bar(foo)
-  }
-
-  def fun(): Unit = {
-    var x = 0
-    while (x < 10) {
-      x += 1
-    }
-
-    val y = Foo @ "hello"
-    if (y.x == "Hello")
-      rollback y
-}
+} 
 ```
+
+## Compiler
+The compiler is a recursive descent parser that generates executable Scala implementations of Thrift interfaces.
+
+- __Records__ are compiled into Thrift struct interfaces.
+- __Services__ are compiled into Thrift service interfaces and into an executable, Scala server that implements the interface. 
+- __Blocks__ are assigned a unique namespace by concatenating the parent block's namespace and a block identifier. All local variable names within a block are prefixed by the namespace in order to implement lexical scoping.
+- __Expressions__ are compiled into operations on the ```Codec``` which is a Scala library that is included and imported in the generated sources that builds runtime-compatible, Thrift transactions.

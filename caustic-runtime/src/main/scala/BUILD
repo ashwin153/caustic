@@ -4,6 +4,7 @@ scala_library(
     dependencies=[
         'caustic-runtime/src/main/thrift:java',
         'caustic-common/src/main/scala',
+        '3rdparty/jvm:caffeine',
         scoped('3rdparty/jvm:mysql', scope='runtime'),
         scoped('3rdparty/jvm:postgres', scope='runtime'),
     ],

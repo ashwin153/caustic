@@ -1,43 +1,54 @@
 package caustic.runtime
 package memory
 
-import scala.collection.mutable
+import com.github.benmanes.caffeine.{cache => caffeine}
+import java.util.concurrent.TimeUnit
+import scala.collection.JavaConverters._
+import scala.concurrent.duration.Duration
 import scala.concurrent.{ExecutionContext, Future}
 
 /**
+ * An in-memory, Caffeine cache.
  *
- * @param underlying
+ * @param database Underlying database.
  */
-case class LocalCache(underlying: mutable.Map[Key, Revision]) extends Cache {
+case class LocalCache(
+  database: Database,
+  underlying: caffeine.Cache[Key, Revision]
+) extends Cache {
 
-  override def get(keys: Set[Key])(
+  override def fetch(keys: Set[Key])(
     implicit ec: ExecutionContext
   ): Future[Map[Key, Revision]] =
-    Future {
-      keys.map(k => k -> this.underlying.get(k))
-        .collect { case (k, Some(v)) => k -> v }
-        .toMap
-    }
+    Future(this.underlying.getAllPresent(keys.asJava).asScala.toMap)
 
-  override def put(changes: Map[Key, Revision])(
+  override def update(changes: Map[Key, Revision])(
     implicit ec: ExecutionContext
   ): Future[Unit] =
-    Future(this.underlying ++= changes)
-
+    Future(this.underlying.putAll(changes.asJava))
 
   override def invalidate(keys: Set[Key])(
     implicit ec: ExecutionContext
   ): Future[Unit] =
-    Future(this.underlying --= keys)
+    Future(this.underlying.invalidateAll(keys.asJava))
 
 }
 
 object LocalCache {
 
   /**
+   * Constructs an empty LocalCache backed by the specified database.
    *
-   * @return
+   * @param database Underlying database.
+   * @param size Maximum number of cache lines.
+   * @param expires Expiration duration.
+   * @return Empty LocalCache.
    */
-  def empty: LocalCache = LocalCache(mutable.Map.empty)
+  def empty(database: Database, size: Long, expires: Duration): LocalCache =
+    LocalCache(database, caffeine.Caffeine.newBuilder()
+      .maximumSize(size)
+      .expireAfterAccess(expires.toMillis, TimeUnit.MILLISECONDS)
+      .build[Key, Revision]()
+    )
 
 }

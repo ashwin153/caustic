@@ -1,7 +1,5 @@
 package caustic
 
-import caustic.runtime.interpreter.{Add, Both, Branch, Cons, Contains, Cos, Div, Either, Equal, Expression, Flag, Floor, IndexOf, Length, Less, Literal, Load, Log, Matches, Mod, Mul, Negate, Prefetch, Read, Real, Repeat, Rollback, Sin, Slice, Store, Sub, Text, Transaction, Write}
-
 package object runtime {
 
   // All keys are strings.

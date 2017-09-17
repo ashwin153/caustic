@@ -1,7 +1,5 @@
 package caustic.runtime
 
-import interpreter._
-
 import java.util.concurrent.{CountDownLatch, TimeUnit}
 
 import org.junit.runner.RunWith

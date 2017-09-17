@@ -1,11 +1,19 @@
 package caustic.runtime
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Success}
 
 /**
- * An asynchronous, non-transactional key-value store.
+ * An asynchronous, transactional write-through cache.
  */
-trait Cache {
+trait Cache extends Database {
+
+  /**
+   * Returns the underlying database.
+   *
+   * @return Underlying database.
+   */
+  def database: Database
 
   /**
    * Asynchronously returns the cached revisions of the specified keys.
@@ -14,7 +22,7 @@ trait Cache {
    * @param ec Implicit execution context.
    * @return Cached revisions of the specified keys.
    */
-  def get(keys: Set[Key])(
+  def fetch(keys: Set[Key])(
     implicit ec: ExecutionContext
   ): Future[Map[Key, Revision]]
 
@@ -25,7 +33,7 @@ trait Cache {
    * @param ec Implicit execution context.
    * @return Future that completes when successful, or an exception otherwise.
    */
-  def put(changes: Map[Key, Revision])(
+  def update(changes: Map[Key, Revision])(
     implicit ec: ExecutionContext
   ): Future[Unit]
 
@@ -40,5 +48,33 @@ trait Cache {
     implicit ec: ExecutionContext
   ): Future[Unit]
 
-}
+  override def get(keys: Set[Key])(
+    implicit ec: ExecutionContext
+  ): Future[Map[Key, Revision]] =
+  // Determine if there are any cache misses.
+    fetch(keys) flatMap { hits =>
+      val misses = hits.keySet diff keys
+      if (misses.nonEmpty) {
+        // Reload any cache misses from the underlying database.
+        this.database.get(misses) flatMap  { changes =>
+          update(changes).map(_ => hits ++ changes)
+        }
+      } else {
+        // Return the cache hits otherwise.
+        Future(hits)
+      }
+    }
 
+  override def cput(depends: Map[Key, Version], changes: Map[Key, Revision])(
+    implicit ec: ExecutionContext
+  ): Future[Unit] =
+    this.database.cput(depends, changes) transformWith {
+      case Success(_) =>
+        // Update the values of changed keys.
+        update(changes)
+      case Failure(e) =>
+        // Invalidate cached keys to force them to reload from the database.
+        invalidate(depends.keySet union changes.keySet).transform(_ => Failure(e))
+    }
+
+}

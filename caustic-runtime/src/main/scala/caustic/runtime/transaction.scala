@@ -8,11 +8,11 @@ import scala.annotation.tailrec
  * expressions represent transformations applied to literals or the results of other expressions.
  */
 sealed trait Transaction
+case class Expression(operator: Operator, operands: List[Transaction]) extends Transaction
 sealed trait Literal extends Transaction
 case class Flag(value: Boolean) extends Literal
 case class Real(value: Double) extends Literal
 case class Text(value: String) extends Literal
-case class Expression(operator: Operator, operands: List[Transaction]) extends Transaction
 
 object Transaction {
 

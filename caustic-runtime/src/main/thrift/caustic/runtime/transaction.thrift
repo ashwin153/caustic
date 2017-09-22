@@ -29,30 +29,29 @@ union Expression {
   3: Load load,
   4: Store store,
   5: Cons cons,
-  6: Prefetch prefetch,
-  7: Repeat repeat,
-  8: Branch branch,
-  9: Rollback rollback,
-  10: Add add,
-  11: Sub sub,
-  12: Mul mul,
-  13: Div div,
-  14: Mod mod,
-  15: Pow pow,
-  16: Log log,
-  17: Sin sin,
-  18: Cos cos,
-  19: Floor floor,
-  20: Both both,
-  21: Either either,
-  22: Negate negate,
-  23: Length length,
-  24: Slice slice,
-  25: Matches matches,
-  26: Contains contains,
-  27: IndexOf indexOf,
-  28: Equal equal,
-  29: Less less,
+  6: Repeat repeat,
+  7: Branch branch,
+  8: Rollback rollback,
+  9: Add add,
+  10: Sub sub,
+  11: Mul mul,
+  12: Div div,
+  13: Mod mod,
+  14: Pow pow,
+  15: Log log,
+  16: Sin sin,
+  17: Cos cos,
+  18: Floor floor,
+  19: Both both,
+  20: Either either,
+  21: Negate negate,
+  22: Length length,
+  23: Slice slice,
+  24: Matches matches,
+  25: Contains contains,
+  26: IndexOf indexOf,
+  27: Equal equal,
+  28: Less less,
 }
 
 /**
@@ -104,15 +103,6 @@ struct Store {
 struct Cons {
   1: required Transaction first,
   2: required Transaction second,
-}
-
-/**
- * Prefetches the array-delimited list of keys.
- *
- * @param keys Text.
- */
-struct Prefetch {
-  1: required Transaction keys,
 }
 
 /**

@@ -48,12 +48,6 @@ package object runtime {
     case _ => Expression(Cons, x :: y :: Nil)
   }
 
-  def prefetch(k: Transaction): Transaction = k match {
-    case Real(a) => throw new thrift.ExecutionException(s"Prefetch undefined for keys $a")
-    case Flag(a) => throw new thrift.ExecutionException(s"Prefetch undefined for keys $a")
-    case _ => Expression(Prefetch, k :: Nil)
-  }
-
   def repeat(c: Transaction, b: Transaction): Transaction = (c, b) match {
     case (Real(a), _) => throw new thrift.ExecutionException(s"Repeat undefined for condition $a")
     case (Text(a), _) => throw new thrift.ExecutionException(s"Repeat undefined for condition $a")

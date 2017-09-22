@@ -7,8 +7,10 @@ import java.util.concurrent.locks.StampedLock
  * semantics of acquiring and releasing shared, exclusive, and optimistic locks. The lock is not
  * reentrant. The [[StampedLock]] implementation benchmarks significantly better than standard
  * monitor synchronization and the various lock abstractions in the Java concurrency package.
+ *
+ * @param underlying Underlying lock.
  */
-class Lock(lock: StampedLock) {
+class Lock(underlying: StampedLock) {
 
   /**
    * Returns the result of the provided code block, after acquiring a shared read lock. Because
@@ -18,11 +20,11 @@ class Lock(lock: StampedLock) {
    * @return Result of evaluation.
    */
   def shared[T](block: => T): T = {
-    val stamp = this.lock.readLock()
+    val stamp = this.underlying.readLock()
     try {
       block
     } finally {
-      this.lock.unlockRead(stamp)
+      this.underlying.unlockRead(stamp)
     }
   }
 
@@ -34,11 +36,11 @@ class Lock(lock: StampedLock) {
    * @return Result of evaluation.
    */
   def exclusive[T](block: => T): T = {
-    val stamp = this.lock.writeLock()
+    val stamp = this.underlying.writeLock()
     try {
       block
     } finally {
-      this.lock.unlockWrite(stamp)
+      this.underlying.unlockWrite(stamp)
     }
   }
 
@@ -51,9 +53,9 @@ class Lock(lock: StampedLock) {
    * @return Result of evaluation.
    */
   def optimistic[T](block: => T): T = {
-    val stamp = this.lock.tryOptimisticRead()
+    val stamp = this.underlying.tryOptimisticRead()
     val value = block
-    if (!this.lock.validate(stamp)) shared(block) else value
+    if (!this.underlying.validate(stamp)) shared(block) else value
   }
 
 }
@@ -61,7 +63,7 @@ class Lock(lock: StampedLock) {
 object Lock {
 
   /**
-   * Construct a lock backed by a Java StampedLock.
+   * Constructs a lock backed by a Java StampedLock.
    *
    * @return Lock.
    */

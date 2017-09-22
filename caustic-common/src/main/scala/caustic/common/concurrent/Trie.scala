@@ -8,6 +8,9 @@ import scala.collection.mutable
  * PatriciaTrie, this implementation makes no claim to be space-optimized; each node of the trie
  * stores exactly one symbol (except the root, which contains no symbol) and an optional value.
  *
+ * @param parent Parent node or None if root.
+ * @param symbol Optional symbol stored at node.
+ * @param value Optional value stored at node.
  * @tparam K Type of symbols.
  * @tparam V Type of values.
  */

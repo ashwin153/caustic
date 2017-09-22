@@ -11,7 +11,6 @@ case object Write extends Operator
 case object Load extends Operator
 case object Store extends Operator
 case object Cons extends Operator
-case object Prefetch extends Operator
 case object Repeat extends Operator
 case object Branch extends Operator
 case object Rollback extends Operator

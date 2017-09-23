@@ -1,10 +1,8 @@
 package caustic.runtime
 
 import Database._
-
 import org.apache.thrift.TException
 import org.apache.thrift.async.AsyncMethodCallback
-
 import scala.annotation.tailrec
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}

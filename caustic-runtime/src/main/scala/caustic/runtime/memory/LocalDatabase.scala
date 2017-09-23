@@ -1,7 +1,9 @@
 package caustic.runtime
 package memory
 
-import scala.collection.mutable
+import com.github.benmanes.caffeine.{cache => caffeine}
+
+import scala.collection.JavaConverters._
 import scala.concurrent.{ExecutionContext, Future}
 
 /**
@@ -11,25 +13,29 @@ import scala.concurrent.{ExecutionContext, Future}
  *
  * @param underlying Underlying data store.
  */
-case class LocalDatabase(underlying: mutable.Map[Key, Revision]) extends Database {
+case class LocalDatabase(
+  underlying: caffeine.Cache[Key, Revision]
+) extends Database {
 
   override def get(keys: Set[Key])(
     implicit ec: ExecutionContext
   ): Future[Map[Key, Revision]] =
-    Future {
-      keys.map(k => k -> this.underlying.get(k))
-        .collect { case (k, Some(v)) => k -> v }
-        .toMap
-    }
+    Future(this.underlying.getAllPresent(keys.asJava).asScala.toMap)
 
   override def cput(depends: Map[Key, Version], changes: Map[Key, Revision])(
     implicit ec: ExecutionContext
   ): Future[Unit] =
     Future {
-      if (depends.exists { case (k, v) => this.underlying.get(k).exists(_.version > v) })
+      // Determine if the dependencies conflict with the underlying database.
+      val conflicts = this.underlying.getAllPresent(depends.keys.asJava).asScala.exists {
+        case (key, rev) => depends(key) < rev.version
+      }
+
+      // Throw an exception on conflict or perform updates otherwise.
+      if (conflicts)
         throw new Exception("Transaction conflicts.")
       else
-        this.underlying ++= changes
+        this.underlying.putAll(changes.asJava)
     }
 
 }
@@ -37,9 +43,10 @@ case class LocalDatabase(underlying: mutable.Map[Key, Revision]) extends Databas
 object LocalDatabase {
 
   /**
+   * Constructs an empty, in-memory database.
    *
-   * @return
+   * @return Empty LocalDatabase.
    */
-  def empty: LocalDatabase = LocalDatabase(mutable.Map.empty)
+  def empty: LocalDatabase = LocalDatabase(caffeine.Caffeine.newBuilder().build[Key, Revision]())
 
 }

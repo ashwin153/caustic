@@ -1,5 +1,19 @@
 # Runtime
-The ```caustic-runtime``` is responsible for executing transactions on arbitrary key-value stores.
+The ```caustic-runtime``` is responsible for executing transactions on arbitrary key-value stores. In order to use a ```Database```, simply construct and serve a Thrift server in the following manner.
+
+```scala
+import caustic.runtime.thrift
+import org.apache.thrift.transport.TServerSocket
+import org.apache.thrift.server.TSimpleServer
+
+// Construct the thrift server.
+val transport = new TServerSocket(9090)
+val processor = new thrift.Database.AsyncProcessor(database)
+val server = new TSimpleServer(new TServer.Args(transport).processor(processor))
+
+// Serve the thrift server.
+server.serve()
+```
 
 ## Representation
 A ```Transaction``` is represented by an [abstract-syntax tree][1]. A ```Literal``` corresponds to a "leaf" of this tree and an ```Expression``` corresponds to a "node". The runtime respects three different types of literals ```Real```, ```Text```, and ```Flag``` (corresponding to ```String```, ```Double```, and ```Boolean``` respectively) and thirty different kinds of expressions. With just these types and operations, the runtime is able to emulate a modern programming language complete with conditional branching, loops, and local variables.

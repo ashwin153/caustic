@@ -3,6 +3,7 @@ package relational
 
 import java.sql.Connection
 import javax.sql.DataSource
+
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext
 

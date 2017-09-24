@@ -2,7 +2,9 @@ package caustic.runtime
 package memory
 
 import com.github.benmanes.caffeine.{cache => caffeine}
+
 import java.util.concurrent.TimeUnit
+
 import scala.collection.JavaConverters._
 import scala.concurrent.duration.Duration
 import scala.concurrent.{ExecutionContext, Future}

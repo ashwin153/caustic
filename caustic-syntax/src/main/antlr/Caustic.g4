@@ -10,9 +10,8 @@ constant
     | String  // "Hello"
     ;
 
-symbol
-    : Identifier // x
-    | symbol '.' Identifier // x.foo
+variable
+    : Identifier ('.' Identifier)* // x, x.foo
     ;
 
 funcall
@@ -25,7 +24,7 @@ funcall
  * precedence.
  */
 primaryExpression
-    : symbol
+    : variable
     | funcall
     | constant
     | '(' expression ')' // (2 + 5) * 3
@@ -82,7 +81,8 @@ expression
  * cause side-effects (funcall).
  */
 value
-    : symbol
+    : variable
+    | funcall
     | expression
     ;
 
@@ -95,7 +95,7 @@ loop
     ;
 
 deletion
-    : Del symbol // del x.foo
+    : Del variable // del x.foo
     ;
 
 definition
@@ -104,12 +104,12 @@ definition
     ;
 
 assignment
-    : symbol Assign value // x.foo = y.foo
-    | symbol MulAssign value // x *= 2.4
-    | symbol DivAssign value // x /= x.bar
-    | symbol ModAssign value // x %= 3
-    | symbol AddAssign value // x += "bar"
-    | symbol SubAssign value // x -= 8.4
+    : variable Assign value // x.foo = y.foo
+    | variable MulAssign value // x *= 2.4
+    | variable DivAssign value // x /= x.bar
+    | variable ModAssign value // x %= 3
+    | variable AddAssign value // x += "bar"
+    | variable SubAssign value // x -= 8.4
     ;
 
 rollback
@@ -135,8 +135,12 @@ block
  * A program corresponds to a namespaced sequence of record and service declarations. Records are
  * object schemas that are persisted in the database and services consist of function definitions.
  */
+type
+    : Identifier Ampersand?
+    ;
+
 parameter
-    : Identifier ':' Identifier // x: String
+    : Identifier ':' type // x: Foo&
     ;
 
 parameters
@@ -144,15 +148,15 @@ parameters
     ;
 
 function
-    : Def Identifier '(' parameters ')' ':' Identifier '=' block // def foo(): Unit = 3
-    ;
-
-record
-    : Record Identifier (Extends Identifier)? '{' parameters '}' // rec Foo { x: String }
+    : Def Identifier '(' parameters ')' ':' type '=' block // def foo(): Unit = 3
     ;
 
 service
     : Service Identifier (Extends Identifier)? '{' function* '}' // service Bar { }
+    ;
+
+record
+    : Record Identifier (Extends Identifier)? '{' parameters '}' // rec Foo { x: String }
     ;
 
 declaration
@@ -161,7 +165,7 @@ declaration
     ;
 
 module
-    : Identifier ('.' Identifier)* ('.' Underscore)? // caustic.example._
+    : Identifier ('.' Identifier)* // caustic.example
     ;
 
 program

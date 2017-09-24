@@ -3,7 +3,9 @@ package caustic.syntax
 import caustic.runtime.thrift
 
 /**
- *
+ * A static library for generating Thrift transactions. Used by the generated sources to dynamically
+ * build and execute transactions on the underlying database. Must be imported into all source files
+ * in order for them to compile.
  */
 object Codec {
 
@@ -69,7 +71,7 @@ object Codec {
     thrift.Transaction.expression(thrift.Expression.floor(new thrift.Floor(x)))
 
   def abs(x: thrift.Transaction): thrift.Transaction =
-    branch(less(x, Zero), sub(Zero, x), x)
+    branch(lt(x, Zero), sub(Zero, x), x)
   def exp(x: thrift.Transaction): thrift.Transaction =
     pow(E, x)
   def tan(x: thrift.Transaction): thrift.Transaction =
@@ -95,9 +97,9 @@ object Codec {
   def sqrt(x: thrift.Transaction): thrift.Transaction =
     pow(x, Half)
   def ceil(x: thrift.Transaction): thrift.Transaction =
-    branch(equal(x, floor(x)), x, add(floor(x), One))
+    branch(eq(x, floor(x)), x, add(floor(x), One))
   def round(x: thrift.Transaction): thrift.Transaction =
-    branch(less(sub(x, floor(x)), Half), floor(x), ceil(x))
+    branch(lt(sub(x, floor(x)), Half), floor(x), ceil(x))
 
   // String Expressions.
   def contains(x: thrift.Transaction, y: thrift.Transaction): thrift.Transaction =
@@ -114,24 +116,23 @@ object Codec {
     thrift.Transaction.expression(thrift.Expression.indexOf(new thrift.IndexOf(x, y)))
 
   // Logical Expressions.
-  def both(x: thrift.Transaction, y: thrift.Transaction): thrift.Transaction =
+  def and(x: thrift.Transaction, y: thrift.Transaction): thrift.Transaction =
     thrift.Transaction.expression(thrift.Expression.both(new thrift.Both(x, y)))
-  def either(x: thrift.Transaction, y: thrift.Transaction): thrift.Transaction =
+  def or(x: thrift.Transaction, y: thrift.Transaction): thrift.Transaction =
     thrift.Transaction.expression(thrift.Expression.either(new thrift.Either(x, y)))
-  def negate(x: thrift.Transaction): thrift.Transaction =
+  def not(x: thrift.Transaction): thrift.Transaction =
     thrift.Transaction.expression(thrift.Expression.negate(new thrift.Negate(x)))
-  def equal(x: thrift.Transaction, y: thrift.Transaction): thrift.Transaction =
+  def eq(x: thrift.Transaction, y: thrift.Transaction): thrift.Transaction =
     thrift.Transaction.expression(thrift.Expression.equal(new thrift.Equal(x, y)))
-  def less(x: thrift.Transaction, y: thrift.Transaction): thrift.Transaction =
-    thrift.Transaction.expression(thrift.Expression.less(new thrift.Less(x, y)))
-
+  def ne(x: thrift.Transaction, y: thrift.Transaction): thrift.Transaction =
+    not(eq(x, y))
   def le(x: thrift.Transaction, y: thrift.Transaction): thrift.Transaction =
-    either(equal(x, y), less(x, y))
+    or(eq(x, y), lt(x, y))
   def lt(x: thrift.Transaction, y: thrift.Transaction): thrift.Transaction =
-    less(x, y)
+    thrift.Transaction.expression(thrift.Expression.less(new thrift.Less(x, y)))
   def ge(x: thrift.Transaction, y: thrift.Transaction): thrift.Transaction =
-    negate(less(x, y))
+    not(lt(x, y))
   def gt(x: thrift.Transaction, y: thrift.Transaction): thrift.Transaction =
-    negate(le(x, y))
+    not(le(x, y))
 
 }

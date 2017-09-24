@@ -15,65 +15,136 @@
 
 % Abstract.
 \begin{abstract}
-Database languages are designed for ease of implementation and not ease of use. For example, every relational database has its own interpretation of the SQL specification that is most convenient for the underlying database architecture and most often incompatible with its competition, and most key-value stores expose primtiive interfaces that are lacking in functionality and programmability. Caustic is a robust query language that is intuitive to use and straightforward to integrate with any database.
+Databases are either easy to use or to scale. For example, relational databases were popularized in
+large part because of the programmability of SQL. However, this programmability comes at an
+incredible expense. Relational databases are notoriously difficult to support at scale, and so
+developers have increasingly turned toward more specialized NoSQL systems that scale well be
+shedding functionality. Developers are not only forced to choose between productivity and
+performance, but also stark differences between query languages makes their choice of database
+effectively permanent. Even databases that claim to support the same SQL standard only implement
+incompatible subsets of its functionality. The lack of a truly uniform interface tightly couples
+databases and the procedures that are executed against them. Caustic is both a syntax for expressing
+transactions and a runtime for executing them on arbitrary key-value stores, that is both
+straightforward to use and simple to integrate.
 \end{abstract}
-
-% Introduction
-\section{Introduction}
-The syntax of query languages varies wildly between databases. For example, relational databases like MySQL and PostgreSQL claim to implement the same SQL specification, but, in reality, all but the most trivial of queries are incompatible with each other. This lack of uniformity between languages tightly couples the database with the queries that are run on it, and makes it difficult to switch storage systems as requirements change.
-
-The structure of query languages is deeply motivated by the capabilities and limits of the underlying database and not by what applications actually require. In particular, the language of relational algebra, which SQL is based upon, is not first-nature for most programmers. [On the Principles of Good Language Design, CJ Date] [http://wiki.c2.com/?SqlFlaws]
-
-It's clear that query languages are typically designed for ease of implementation and not ease of use. They have disparate interfaces, deficient functionality, and unintuitive syntax. Caustic provides both a robust language for specifying transactions and an efficient runtime for executing them on arbitrary databases.
-
-% Background
-\section{Background}
 
 % Runtime
 \section{Runtime}
-The runtime is responsible for executing transactions on arbitrary databases. Transactions are represented as abstract-syntax trees, because they are easy to manipulate, serialize, and optimize. The runtime exposes a Thrift interface for cross-language transaction execution, and is capable of running on any database that supports the following primitive operations:
+  The runtime is responsible for executing transactions on arbitrary key-value stores. Runtimes
+  implement Multiversion Concurrency Controls over any key-value store that satisfies an minimal
+  interface.
 
-\begin{itemize}
-  \item \textbf{get}: Returns the values of a set of keys.
-  \item \textbf{cput}: Conditionally apply changes iff dependent keys remain unchanged.
-\end{itemize}
+  \subsection{Representation}
+    A \texttt{Transaction} is represented by an abstract-syntax tree. A \texttt{Literal} corresponds
+    to a leaf of this syntax tree, and an \texttt{Expression} corresponds to a node. The runtime
+    respects three different types of literals (\texttt{Real}, \texttt{Text}, and \texttt{Flag}) and
+    thirty different kinds of expressions. With just these types and operations, the runtime is able
+    to emulate a modern programming language complete with conditional branching, loops, and local
+    variables.
 
-\subsection{Representation}
+  \subsection{Execution}
+    Transactions are executed through repeated partial evaluation, according to the following
+    procedure.
 
-\subsection{Snapshot Isolation}
+    \begin{itemize}
+      \item \textbb{Fetch}: Call \texttt{get} on all keys that are read and written by the
+        transaction and add the returned revisions to a local snapshot. In order to guarantee
+        snapshot isolation, \texttt{get} is only called when a key is read or written for the
+        first time. By batching reads and writes and avoiding duplicate fetches, the runtime is
+        guaranteed to perform a minimal number of roundtrips to and from the database.
+      \item \textbb{Evaluate}: Recursively replace all expressions that have literal operands with
+        their corresponding literal result. For example, add(real(1), sub(real(0), real(2)))
+        returns real(-1). The result of all write expressions is saved to a local buffer and all
+        read expressions return the latest value of the key in either the local buffer or snapshot.
+      \item \textbb{Repeat}: Re-evaluate the transaction until it reduces to a single literal
+        value. Because all expressions with literal operands return a literal value, all
+        transactions eventually reduce to a literal.
+    \end{itemize}
 
-\subsection{Optimizations}
-Because transactions are represented as abstract-syntax trees, the runtime is able to perform some interesting optimizations to improve execution performance. Most importantly, the runtime performs read and write batching. In other words, the runtime fetches \emph{as many reads as possible} and applies \emph{all writes together}. Clearly, the runtime performs optimally few roundtrips to and from the underlying key-value store, which is typically the performance bottleneck in database applications. 
+  \subsection{Integrated Caching}
+    MVCC allows the runtime to cache incoherently without sacrificing data integrity. The runtime
+    speculates about the value of a key by reading a potentially stale version from cache, and then
+    validate the cached versions when they commit. Multilevel, write-through caching is directly
+    integrated into the runtime:
 
-\subsection{Tunable Consistency}
-Transactions are executed using MVCC, and derive their consistency and isolation guarantees from the underlying key-value store. If the underlying key-value has a repeatable isolation level, for example, then so will transactions in Caustic. If the underlying key-value is not transactional, then neither are transactions in Caustic. Therefore, applications may substitute a key-value store with weaker transactional guarantees (or no transactions at all!) to improve performance.
+    \begin{itemize}
+      \item Keys are updated on cache miss.
+      \item Keys are automatically updated after successful transactions.
+      \item Keys are automatically invalidated after conflicting transactions.
+    \end{itemize}
 
-\subsection{Benchmarks}
-Compare the Caustic runtime (running on RocksDB) to comparable systems like Calvin and Tango. Rely on quantitative metrics like end-to-end latency and transaction throughput on standard database benchmarks like YCSB and TPC-C.
+    \subsubsection{Effect of Contention}
+      While the implementation of caching is fault tolerant, it is particularly vulnerable to
+      thrashing under contention. Consider if runtime A and runtime B read a key K from cache. A
+      updates the value of K, and then subsequently updates the value of K in cache. When B tries to
+      update the value of K it will cause a conflict, and so it will subsequently invalidate K in
+      cache.
 
-\subsubsection{Effect of Transaction Size}
-Performance scales linearly with transaction size. This is enabled by the tail recursive design of the runtime and can be verified empirically from benchmarks. 
+      A potential solution might be to remove the invalidation step from the procedure; however, the
+      implementation would no longer be fault tolerant. Consider if A updates K but fails to write
+      the new value to cache. Now the value in cache will remain stale until its evicted, but a key
+      under high contention may never be evicted from cache.
 
-\subsubsection{Effect of Read or Write Skew}
-Transactions with more reads than writes will have a different performance profiles than transactions with more writes than reads. However, this difference in performance is an artifact of the choice of underlying key-value store and not due to a read or write bias in the runtime. In other words, a read optimized key-value store will fare better with read-heavy transactions and a write optimized key-value store with write-heavy transactions in Caustic.
+  \subsection{Performance}
 
-\subsubsection{Effect of Contention}
-What happens to performance under contention? The number of retries required to execute a transaction may be modeled as a negative binomial distribution in which the probability of success $p$ is the contention probability. Therefore, $A = 1 + NB(1, p)$ is the distribution of attempts. Known results about the negative binomial distribution, may be used to make predictions about the mean and variance of transaction execution latency under contention. For example, the mean number of attempts $\bar{A} = 1 + \frac{p}{1 - p} = \frac{1}{1 - p}$. The contention probability is determined by a number of factors including: the number of keys that are read and written, the number of database reads and writes, and the latency of database reads and write.
+    \subsubsection{Effect of Transaction Size}
+      The runtime has been empirically shown to scale linearly with transaction size.
+
+    \subsubsection{Effect of Read or Write Skew}
+      The quantity of read and write expressions will surely impact the performance profile of the
+      runtime. However, the difference in performance is an artifact of the choice of underlying
+      key-value store and not due to any inherent bias in the runtime.
+
+    \subsubsection{Effect of Contention}
+      What happens to performance under contention? The number of retries required to execute a
+      transaction may be modeled as a negative binomial distribution in which the probability of
+      success $p$ is the contention probability. Therefore, $A = 1 + NB(1, p)$ is the distribution
+      of attempts. Known results about the negative binomial distribution, may be used to make
+      predictions about the mean and variance of transaction execution latency under contention. For
+      example, the mean number of attempts $\bar{A} = 1 + \frac{p}{1 - p} = \frac{1}{1 - p}$. The
+      contention probability is determined by a number of factors including: the number of keys that
+      are read and written, the number of database reads and writes, and the latency of database
+      reads and write.
 
 % Syntax
 \section{Syntax}
-The Caustic syntax is a new high-level programming language that compiles into transactions on the Caustic runtime. Regardless of the features they might have (objects, functions, types, etc.), all programs eventually compile down into load, stores, and operations on memory - and memory is a key-value store. The purpose of Caustic syntax is to provide a rich language for expressing \emph{transactional} loads, stores, and operations on \emph{key-value stores}.
+  While the language exposed by the runtime is robust and fully-featured, it can become verbose and
+  unintuitive as transactions get larger in size and broader in scope. In this section, we'll
+  introduce the Caustic programming language.
 
-\subsection{Concurrency}
-Because all programs written in Caustic compile into transactions, all programs are automatically thread-safe. No fancy synchronization mechanisms are required to build parallelizable programs in Caustic, everything is concurrent by default.
+  \subsection{Why Caustic?}
+    Relational databases have remained dominant particularly because of the programmability of SQL.
+    SQL provides developers with robust schemas that make it easy to structure and debug database
+    queries. However, relational database are notoriously difficult to support at scale, and so
+    developers are increasingly turning towards more specialized NoSQL systems that scale well by
+    shedding functionality.
 
-\subsection{Separation of Code and Data}
-Every database has its own language for writing stored procedures. Even SQL databases typically support very different subsets of the SQL specification, that are not interoperable for anything but the most trivial of programs.  Because the syntax varies so wildly between different databases, stored procedures are very tightly coupled with the choice of underlying database. This makes it tremendously expensive to change databases once development is under way, and impossible to test stored procedures in isolation. Caustic provides a uniform interface over arbitrary databases. In other words, Caustic programs written for ione database will be identical to the same program written for any another. This allows programmers to select whichever database is most appropriate for their use-case (eg. in-memory for tests, MySQL for production). 
+    While SQL has previously enjoyed remarkable popularity, the language is deeply flawed. In his
+    letter entitled "Some Principles of Good Language Design", CJ Date outlines a number of these
+    flaws as well as a criteria for evaluating languages in general. Date argues that well-designed
+    languages should have a consistent syntax, a canonical implementation, a terse grammar, and an
+    intuitive structure and provides examples that show how SQL fails to satisfy each of these
+    fundamental requirements.
 
-\subsection{Interoperability}
-Because of the simplicity of the Caustic grammar and runtime, the compiler is able to generate executable binaries that serve Caustic programs over a variety of mediums over any underlying database. Most OLTP applications can be divided into three parts: a database connector (eg. SQLAlchemy), a set of stored procedures (eg. Flask), and an external interface (eg. REST, Thrift). By specifying their stored procedures in Caustic, programmers can now rely on the Caustic compiler to generate the first and third parts for them. 
+  \subsection{Automatic Concurrency}
+    Because all programs written in Caustic compile into transactions on the Caustic runtime, all
+    programs are automatically thread-safe. Developers no longer have to worry about fancy
+    synchronization mechanisms in order to build parallelizable programs.
 
-\subsection{Benchmarks}
-Compare the Caustic syntax qualitatively to SQL, Tango, and Java. Measure differences in code complexity (measured in Cyclomatic or Halstead Complexity), size of executables, and lines of code for a variety of sample use cases (eg. implementing ZooKeeper or BookKeeper). 
+  \subsection{Uniform Interface}
+    Every database has its own query language. Even databases that implement the same SQL
+    specification usually support disparate subsets of the language. This has the effect of tightly
+    coupling the underlying database and the procedures that are run against it. Caustic provides
+    a uniform interface over arbitrary databases, which allows programmers to select whichever
+    underlying database is most appropriate for their use-case without modifying the code in any
+    way shape or form.
+
+  \subsection{Interoperability}
+    Because of the simplicity of the Caustic grammar and runtime, the compiler is able to generate
+    executable binaries that serve Caustic programs over a variety of mediums over any underlying
+    database. Most OLTP applications can be divided into three parts: a database connector
+    (eg. SQLAlchemy), a set of stored procedures (eg. Flask), and an external interface
+    (eg. REST, Thrift). By specifying their stored procedures in Caustic, programmers can now rely
+    on the Caustic compiler to generate the first and third parts for them.
 
 \end{document}

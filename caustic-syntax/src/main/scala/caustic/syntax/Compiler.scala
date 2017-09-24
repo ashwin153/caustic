@@ -13,13 +13,13 @@ trait Compiler extends CausticBaseVisitor[String] {
   /**
    *
    * @param caustic Caustic source code.
-   * @return
+   * @return Generated code.
    */
   def compile(caustic: CharStream): String = {
     val lexer = new CausticLexer(caustic)
     val tokens = new CommonTokenStream(lexer)
     val parser = new CausticParser(tokens)
-    this.visitService(parser.service())
+    this.visitProgram(parser.program())
   }
 
   final def compile(code: String): String =
@@ -30,5 +30,6 @@ trait Compiler extends CausticBaseVisitor[String] {
 
   final def compile(source: Source): String =
     try compile(source.mkString) finally source.close()
+
 
 }

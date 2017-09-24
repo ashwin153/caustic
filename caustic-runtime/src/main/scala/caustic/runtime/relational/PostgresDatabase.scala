@@ -13,7 +13,7 @@ import scala.concurrent.ExecutionContext
  * @param underlying Underlying PostgreSQL DataSource.
  * @param ec Implicit execution context.
  */
-case class PostgreSQLDatabase(underlying: DataSource)(
+case class PostgresDatabase(underlying: DataSource)(
   implicit ec: ExecutionContext
 ) extends RelationalDatabase(underlying) {
 

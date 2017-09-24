@@ -69,7 +69,7 @@ class ThriftCompiler extends Compiler {
       case "Integer" => "i64"
       case "Decimal" => "double"
       case "String"  => "string"
-      case _ => _
+      case x => x
     }
 
 }

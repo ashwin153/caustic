@@ -78,6 +78,9 @@ trait Cache extends Database {
       case Failure(e: ConflictException) =>
         // Invalidate cached keys to force them to reload from the database.
         invalidate(e.keys.asScala.toSet).transform(_ => Failure(e))
+      case Failure(_) =>
+        // Ignore all other failures.
+        Future.unit
     }
 
 }

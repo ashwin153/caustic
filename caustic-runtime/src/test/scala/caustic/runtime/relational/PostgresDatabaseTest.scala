@@ -1,10 +1,11 @@
-package caustic.runtime.relational
+package caustic.runtime
+package relational
 
-import caustic.runtime.DatabaseTest
 import com.mchange.v2.c3p0.ComboPooledDataSource
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.{BeforeAndAfterAll, Outcome}
+import scala.concurrent.ExecutionContext.Implicits.global
 
 @RunWith(classOf[JUnitRunner])
 class PostgresDatabaseTest extends DatabaseTest with BeforeAndAfterAll {
@@ -27,7 +28,7 @@ class PostgresDatabaseTest extends DatabaseTest with BeforeAndAfterAll {
     con.close()
 
     // Run the tests.
-    val database = PostgreSQLDatabase(this.pool)
+    val database = PostgresDatabase(this.pool)
     test(database)
   }
 

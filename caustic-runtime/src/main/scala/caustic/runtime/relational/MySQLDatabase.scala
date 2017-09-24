@@ -1,9 +1,8 @@
 package caustic.runtime
-package mysql
+package relational
 
 import java.sql.Connection
 import javax.sql.DataSource
-
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext
 
@@ -18,7 +17,7 @@ case class MySQLDatabase(underlying: DataSource)(
 ) extends RelationalDatabase(underlying) {
 
   override def schema: String =
-    s""" CREATE TABLE IF NOT EXISTS `schema`(
+    s""" CREATE TABLE IF NOT EXISTS `caustic`(
        |   `key` varchar (200) NOT NULL,
        |   `version` BIGINT DEFAULT 0,
        |   `type` INT,
@@ -31,13 +30,13 @@ case class MySQLDatabase(underlying: DataSource)(
     // Load all the rows that match the keys.
     val statement = connection.prepareStatement(
       s""" SELECT `key`, `version`, `type`, `value`
-         | FROM `schema`
+         | FROM `caustic`
          | WHERE `key` IN (${List.fill(keys.size)("?").mkString(",")})
        """.stripMargin
     )
 
-    keys.zipWithIndex.foreach { case (key, index) =>
-      statement.setString(index + 1, key)
+    keys.zipWithIndex.foreach {
+      case (key, index) => statement.setString(index + 1, key)
     }
 
     // Parse the query result set into a buffer.
@@ -66,7 +65,7 @@ case class MySQLDatabase(underlying: DataSource)(
   def upsert(connection: Connection, key: Key, revision: Revision): Unit = {
     // Prepare the SQL statement.
     val statement = connection.prepareStatement(
-      s""" INSERT INTO `schema` (`key`, `version`, `type`, `value`)
+      s""" INSERT INTO `caustic` (`key`, `version`, `type`, `value`)
          | VALUES (?, ?, ?, ?)
          | ON DUPLICATE KEY UPDATE
          | `version` = VALUES(`version`),

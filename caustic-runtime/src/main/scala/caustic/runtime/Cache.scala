@@ -1,5 +1,8 @@
 package caustic.runtime
 
+import caustic.runtime.thrift.ConflictException
+
+import scala.collection.JavaConverters._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
@@ -72,9 +75,9 @@ trait Cache extends Database {
       case Success(_) =>
         // Update the values of changed keys.
         update(changes)
-      case Failure(e) =>
+      case Failure(e: ConflictException) =>
         // Invalidate cached keys to force them to reload from the database.
-        invalidate(depends.keySet union changes.keySet).transform(_ => Failure(e))
+        invalidate(e.keys.asScala.toSet).transform(_ => Failure(e))
     }
 
 }

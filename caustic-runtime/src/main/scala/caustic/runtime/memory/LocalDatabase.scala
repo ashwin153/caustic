@@ -27,15 +27,15 @@ case class LocalDatabase(
   ): Future[Unit] =
     Future {
       // Determine if the dependencies conflict with the underlying database.
-      val conflicts = this.underlying.getAllPresent(depends.keys.asJava).asScala.exists {
-        case (key, rev) => depends(key) < rev.version
-      }
+      val conflicts = this.underlying
+        .getAllPresent(depends.keys.asJava).asScala
+        .filter { case (k, r) => depends(k) < r.version }
 
       // Throw an exception on conflict or perform updates otherwise.
-      if (conflicts)
-        throw new Exception("Transaction conflicts.")
-      else
+      if (conflicts.isEmpty)
         this.underlying.putAll(changes.asJava)
+      else
+        throw new thrift.ConflictException(conflicts.keySet.asJava)
     }
 
 }

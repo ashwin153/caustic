@@ -2,11 +2,14 @@
 The ```caustic-runtime``` is responsible for executing transactions on arbitrary key-value stores. In order to use a ```Database```, simply construct and serve a Thrift server in the following manner.
 
 ```scala
+import caustic.rumtime.memory.LocalDatabase
 import caustic.runtime.thrift
+
 import org.apache.thrift.transport.TServerSocket
 import org.apache.thrift.server.TSimpleServer
 
 // Construct the thrift server.
+val database = LocalDatabase.empty
 val transport = new TServerSocket(9090)
 val processor = new thrift.Database.AsyncProcessor(database)
 val server = new TSimpleServer(new TServer.Args(transport).processor(processor))

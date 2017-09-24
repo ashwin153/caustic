@@ -1,4 +1,4 @@
-package caustic.runtime.postgres
+package caustic.runtime.relational
 
 import caustic.runtime.DatabaseTest
 import com.mchange.v2.c3p0.ComboPooledDataSource
@@ -23,7 +23,7 @@ class PostgresDatabaseTest extends DatabaseTest with BeforeAndAfterAll {
     // Delete all the table metadata.
     val con = this.pool.getConnection()
     val smt = con.createStatement()
-    smt.execute("DROP TABLE IF EXISTS schema")
+    smt.execute("DROP TABLE IF EXISTS caustic")
     con.close()
 
     // Run the tests.

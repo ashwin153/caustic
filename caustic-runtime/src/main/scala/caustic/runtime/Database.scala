@@ -1,12 +1,14 @@
 package caustic.runtime
 
 import Database._
-import org.apache.thrift.TException
+
 import org.apache.thrift.async.AsyncMethodCallback
+import org.apache.thrift.TException
+
 import scala.annotation.tailrec
+import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
-import scala.collection.mutable
 
 /**
  * An asynchronous, transactional key-value store.
@@ -77,15 +79,12 @@ trait Database extends thrift.Database.AsyncIface {
 
       // Load the keys, update the local snapshot, and reduce the transaction. If the result is a
       // literal then return, otherwise recurse on the partially evaluated transaction.
-      get(keys) transformWith {
-        case Success(r) =>
-          snapshot ++= r
-          reduce(List(txn), List.empty) match {
-            case l: Literal => Future(l)
-            case o: Expression => evaluate(o)
-          }
-        case Failure(e) =>
-          Future.failed(new thrift.ReadException(e.getMessage))
+      get(keys) flatMap { r =>
+        snapshot ++= r
+        reduce(List(txn), List.empty) match {
+          case l: Literal => Future(l)
+          case o: Expression => evaluate(o)
+        }
       }
     }
 
@@ -173,10 +172,7 @@ trait Database extends thrift.Database.AsyncIface {
         buffer.clear()
         e.result
     } flatMap { r =>
-      cput(snapshot.mapValues(_.version).toMap, buffer.toMap).transformWith {
-        case Success(_) => Future(r)
-        case Failure(e) => Future.failed(new thrift.WriteException(e.getMessage))
-      }
+      cput(snapshot.mapValues(_.version).toMap, buffer.toMap).map(_ => r)
     }
   }
 

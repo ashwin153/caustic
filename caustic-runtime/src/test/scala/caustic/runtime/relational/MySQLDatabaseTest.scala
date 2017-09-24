@@ -1,7 +1,7 @@
 package caustic.runtime
-package mysql
+package relational
 
-import caustic.runtime.mysql.MySQLDatabase
+import caustic.runtime.relational.MySQLDatabase
 import com.mchange.v2.c3p0.ComboPooledDataSource
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner

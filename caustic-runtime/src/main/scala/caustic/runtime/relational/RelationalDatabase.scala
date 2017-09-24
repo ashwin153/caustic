@@ -1,7 +1,10 @@
 package caustic.runtime
+package relational
 
 import java.sql.Connection
 import javax.sql.DataSource
+
+import scala.collection.JavaConverters._
 import scala.concurrent.{ExecutionContext, Future, blocking}
 
 /**
@@ -90,16 +93,15 @@ abstract class RelationalDatabase(underlying: DataSource)(
     implicit ec: ExecutionContext
   ): Future[Unit] =
     transaction { con =>
-      // Determine whether or not the transaction conflicts.
+      // Determine if the dependencies conflict with the underlying database.
       val current = if (depends.isEmpty) Map.empty[Key, Revision] else select(con, depends.keySet)
-      val conflicts = depends.exists { case (k, v) => current.get(k).exists(_.version > v) }
+      val conflicts = depends.filter { case (k, v) => current.get(k).exists(_.version > v) }
 
-      if (!conflicts) {
-        // If the transaction does not conflict, then perform changes.
+      // Throw an exception on conflict or perform updates otherwise.
+      if (conflicts.isEmpty) {
         changes.foreach { case (k, r) => upsert(con, k, r) }
       } else {
-        // Otherwise, fail the put operation.
-        throw new Exception("Transaction conflicts.")
+        throw new thrift.ConflictException(conflicts.keySet.asJava)
       }
     }
 

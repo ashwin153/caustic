@@ -3,17 +3,10 @@ namespace * caustic.runtime.thrift
 include "transaction.thrift"
 
 /**
- * A retryable failure that is thrown when a database cannot read a set of keys.
- */
-exception ReadException {
-  1: required string message,
-}
-
-/**
  * A retryable failure that is thrown when a database cannot write a set of revisions.
  */
-exception WriteException {
-  1: required string message,
+exception ConflictException {
+  1: required set<string> keys,
 }
 
 /**
@@ -39,9 +32,8 @@ service Database {
   transaction.Literal execute(
     1: transaction.Transaction transaction,
   ) throws (
-    1: ReadException read,
-    2: WriteException write,
-    3: ExecutionException execute,
+    1: ConflictException conflicts,
+    2: ExecutionException execute,
   ),
 
 }

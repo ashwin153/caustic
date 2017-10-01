@@ -1,11 +1,13 @@
 package caustic.common.collection
 
-import java.util.concurrent.Executors
+import org.junit.runner.RunWith
 import org.scalatest.FunSuite
+import org.scalatest.junit.JUnitRunner
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
+@RunWith(classOf[JUnitRunner])
 class TrieTest extends FunSuite {
 
   test("Get should have happens-before relationship") {
@@ -28,19 +30,15 @@ class TrieTest extends FunSuite {
     val hello = hel :+ 'l' :+ 'o'
 
     // Insert 'hello' and 'help' into the trie.
-    trie.put(hello,
-      (s, v) =>
-        (s, v) match {
-          case (_, None) => Some(1)
-          case (_, Some(value)) => Some(value + 1)
-        })
+    trie.put(hello, (s, v) => (s, v) match {
+      case (_, None) => Some(1)
+      case (_, Some(value)) => Some(value + 1)
+    })
 
-    trie.put(help,
-      (s, v) =>
-        (s, v) match {
-          case (_, None) => Some(1)
-          case (_, Some(value)) => Some(value + 2)
-        })
+    trie.put(help, (s, v) => (s, v) match {
+      case (_, None) => Some(1)
+      case (_, Some(value)) => Some(value + 2)
+    })
 
     // Verify that each key has the correct value.
     assert(trie.closest(hello).value.contains(1))
@@ -51,27 +49,22 @@ class TrieTest extends FunSuite {
   test("Put should atomically updates value") {
     val trie = Trie.empty[Char, Int]
     val hello = 'h' :: 'e' :: 'l' :: 'l' :: 'o' :: Nil
-    val executor = Executors.newCachedThreadPool()
 
     // Submit simultaneous put operations and verify results.
-    Future
-      .sequence((0 until 10).map { i =>
-        Future {
-          trie.put(hello,
-            (s, p) =>
-              (s, p) match {
-                case (_, None) => Some(1)
-                case (_, Some(value)) => Some(value + 1)
-              })
-        }
-      })
-      .onComplete {
-        case Success(v) =>
-          (1 until hello.length)
-            .map(i => hello.slice(0, i))
-            .foreach(prefix => assert(trie.closest(prefix).value.contains(9)))
-        case Failure(e) => fail(e)
+    Future.sequence(Seq.fill(10)(
+      Future {
+        trie.put(hello, (s, p) => (s, p) match {
+          case (_, None) => Some(1)
+          case (_, Some(value)) => Some(value + 1)
+        })
       }
+    )).onComplete {
+      case Success(_) =>
+        (1 until hello.length)
+          .map(i => hello.slice(0, i))
+          .foreach(prefix => assert(trie.closest(prefix).value.contains(9)))
+      case Failure(e) => fail(e)
+    }
   }
 
 }

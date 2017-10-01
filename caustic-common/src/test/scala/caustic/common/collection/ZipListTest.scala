@@ -1,11 +1,10 @@
 package caustic.common.collection
 
-import java.util.concurrent.Executors
+import org.junit.runner.RunWith
+import org.scalatest.junit.JUnitRunner
 import org.scalatest.{FunSuite, Matchers}
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
-import scala.util.{Failure, Success}
 
+@RunWith(classOf[JUnitRunner])
 class ZipListTest extends FunSuite with Matchers {
 
   test("toSeq should match contents") {

@@ -16,8 +16,8 @@ import scala.collection.mutable
  * @tparam V Type of values.
  */
 class Trie[K, V] private (
-  val parent: Option[Trie[K, V]],
-  val symbol: Option[K],
+  parent: Option[Trie[K, V]],
+  symbol: Option[K],
   var value: Option[V]
 ) {
 

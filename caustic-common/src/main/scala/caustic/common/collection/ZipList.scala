@@ -16,7 +16,7 @@ import scala.collection.mutable
  */
 case class ZipList(
   underlying: Seq[Byte],
-  charset: Charset = Charset.defaultCharset()
+  charset: Charset
 ) {
 
   /**
@@ -75,7 +75,7 @@ object ZipList {
    *
    * @return Empty ZipList.
    */
-  def empty: ZipList = ZipList(Seq.empty)
+  def empty: ZipList = ZipList(Seq.empty, Charset.defaultCharset())
 
   /**
    * Constructs a ZipList containing the specified elements.

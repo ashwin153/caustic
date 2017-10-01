@@ -24,15 +24,16 @@ object Backoff {
   def retry[T](backoffs: Seq[FiniteDuration])(f: => Future[T])(
     implicit ec: ExecutionContext
   ): Future[T] =
-    f.recoverWith {
-      case _ if backoffs.nonEmpty =>
-        val result = Promise[T]()
+    f.recoverWith { case _ if backoffs.nonEmpty =>
+      // Schedule the retries on the underlying timer.
+      val result = Promise[T]()
+      this.scheduler.schedule(new TimerTask {
+        override def run(): Unit =
+          retry(backoffs.drop(1))(f).onComplete(result.complete)
+      }, backoffs.head.toMillis)
 
-        this.scheduler.schedule(new TimerTask {
-          override def run(): Unit = retry(backoffs.drop(1))(f).onComplete(result.complete)
-        }, backoffs.head.toMillis)
-
-        result.future
+      // Return a handle to the retry attempt.
+      result.future
     }
 
   /**

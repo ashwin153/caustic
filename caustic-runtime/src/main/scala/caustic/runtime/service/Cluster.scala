@@ -3,12 +3,12 @@ package service
 
 import org.apache.curator.framework.CuratorFramework
 import org.apache.curator.framework.recipes.cache._
-
+import scala.collection.concurrent.TrieMap
 import scala.collection.mutable
 import scala.util.{Random, Try}
 
 /**
- * A Thrift connection for clusters of instances.
+ * A Thrift connection for clusters of instances. Thread-safe.
  *
  * @param instances Instance cache.
  * @param clients Client cache.
@@ -41,10 +41,12 @@ case class Cluster(
   override def execute(transaction: thrift.Transaction): Try[thrift.Literal] = {
     // Avoids race by caching the available clients.
     val current = this.clients.values.toSeq
-
-    // Execute the transaction on a randomized client.
     val client = current(Random.nextInt(current.length))
-    client.execute(transaction)
+
+    // Avoid race by synchronizing execution on the randomized client.
+    client.synchronized {
+      client.execute(transaction)
+    }
   }
 
 }
@@ -52,13 +54,14 @@ case class Cluster(
 object Cluster {
 
   /**
+   * Constructs a connection to the various servers in the specified registry.
    *
-   * @param registry
-   * @return
+   * @param registry Server registry.
+   * @return Cluster connection.
    */
   def apply(registry: Registry): Cluster = {
-    val instances = new PathChildrenCache(registry.curator, registry.path, false)
-    val clients = mutable.Map.empty[String, Client]
+    val instances = new PathChildrenCache(registry.curator, registry.namespace, false)
+    val clients = TrieMap.empty[String, Client]
     Cluster(instances, clients)
   }
 

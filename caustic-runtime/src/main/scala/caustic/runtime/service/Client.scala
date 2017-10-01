@@ -7,7 +7,7 @@ import org.apache.thrift.transport.{TSocket, TTransport}
 import scala.util.Try
 
 /**
- * A Thrift connection for single instances.
+ * A Thrift connection for single instances. Not thread-safe.
  *
  * @param transport Thrift transport.
  * @param underlying Underlying Thrift client.
@@ -31,9 +31,10 @@ case class Client(
 object Client {
 
   /**
+   * Constructs a connection to the specified instance.
    *
-   * @param instance
-   * @return
+   * @param instance Server instance.
+   * @return Instance connection.
    */
   def apply(instance: Instance): Client = {
     val transport = new TSocket(instance.host, instance.port)

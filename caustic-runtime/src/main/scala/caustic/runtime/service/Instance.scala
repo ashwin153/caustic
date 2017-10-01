@@ -9,10 +9,7 @@ import java.nio.charset.Charset
  * @param host Hostname.
  * @param port Port number.
  */
-case class Instance(
-  host: String,
-  port: Int
-) {
+case class Instance(host: String, port: Int) {
 
   /**
    * Serializes the instance to a sequence of bytes.
@@ -29,8 +26,8 @@ object Instance {
   /**
    * Constructs an instance from the serialized bytes.
    *
-   * @param bytes Serialized bytes.
-   * @return Instance.
+   * @param bytes Serialized representation.
+   * @return Deserialized instance.
    */
   def apply(bytes: Array[Byte]): Instance = {
     val tokens = new String(bytes, Charset.forName("UTF-8")).split(":")

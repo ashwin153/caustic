@@ -6,7 +6,7 @@ import org.apache.thrift.server.TThreadPoolServer
 import org.apache.thrift.transport.TNonblockingServerSocket
 
 /**
- * A Caustic Thrift server.
+ * A Thrift server. Thread-safe.
  *
  * @param underlying Underlying database.
  */
@@ -32,17 +32,21 @@ case class Server(underlying: Database) {
   }
 
   /**
-   * Announces the server in the specified registry, and then serves the underlying database over
-   * the specified port. Blocks indefinitely.
+   * Registers the server instance in the provided registry, and then serves the underlying database
+   * over the specified port. Blocks indefinitely.
    *
    * @param registry Instance registry.
    * @param port Port number.
    */
   def serve(registry: Registry, port: Int): Unit = {
     val instance = Instance(InetAddress.getLocalHost.getHostName, port)
-    val announcer = Announcer(registry.path, instance)
-    registry.curator.getConnectionStateListenable.addListener(announcer)
-    serve(port)
+
+    try {
+      registry.register(instance)
+      serve(port)
+    } finally {
+      registry.unregister(instance)
+    }
   }
 
 }

@@ -1,5 +1,7 @@
 package caustic.runtime
 
+import scala.language.implicitConversions
+
 package object service {
 
   // Implicit Conversions.

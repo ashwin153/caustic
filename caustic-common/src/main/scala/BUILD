@@ -1,6 +1,9 @@
 scala_library(
   name='scala',
   sources=rglobs('*.scala'),
+  dependencies=[
+    '3rdparty/jvm:shapeless',
+  ],
   provides=artifact(
     org='com.madavan',
     name='caustic-common_2.12',

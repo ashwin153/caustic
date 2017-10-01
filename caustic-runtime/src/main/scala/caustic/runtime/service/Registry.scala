@@ -1,8 +1,10 @@
-package caustic.runtime.service
+package caustic.runtime
+package service
 
 import org.apache.curator.framework.CuratorFramework
 import org.apache.curator.framework.state.{ConnectionState, ConnectionStateListener}
 import org.apache.zookeeper.CreateMode
+
 import scala.collection.mutable
 
 /**

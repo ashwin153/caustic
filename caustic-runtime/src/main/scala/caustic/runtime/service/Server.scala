@@ -1,52 +1,52 @@
 package caustic.runtime
 package service
 
-import java.net.InetAddress
+import caustic.common.concurrent.Process
+
+import shapeless._
+
 import org.apache.thrift.server.TThreadPoolServer
 import org.apache.thrift.transport.TNonblockingServerSocket
 
-/**
- * A Thrift server. Thread-safe.
- *
- * @param underlying Underlying database.
- */
-case class Server(underlying: Database) {
+import java.net.InetAddress
+import scala.concurrent.ExecutionContext
+
+object Server {
 
   /**
-   * Serves the underlying database over the specified port. Blocks indefinitely.
+   * Constructs a process that serves the specified database over the provided port.
    *
+   * @param database Underlying database.
    * @param port Port number.
+   * @param ec Implicit execution context.
+   * @return Server process.
    */
-  def serve(port: Int): Unit = {
+  def apply(database: Database, port: Int)(
+    implicit ec: ExecutionContext
+  ): Process[Unit :: HNil] = {
     val transport = new TNonblockingServerSocket(port)
-    val processor = new thrift.Database.AsyncProcessor(this.underlying)
+    val processor = new thrift.Database.AsyncProcessor(database)
     val arguments = new TThreadPoolServer.Args(transport).processor(processor)
     val server = new TThreadPoolServer(arguments)
-
-    try {
-      server.serve()
-    } finally {
-      server.stop()
-      transport.close()
-    }
+    Process.sync(server.serve(), server.stop())
   }
 
   /**
-   * Registers the server instance in the provided registry, and then serves the underlying database
-   * over the specified port. Blocks indefinitely.
+   * Constructs a process that first announces the server in the registry and then serves the
+   * specified database over the provided port.
    *
    * @param registry Instance registry.
+   * @param database Underlying database.
    * @param port Port number.
+   * @param ec Implicit execution context.
+   * @return Announced server process.
    */
-  def serve(registry: Registry, port: Int): Unit = {
+  def apply(registry: Registry, database: Database, port: Int)(
+    implicit ec: ExecutionContext
+  ): Process[Unit :: Unit :: HNil] = {
     val instance = Instance(InetAddress.getLocalHost.getHostName, port)
-
-    try {
-      registry.register(instance)
-      serve(port)
-    } finally {
-      registry.unregister(instance)
-    }
+    val announce = Process.sync(registry.register(instance), registry.unregister(instance))
+    announce before Server(database, port)
   }
 
 }

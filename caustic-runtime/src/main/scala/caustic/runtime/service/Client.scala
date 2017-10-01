@@ -43,4 +43,14 @@ object Client {
     Client(transport, underlying)
   }
 
+  /**
+   * Constructs a connection to the specified hostname and port.
+   *
+   * @param host Hostname.
+   * @param port Port number.
+   * @return Instance connection.
+   */
+  def apply(host: String, port: Int): Client =
+    Client(Instance(host, port))
+
 }

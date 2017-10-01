@@ -35,6 +35,11 @@ jar_library(name='curator', jars=[
   jar(org='org.apache.curator', name='curator-recipes', rev='4.0.0'),
 ])
 
+# Shapeless
+jar_library(name='shapeless', jars=[
+  jar(org='com.chuusai', name='shapeless_2.12', rev='2.3.2'),
+])
+
 # JUnit
 jar_library(name='junit', jars=[
   jar(org='junit', name='junit', rev='4.12'),

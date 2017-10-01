@@ -3,6 +3,7 @@ package service
 
 import org.apache.curator.framework.CuratorFramework
 import org.apache.curator.framework.recipes.cache._
+
 import scala.collection.concurrent.TrieMap
 import scala.collection.mutable
 import scala.util.{Random, Try}
@@ -15,7 +16,7 @@ import scala.util.{Random, Try}
  */
 case class Cluster(
   instances: PathChildrenCache,
-  clients: mutable.Map[String, Client],
+  clients: mutable.Map[String, Client]
 ) extends Connection with PathChildrenCacheListener {
 
   // Setup the path cache.
@@ -30,12 +31,11 @@ case class Cluster(
 
   override def childEvent(curator: CuratorFramework, event: PathChildrenCacheEvent): Unit =
     event.getType match {
-      case PathChildrenCacheEvent.Type.CHILD_ADDED =>
-        this.clients += event.getData.getPath -> Client(Instance(event.getData.getData))
-      case PathChildrenCacheEvent.Type.CHILD_UPDATED =>
+      case PathChildrenCacheEvent.Type.CHILD_ADDED | PathChildrenCacheEvent.Type.CHILD_UPDATED =>
         this.clients += event.getData.getPath -> Client(Instance(event.getData.getData))
       case PathChildrenCacheEvent.Type.CHILD_REMOVED =>
         this.clients.remove(event.getData.getPath).foreach(_.close())
+      case _ =>
     }
 
   override def execute(transaction: thrift.Transaction): Try[thrift.Literal] = {

@@ -1,4 +1,4 @@
-package caustic.common.concurrent
+package caustic.common.collection
 
 import scala.collection.mutable
 

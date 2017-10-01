@@ -1,4 +1,4 @@
-package caustic.common.concurrent
+package caustic.common.collection
 
 import java.util.concurrent.Executors
 import org.scalatest.FunSuite

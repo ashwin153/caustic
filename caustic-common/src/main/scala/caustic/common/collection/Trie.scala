@@ -1,5 +1,6 @@
-package caustic.common.concurrent
+package caustic.common.collection
 
+import caustic.common.concurrent.Lock
 import scala.collection.mutable
 
 /**

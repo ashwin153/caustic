@@ -52,6 +52,7 @@ union Expression {
   26: IndexOf indexOf,
   27: Equal equal,
   28: Less less,
+  29: Prefetch prefetch,
 }
 
 /**
@@ -136,6 +137,15 @@ struct Branch {
  */
 struct Rollback {
   1: required Transaction message,
+}
+
+/**
+ * Prefetches the list of keys. Each key in the list prefixed by its length.
+ *
+ * @param keys Keys to prefetch.
+ */
+struct Prefetch {
+  1: required Transaction keys,
 }
 
 /**

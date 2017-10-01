@@ -15,30 +15,30 @@ jar_library(name='postgres', jars=[
 
 # Caffeine
 jar_library(name='caffeine', jars=[
-  jar(org='com.github.ben-manes.caffeine', name='caffeine', rev='2.5.5')
+  jar(org='com.github.ben-manes.caffeine', name='caffeine', rev='2.5.5'),
 ])
 
 # Thrift
 jar_library(name='thrift', jars=[
-  jar(org='org.apache.thrift', name='libthrift', rev='0.10.0')
+  jar(org='org.apache.thrift', name='libthrift', rev='0.10.0'),
 ])
 
-# Finagle
-jar_library(name='finagle', jars=[
-  jar(org='com.twitter', name='finagle-core_2.12', rev='7.0.0'),
-  jar(org='com.twitter', name='finagle-http_2.12', rev='7.0.0'),
-  jar(org='com.twitter', name='finagle-thrift_2.12', rev='7.0.0'),
+# Jackson
+jar_library(name='jackson', jars=[
+  jar(org='com.fasterxml.jackson.core', name='jackson-databind', rev='2.9.1'),
+  jar(org='com.fasterxml.jackson.module', name='jackson-module-scala_2.12', rev='2.9.1'),
 ])
 
-# Shapeless
-jar_library(name='shapeless', jars=[
-  jar(org='com.chuusai', name='shapeless_2.12', rev='2.3.2'),
+# Curator
+jar_library(name='curator', jars=[
+  jar(org='org.apache.curator', name='curator-framework', rev='4.0.0'),
+  jar(org='org.apache.curator', name='curator-recipes', rev='4.0.0'),
 ])
 
 # JUnit
 jar_library(name='junit', jars=[
   jar(org='junit', name='junit', rev='4.12'),
-  jar(org='org.pantsbuild', name='junit-runner-annotations', rev='0.0.17')
+  jar(org='org.pantsbuild', name='junit-runner-annotations', rev='0.0.17'),
 ])
 
 # Scalatest

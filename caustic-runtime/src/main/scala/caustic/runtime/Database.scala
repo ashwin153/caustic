@@ -112,6 +112,8 @@ trait Database extends thrift.Database.AsyncIface {
         reduce(first :: Cons :: rest, second :: rem)
       case (Expression(Repeat, c :: b :: Nil) :: rest, rem) =>
         reduce(branch(c, cons(b, repeat(c, b)), text("")) :: rest, rem)
+      case (Expression(Prefetch, Text(k) :: Nil) :: rest, rem) =>
+        reduce(rest, k.split(",").map(x => read(Text(x))).reduceLeftOption(cons).getOrElse(text("")) :: rem)
       case ((e: Expression) :: rest, rem) =>
         reduce(e.operands.reverse ::: e.operator :: rest, rem)
 
@@ -131,6 +133,7 @@ trait Database extends thrift.Database.AsyncIface {
       case (Branch :: rest, Flag(true) :: pass :: _ :: rem) => reduce(pass :: rest, rem)
       case (Branch :: rest, Flag(false) :: _ :: fail :: rem) => reduce(fail :: rest, rem)
       case (Branch :: rest, c :: p :: f :: rem) => reduce(rest, branch(c, p, f) :: rem)
+      case (Prefetch :: rest, k :: rem) => reduce(rest, prefetch(k) :: rem)
 
       // Simplify String Expressions.
       case (Length :: rest, x :: rem) => reduce(rest, length(x) :: rem)

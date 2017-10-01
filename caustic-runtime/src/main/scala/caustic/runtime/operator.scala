@@ -14,6 +14,7 @@ case object Cons extends Operator
 case object Repeat extends Operator
 case object Branch extends Operator
 case object Rollback extends Operator
+case object Prefetch extends Operator
 case object Add extends Operator
 case object Sub extends Operator
 case object Mul extends Operator

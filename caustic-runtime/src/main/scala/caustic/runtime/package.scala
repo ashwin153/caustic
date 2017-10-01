@@ -65,6 +65,12 @@ package object runtime {
     case _ => Expression(Rollback, m :: Nil)
   }
 
+  def prefetch(k: Transaction): Transaction = k match {
+    case Real(a) => throw new thrift.ExecutionException(s"Prefetch undefined for keys $a")
+    case Flag(a) => throw new thrift.ExecutionException(s"Prefetch undefined for keys $a")
+    case _ => Expression(Prefetch, k :: Nil)
+  }
+
   def add(x: Transaction, y: Transaction): Transaction = (x, y) match {
     case (Real(a), Real(b)) => real(a + b)
     case (Real(a), Flag(b)) => text(a.toString + b.toString)
@@ -168,6 +174,8 @@ package object runtime {
   }
 
   def length(x: Transaction): Transaction = x match {
+    case Flag(a) => real(a.toString.length)
+    case Real(a) => real(a.toString.length)
     case Text(a) => real(a.length)
     case a: Literal => throw new thrift.ExecutionException(s"Length undefined for $a")
     case _ => Expression(Length, x :: Nil)

@@ -22,7 +22,7 @@ class TransactionTest extends FunSuite with Matchers {
     add(flag(true), flag(false)) shouldEqual text("truefalse")
     add(text("a"), real(0)) shouldEqual text("a0.0")
     add(text("a"), flag(true)) shouldEqual text("atrue")
-    add(real(0), flag(true)) shouldEqual text("0.0true")
+    add(real(3.2), flag(true)) shouldEqual text("3.2true")
     sub(real(9), real(6)) shouldEqual real(3)
     mul(real(2), real(3)) shouldEqual real(6)
     div(real(5), real(2)) shouldEqual real(2.5)

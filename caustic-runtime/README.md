@@ -39,7 +39,7 @@ brew install zookeeper
 brew services start zookeeper
 ```
 
-Once ZooKeeper is up and running, we'll need to create ```Registry``` to store the locations of the various active ```Server``` instances. To construct a ```Registry```, we'll need to supply (a) a [Curator][3] connection to ZooKeeper and (b) a Zookeeper path to its contents. While Curator does already provide an implementation of [Service Discovery][4], I personally found it to be a verbose, unintuitive interface and so I chose to implement my own version instead.
+Once ZooKeeper is up and running, we'll need to create ```Registry``` to store the locations of the various active ```Server``` instances. To construct a ```Registry```, we'll need to supply (a) a [Curator][3] connection to ZooKeeper and (b) a Zookeeper path to its contents. While Curator does already provide an implementation of [service discovery][4], I personally found it to be a verbose, unintuitive interface and so I chose to implement my own version instead.
 
 ```scala
 import org.apache.curator.framework.CuratorFrameworkFactory

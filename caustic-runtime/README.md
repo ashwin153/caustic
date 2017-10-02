@@ -44,8 +44,8 @@ Once ZooKeeper is up and running, we'll need to create ```Registry``` to store t
 ```scala
 import org.apache.curator.framework.CuratorFrameworkFactory
 val curator = CuratorFrameworkFactory.newClient(
-  "localhost:2181",                               // Comma delimited list of ZooKeeper host:port.
-  new ExponentialBackoffRetry(1000, 3)            // Recommended default retry policy.
+  "localhost:2181",                    // Comma delimited list of ZooKeeper host:port.
+  new ExponentialBackoffRetry(1000, 3) // Recommended default retry policy.
 )
 
 val registry = Registry(curator, "/services/caustic")

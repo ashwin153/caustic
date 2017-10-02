@@ -101,7 +101,7 @@ abstract class RelationalDatabase(underlying: DataSource)(
       if (conflicts.isEmpty) {
         changes.foreach { case (k, r) => upsert(con, k, r) }
       } else {
-        throw new thrift.ConflictException(conflicts.keySet.asJava)
+        throw ConflictException(conflicts.keySet)
       }
     }
 

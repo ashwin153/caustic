@@ -35,7 +35,7 @@ case class LocalDatabase(
       if (conflicts.isEmpty)
         this.underlying.putAll(changes.asJava)
       else
-        throw new thrift.ConflictException(conflicts.keySet.asJava)
+        throw ConflictException(conflicts.keySet.toSet)
     }
 
 }

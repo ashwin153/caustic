@@ -1,13 +1,17 @@
 package caustic.runtime
 
-import Database._
+import caustic.common.concurrent.Backoff._
+import caustic.runtime.Database._
 
 import org.apache.thrift.async.AsyncMethodCallback
 import org.apache.thrift.TException
 
 import scala.annotation.tailrec
+import scala.collection.JavaConverters._
 import scala.collection.mutable
+import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
+import scala.language.postfixOps
 import scala.util.{Failure, Success}
 
 /**
@@ -51,10 +55,11 @@ trait Database extends thrift.Database.AsyncIface {
    * transaction remain unchanged.
    *
    * @param expression Expression to execute.
+   * @param backoffs Backoff durations.
    * @param ec Implicit execution context.
    * @return Result of transaction execution, or an exception on failure.
    */
-  def execute(expression: Transaction)(
+  def execute(expression: Transaction, backoffs: Seq[FiniteDuration] = Seq.empty)(
     implicit ec: ExecutionContext
   ): Future[Literal] = {
     val snapshot = mutable.Map.empty[Key, Revision]
@@ -93,7 +98,7 @@ trait Database extends thrift.Database.AsyncIface {
       // Return Results.
       case (Nil, _) =>
         if (results.size != 1)
-          throw new thrift.ExecutionException(s"Transaction evaluates to $results.")
+          throw ExecutionException(s"Transaction evaluates to $results.")
         else
           results.head
 
@@ -113,7 +118,8 @@ trait Database extends thrift.Database.AsyncIface {
       case (Expression(Repeat, c :: b :: Nil) :: rest, rem) =>
         reduce(branch(c, cons(b, repeat(c, b)), text("")) :: rest, rem)
       case (Expression(Prefetch, Text(k) :: Nil) :: rest, rem) =>
-        reduce(rest, k.split(",").map(x => read(Text(x))).reduceLeftOption(cons).getOrElse(text("")) :: rem)
+        reduce(rest, k.split(",").map(x => read(Text(x))).reduceLeftOption(cons)
+          .getOrElse(text("")) :: rem)
       case ((e: Expression) :: rest, rem) =>
         reduce(e.operands.reverse ::: e.operator :: rest, rem)
 
@@ -164,34 +170,37 @@ trait Database extends thrift.Database.AsyncIface {
       case (Less :: rest, x :: y :: rem) => reduce(rest, less(x, y) :: rem)
 
       // Default Error.
-      case _ => throw new thrift.ExecutionException(s"$stack cannot be applied to $results.")
+      case _ => throw ExecutionException(s"$stack cannot be applied to $results.")
     }
 
     // Recursively reduce the transaction, and then conditionally persist all changes made by the
     // transaction to the underlying database if and only if the versions of its various
     // dependencies have not changed. Filter out empty first changes to allow local variables.
-    evaluate(expression) recover {
-      case e: RollbackException =>
-        buffer.clear()
-        e.result
-    } flatMap { r =>
-      cput(snapshot.mapValues(_.version).toMap, buffer.toMap).map(_ => r)
+    retry(backoffs) {
+      evaluate(expression) recover {
+        case e: RollbackException =>
+          buffer.clear()
+          e.result
+      } flatMap { r =>
+        cput(snapshot.mapValues(_.version).toMap, buffer.toMap).map(_ => r)
+      }
     }
   }
 
   override def execute(
     txn: thrift.Transaction,
+    backoffs: java.util.List[java.lang.Long],
     resultHandler: AsyncMethodCallback[thrift.Literal]
   ): Unit = {
     import scala.concurrent.ExecutionContext.Implicits.global
 
     // Execute the scala transaction and convert the result back to thrift.
-    execute(Transaction.parse(txn)).onComplete {
+    execute(Transaction.parse(txn), backoffs.asScala.map(Long2long).map(_ millis)).onComplete {
       case Success(Real(r)) => resultHandler.onComplete(thrift.Literal.real(r))
       case Success(Flag(f)) => resultHandler.onComplete(thrift.Literal.flag(f))
       case Success(Text(t)) => resultHandler.onComplete(thrift.Literal.text(t))
       case Failure(e: TException) => resultHandler.onError(e)
-      case Failure(e) => resultHandler.onError(new thrift.ExecutionException(s"Unknown error $e"))
+      case Failure(e) => resultHandler.onError(ExecutionException(s"Unknown error $e"))
     }
   }
 

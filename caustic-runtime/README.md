@@ -57,7 +57,7 @@ curator.start()
 Then, we can use this ```Registry``` to bootstrap a database ```Server``` that automatically registers itself when it comes online and unregisters itself when it goes offline and start it as a background process.
 
 ```scala
-val server = Server(registry, LocalDatabase.empty, 9000)
+val server = Server(LocalDatabase.empty, 9000, registry)
 server.start()
 ```
 

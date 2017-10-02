@@ -5,6 +5,7 @@ import org.apache.curator.framework.CuratorFramework
 import org.apache.curator.framework.recipes.cache._
 import scala.collection.concurrent.TrieMap
 import scala.collection.mutable
+import scala.concurrent.duration.FiniteDuration
 import scala.util.{Failure, Random, Try}
 
 /**
@@ -37,7 +38,10 @@ case class Cluster(
       case _ =>
     }
 
-  override def execute(transaction: thrift.Transaction): Try[thrift.Literal] = {
+  override def execute(
+    transaction: thrift.Transaction,
+    backoffs: Seq[FiniteDuration]
+  ): Try[thrift.Literal] = {
     // Avoids race by caching the available clients.
     val current = this.connections.values.toSeq
     if (current.isEmpty) {
@@ -47,7 +51,7 @@ case class Cluster(
       // Avoid race by synchronizing execution on the randomized client.
       val client = current(Random.nextInt(current.length))
       client.synchronized {
-        client.execute(transaction)
+        client.execute(transaction, backoffs)
       }
     }
   }

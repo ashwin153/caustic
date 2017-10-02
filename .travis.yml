@@ -1,4 +1,5 @@
-# Setup pants (https://github.com/pantsbuild/pants/blob/master/.travis.yml)
+# Setup Pants.
+# https://github.com/pantsbuild/pants/blob/master/.travis.yml
 env:
   global:
     - JAVA_HOME="$HOME/opt/jdk1.8.0_131"
@@ -19,7 +20,8 @@ cache:
     - build-support/isort.venv
     - build-support/pants_dev_deps.venv
 
-# Setup JDK (https://github.com/foursquare/fsqio/blob/master/.travis.yml)
+# Setup JDK.
+# https://github.com/foursquare/fsqio/blob/master/.travis.yml
 before_script: |
   if ! ${HOME}/opt/jdk1.8.0_131/bin/java -version; then
     mkdir -p ~/opt
@@ -29,8 +31,20 @@ before_script: |
     tar xzf jdk-8u131-linux-x64.tar.gz -C ~/opt
   fi
 
+# Setup ZooKeeper.
+# https://gist.github.com/estliberitas/b2c004f7447ed6fa3248
+before_install:
+  - "sudo apt-get install -y zookeeper-server"
 
-# Setup databases.
+before_script:
+  - "sudo service zookeeper-server init"
+  - "sudo service zookeeper-server start"
+
+after_script:
+  - "sudo service zookeeper-server stop"
+
+
+# Setup Databases.
 services:
   - mysql
   - postgresql
@@ -42,7 +56,7 @@ before_install:
   - mysql -e 'CREATE DATABASE IF NOT EXISTS test;'
   - psql -c 'CREATE DATABASE test;' -U postgres
 
-# Compile and run all unit tests.
+# Compile and Test.
 language: python
 python:
   - '2.7'

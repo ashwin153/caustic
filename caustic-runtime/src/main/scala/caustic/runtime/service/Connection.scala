@@ -3,6 +3,9 @@ package service
 
 import org.apache.thrift.protocol.TBinaryProtocol
 import org.apache.thrift.transport.{TFramedTransport, TSocket, TTransport}
+
+import scala.collection.JavaConverters._
+import scala.concurrent.duration.FiniteDuration
 import scala.util.Try
 
 /**
@@ -22,8 +25,11 @@ case class Connection(
   override def close(): Unit =
     this.transport.close()
 
-  override def execute(transaction: thrift.Transaction): Try[thrift.Literal] =
-    Try(this.underlying.execute(transaction))
+  override def execute(
+    transaction: thrift.Transaction,
+    backoffs: Seq[FiniteDuration]
+  ): Try[thrift.Literal] =
+    Try(this.underlying.execute(transaction, backoffs.map(_.toMillis).map(long2Long).asJava))
 
 }
 

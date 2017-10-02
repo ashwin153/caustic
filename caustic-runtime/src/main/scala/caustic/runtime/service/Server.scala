@@ -34,13 +34,13 @@ object Server {
    * Constructs a process that first announces the server in the registry and then serves the
    * specified database over the provided port.
    *
-   * @param registry Instance registry.
    * @param database Underlying database.
    * @param port Port number.
+   * @param registry Instance registry.
    * @param ec Implicit execution context.
    * @return Announced server process.
    */
-  def apply(registry: Registry, database: Database, port: Int)(
+  def apply(database: Database, port: Int, registry: Registry)(
     implicit ec: ExecutionContext
   ): Process[Unit :: Unit :: HNil] = {
     val instance = Instance(InetAddress.getLocalHost.getHostName, port)

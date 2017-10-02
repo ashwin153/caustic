@@ -9,11 +9,12 @@ Developers are not only forced to choose between productivity and performance, b
 Caustic is a language for expressing and executing transactions on arbitrary key-value stores that is both straightforward to use and simple to integrate. In this article, we’ll discuss the implementation and implications of the transaction runtime and syntax. As a motivating example, consider the following distributed counter implementation in MySQL and Caustic. 
 
 # Requirements
-- Scala 2.12
 - Java 1.8
-- Python 2.7
-- PostgreSQL 9.5
 - MySQL 5.0
+- PostgreSQL 9.5
+- Python 2.7
+- Scala 2.12
+- ZooKeeper 3.4.10
 
 # Build
 Artifacts are published to the [Sonatype OSS Repository Hosting Service][3] and synced to [Maven Central][4]. Snapshots of the ```master``` branch are built using [Travis CI][5].

@@ -32,7 +32,7 @@ server.stop()
 ```
 
 ## Cluster
-A ```Server``` may also be run as a member of a cluster of instances. Caustic relies on [ZooKeeper][1] __version 3.4.10__ to perform automatic server registration and discovery. The following script will download, install, and start ZooKeeper on macOS. A more in depth tutorial can be found [here][2].
+A ```Server``` may also be run as a member of a cluster of instances. Caustic depends on [ZooKeeper][1] __version 3.4.10__ to perform automatic server registration and discovery. The following script will download, install, and start ZooKeeper on macOS. A more in depth tutorial can be found [here][2].
 
 ```sh
 brew install zookeeper

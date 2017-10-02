@@ -56,7 +56,12 @@ jar_library(name='scalatest',
 
 # Mockito
 jar_library(name='mockito', jars=[
-  jar(org='org.mockito', name='mockito-core', rev='2.7.11')
+  jar(org='org.mockito', name='mockito-core', rev='2.7.11'),
+])
+
+# Curator Test
+jar_library(name='curator-test', jars=[
+  jar(org='org.apache.curator', name='curator-test', rev='4.0.0'),
 ])
 
 # Scalameter

@@ -1,14 +1,10 @@
 package caustic.benchmark
 
 import caustic.runtime.thrift
-import caustic.runtime.interpreter.Transaction
-import caustic.syntax._
+import caustic.runtime.Transaction
+import caustic.runtime.service._
 
-import caustic.runtime.thrift.Read
 import org.scalameter.api._
-import scala.concurrent.Await
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration.Duration
 
 object ParseBenchmark extends Bench.OfflineReport {
 

@@ -1,6 +1,7 @@
 package caustic.benchmark
 
 import caustic.runtime._
+
 import scala.concurrent.{ExecutionContext, Future}
 
 /**

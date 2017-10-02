@@ -10,21 +10,21 @@ import caustic.runtime.memory._
 import caustic.runtime.service._
 ```
 
-Then, bootstrap an in-memory database ```Server``` and ```start``` it as a background process.
+Then, bootstrap an in-memory database ```Server``` and start it as a background process.
 
 ```scala
 val server = Server(LocalDatabase.empty, 9000)
 server.start()
 ```
 
-Finally, open a ```Connection``` to the ```Server``` and use it to ```execute``` transactions.
+Finally, open a ```Connection``` to the ```Server``` and use it to execute transactions.
 
 ```scala
 val client = Connection("localhost", 9000)
 client.execute(cons(write("x", 3), read("x")))
 ```
 
-It's always good practice to ```close``` clients and ```stop``` servers when they are no longer needed.
+It's always good practice to close clients and stop servers when they are no longer needed.
 
 ```scala
 client.close()
@@ -52,14 +52,14 @@ val curator = CuratorFrameworkFactory.newClient(
 val registry = Registry(curator, "/services/caustic")
 ```
 
-Then, we can use this ```Registry``` to bootstrap a database ```Server``` that automatically ```registers``` itself when it comes online and ```unregisters``` itself when it goes offline and ```start``` it as a background process.
+Then, we can use this ```Registry``` to bootstrap a database ```Server``` that automatically registers itself when it comes online and unregisters itself when it goes offline and start it as a background process.
 
 ```scala
 val server = Server(registry, LocalDatabase.empty, 9000)
 server.start()
 ```
 
-Finally, we can connect a ```Cluster``` to the ```Registry``` and use it to ```execute``` transactions on a randomized, registered ```Server``` instance. Randomization (in)effectively distributes ```execute``` calls across the various instances.
+Finally, we can connect a ```Cluster``` to the ```Registry``` and use it to execute transactions on a randomized, registered ```Server``` instance. Randomization (in)effectively distributes execute calls across the various instances.
 
 ```scala
 val client = Cluster(registry)

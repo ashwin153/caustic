@@ -71,6 +71,7 @@ Always be sure the clean up after you're done!
 ```
 client.close()
 server.stop()
+curator.close()
 ```
 
 [1]: https://zookeeper.apache.org/

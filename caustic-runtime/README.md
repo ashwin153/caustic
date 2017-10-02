@@ -59,7 +59,7 @@ val server = Server(registry, LocalDatabase.empty, 9000)
 server.start()
 ```
 
-Finally, we can connect a ```Cluster``` to the ```Registry``` and use it to execute transactions on a randomized, registered ```Server``` instance. Randomization (in)effectively distributes execute calls across the various instances.
+Finally, we can connect a ```Cluster``` to the ```Registry``` and use it to execute transactions on a randomized, registered ```Server``` instance. Randomization (in)effectively distributes ```execute``` calls across the various instances.
 
 ```scala
 val client = Cluster(registry)

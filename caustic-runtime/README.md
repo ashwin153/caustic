@@ -51,6 +51,7 @@ val curator = CuratorFrameworkFactory.newClient(
 )
 
 val registry = Registry(curator, "/services/caustic")
+curator.start()
 ```
 
 Then, we can use this ```Registry``` to bootstrap a database ```Server``` that automatically registers itself when it comes online and unregisters itself when it goes offline and start it as a background process.

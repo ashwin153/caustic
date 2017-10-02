@@ -39,7 +39,7 @@ brew install zookeeper
 brew services start zookeeper
 ```
 
-Once ZooKeeper is up and running, we'll need to create ```Registry``` to store the locations of the various active ```Server``` instances. To construct a ```Registry```, we'll need to supply (a) a [Curator][3] connection to ZooKeeper and (b) a Zookeeper path to its contents. 
+Once ZooKeeper is up and running, we'll need to create ```Registry``` to store the locations of the various active ```Server``` instances. To construct a ```Registry```, we'll need to supply (a) a [Curator][3] connection to ZooKeeper and (b) a Zookeeper path to its contents. While Curator does already provide an implementation of [Service Discovery][4], I personally found it to be a verbose, unintuitive interface and so I chose to implement my own version instead.
 
 ```scala
 import org.apache.curator.framework.CuratorFrameworkFactory
@@ -76,3 +76,4 @@ curator.close()
 [1]: https://zookeeper.apache.org/
 [2]: https://blog.kompany.org/2013/02/23/setting-up-apache-zookeeper-on-os-x-in-five-minutes-or-less/
 [3]: http://curator.apache.org/curator-framework/
+[4]: https://github.com/Netflix/curator/wiki/Service-Discovery

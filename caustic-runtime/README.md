@@ -1,21 +1,68 @@
 # Runtime
 The ```caustic-runtime``` is responsible for executing transactions on arbitrary key-value stores. In order to use a ```Database```, simply construct and serve a Thrift server in the following manner.
 
+## Standalone
 ```scala
-import caustic.rumtime.memory.LocalDatabase
-import caustic.runtime.thrift
+import scala.concurrent.ExecutionContext.Implicits.global
+import caustic.runtime.memory._
+import caustic.runtime.service._
 
-import org.apache.thrift.transport.TServerSocket
-import org.apache.thrift.server.TSimpleServer
+// Bootstrap an in-memory server.
+val server = Server(LocalDatabase.empty, 9000)
+server.start()
 
-// Construct the thrift server.
-val database = LocalDatabase.empty
-val transport = new TServerSocket(9090)
-val processor = new thrift.Database.AsyncProcessor(database)
-val server = new TSimpleServer(new TServer.Args(transport).processor(processor))
+// Connect a client and execute transactions.
+val client = Connection("localhost", 9000)
+client.execute(cons(write("x", 3), read("x")))
 
-// Serve the thrift server.
-server.serve()
+// Cleanup the client and server.
+client.close()
+server.stop()
+```
+
+## Cluster
+Caustic relies on ZooKeeper to perform automatic service discovery of server instances in a cluster. The following script installs ZooKeeper and verifies that it is running correctly. A more detailed guide can be found [here](https://blog.kompany.org/2013/02/23/setting-up-apache-zookeeper-on-os-x-in-five-minutes-or-less/).
+
+```sh
+# Install and Start ZooKeeper.
+brew install zookeeper
+brew services start zookeeper
+
+# Login to ZooKeeper.
+# Commands: http://zookeeper.apache.org/doc/r3.4.5/zookeeperAdmin.html#sc_zkCommands
+telnet localhost 2181
+stat
+```
+
+Once ZooKeeper is up and running, we'll need to create a ```Registry``` which each ```Server``` will announce themself in so that each ```Client``` can automatically discover their network location.
+
+```scala
+import org.apache.curator.framework.CuratorFrameworkFactory
+
+// Connect to ZooKeeper.
+val curator = CuratorFrameworkFactory.newClient(
+  "localhost:2181,localhost:3001", 
+  new ExponentialBackoffRetry(1000, 3)
+)
+
+// Construct a Registry.
+val registry = Registry(curator, "/services/caustic")
+```
+
+Finally, we'll setup a ```Server``` that automatically announces itself in the registry and a ```Cluster``` which executes transactions on a randomized instance in the registry. Randomization enables the ```Cluster``` to distribute load (somewhat inequitably) across the various instances in the registry.
+
+```scala
+// Bootstrap a server instance.
+val server = Server(registry, LocalDatabase.empty, 9000)
+server.start()
+
+// Connect a cluster client and execute transactions.
+val client = Cluster(registry)
+client.execute(cons(write("x", 3), read("x")))
+
+// Cleanup the cluster and server.
+client.close()
+server.stop()
 ```
 
 ## Representation

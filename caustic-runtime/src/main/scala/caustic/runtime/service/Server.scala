@@ -3,10 +3,9 @@ package service
 
 import caustic.common.concurrent.Process
 
-import shapeless._
-
-import org.apache.thrift.server.TThreadPoolServer
+import org.apache.thrift.server.TNonblockingServer
 import org.apache.thrift.transport.TNonblockingServerSocket
+import shapeless._
 
 import java.net.InetAddress
 import scala.concurrent.ExecutionContext
@@ -26,8 +25,8 @@ object Server {
   ): Process[Unit :: HNil] = {
     val transport = new TNonblockingServerSocket(port)
     val processor = new thrift.Database.AsyncProcessor(database)
-    val arguments = new TThreadPoolServer.Args(transport).processor(processor)
-    val server = new TThreadPoolServer(arguments)
+    val arguments = new TNonblockingServer.Args(transport).processor(processor)
+    val server = new TNonblockingServer(arguments)
     Process.sync(server.serve(), server.stop())
   }
 

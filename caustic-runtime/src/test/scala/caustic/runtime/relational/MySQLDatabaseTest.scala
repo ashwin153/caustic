@@ -24,7 +24,7 @@ class MySQLDatabaseTest extends DatabaseTest with BeforeAndAfterAll {
     // Delete all the table metadata.
     val con = this.pool.getConnection()
     val smt = con.createStatement()
-    smt.execute("DROP TABLE IF EXISTS `schema`")
+    smt.execute("DROP TABLE IF EXISTS `caustic`")
     con.close()
 
     // Run the tests.

@@ -14,6 +14,7 @@ Caustic is a language for expressing and executing transactions on arbitrary key
 - Python 2.7
 - PostgreSQL 9.5
 - MySQL 5.0
+- ZooKeeper 3.4.10
 
 # Build
 Artifacts are published to the [Sonatype OSS Repository Hosting Service][3] and synced to [Maven Central][4]. Snapshots of the ```master``` branch are built using [Travis CI][5].

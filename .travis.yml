@@ -34,14 +34,13 @@ before_script: |
 # Setup ZooKeeper.
 # https://gist.github.com/estliberitas/b2c004f7447ed6fa3248
 before_install:
-  - "sudo apt-get install -y zookeeper-server"
+  - "sudo apt-get install zookeeperd"
 
 before_script:
-  - "sudo service zookeeper-server init"
-  - "sudo service zookeeper-server start"
+  - "sudo service zookeeper start"
 
 after_script:
-  - "sudo service zookeeper-server stop"
+  - "sudo service zookeeper stop"
 
 
 # Setup Databases.

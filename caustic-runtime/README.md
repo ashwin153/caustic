@@ -24,7 +24,7 @@ val client = Connection("localhost", 9000)
 client.execute(cons(write("x", 3), read("x")))
 ```
 
-It's good practice to close the clients and stop servers when they are no longer needed.
+It's always good practice to close the clients and stop servers when they are no longer needed.
 
 ```scala
 client.close()

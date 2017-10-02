@@ -1,0 +1,14 @@
+scala_library(
+    name='scala',
+    sources=rglobs('*.scala'),
+    dependencies=[
+        'caustic-runtime/src/main/thrift:java',
+        'caustic-syntax/src/main/antlr:java',
+    ],
+    provides=artifact(
+        org='com.madavan',
+        name='caustic-syntax_2.12',
+        repo=public,
+        publication_metadata=describe,
+    ),
+)

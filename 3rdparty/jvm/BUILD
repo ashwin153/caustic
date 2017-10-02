@@ -31,8 +31,10 @@ jar_library(name='jackson', jars=[
 
 # Curator
 jar_library(name='curator', jars=[
-  jar(org='org.apache.curator', name='curator-framework', rev='4.0.0'),
-  jar(org='org.apache.curator', name='curator-recipes', rev='4.0.0'),
+  jar(org='org.apache.curator', name='curator-framework', rev='4.0.0', excludes=[exclude('org.apache.zookeeper')]),
+  jar(org='org.apache.curator', name='curator-recipes', rev='4.0.0', excludes=[exclude('org.apache.zookeeper')]),
+  jar(org='org.apache.zookeeper', name='zookeeper', rev='3.4.10'),
+  jar(org='org.slf4j', name='slf4j-simple', rev='1.7.25'),
 ])
 
 # Shapeless

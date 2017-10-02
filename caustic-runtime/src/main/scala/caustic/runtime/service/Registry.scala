@@ -50,8 +50,10 @@ case class Registry(
     unregister(instance)
 
     // Announce the instance in ZooKeeper.
+    this.curator.blockUntilConnected()
     this.paths += instance -> curator.create()
       .creatingParentContainersIfNeeded()
+      .withProtection()
       .withMode(CreateMode.EPHEMERAL_SEQUENTIAL)
       .forPath(s"${this.namespace}/instance", instance.toBytes)
 
@@ -71,8 +73,9 @@ case class Registry(
   def unregister(instance: Instance): Unit = this.synchronized {
     if (this.paths.contains(instance)) {
       // Remove the instance from ZooKeeper.
-      curator.delete().forPath(this.paths(instance))
-      curator.getConnectionStateListenable.removeListener(this.announcers(instance))
+      this.curator.blockUntilConnected()
+      this.curator.delete().forPath(this.paths(instance))
+      this.curator.getConnectionStateListenable.removeListener(this.announcers(instance))
 
       // Delete the instance.
       this.paths -= instance

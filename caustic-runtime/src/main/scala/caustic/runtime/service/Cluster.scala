@@ -5,7 +5,7 @@ import org.apache.curator.framework.CuratorFramework
 import org.apache.curator.framework.recipes.cache._
 import scala.collection.concurrent.TrieMap
 import scala.collection.mutable
-import scala.util.{Random, Try}
+import scala.util.{Failure, Random, Try}
 
 /**
  * A Thrift connection for clusters of instances. Thread-safe.
@@ -40,11 +40,15 @@ case class Cluster(
   override def execute(transaction: thrift.Transaction): Try[thrift.Literal] = {
     // Avoids race by caching the available clients.
     val current = this.connections.values.toSeq
-    val client = current(Random.nextInt(current.length))
-
-    // Avoid race by synchronizing execution on the randomized client.
-    client.synchronized {
-      client.execute(transaction)
+    if (current.isEmpty) {
+      // If there are no available clients, then throw an error.
+      Failure(new IndexOutOfBoundsException("No available servers."))
+    } else {
+      // Avoid race by synchronizing execution on the randomized client.
+      val client = current(Random.nextInt(current.length))
+      client.synchronized {
+        client.execute(transaction)
+      }
     }
   }
 
@@ -59,7 +63,7 @@ object Cluster {
    * @return Cluster client.
    */
   def apply(registry: Registry): Cluster = {
-    val instances = new PathChildrenCache(registry.curator, registry.namespace, false)
+    val instances = new PathChildrenCache(registry.curator, registry.namespace, true)
     val connections = TrieMap.empty[String, Connection]
     Cluster(instances, connections)
   }

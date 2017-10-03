@@ -39,12 +39,12 @@ case class LocalCache(
 object LocalCache {
 
   /**
-   * Constructs an empty LocalCache backed by the specified database.
+   * Constructs a LocalCache backed by the specified database.
    *
    * @param database Underlying database.
    * @param size Maximum number of cache lines.
    * @param expires Expiration duration.
-   * @return Empty LocalCache.
+   * @return LocalCache.
    */
   def empty(database: Database, size: Long, expires: Duration): LocalCache =
     LocalCache(database, caffeine.Caffeine.newBuilder()

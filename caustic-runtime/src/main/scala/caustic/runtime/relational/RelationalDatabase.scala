@@ -17,7 +17,7 @@ abstract class RelationalDatabase(underlying: DataSource)(
 ) extends Database {
 
   // Ensure that the table schema exists.
-  this.transaction { con =>
+  val exists: Future[Unit] = this.transaction { con =>
     val smt = con.createStatement()
     smt.execute(this.schema)
     smt.close()

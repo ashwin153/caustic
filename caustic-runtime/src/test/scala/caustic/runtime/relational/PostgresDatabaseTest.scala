@@ -5,7 +5,11 @@ import com.mchange.v2.c3p0.ComboPooledDataSource
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.{BeforeAndAfterAll, Outcome}
+
+import scala.concurrent.Await
+import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.language.postfixOps
 
 @RunWith(classOf[JUnitRunner])
 class PostgresDatabaseTest extends DatabaseTest with BeforeAndAfterAll {
@@ -29,6 +33,7 @@ class PostgresDatabaseTest extends DatabaseTest with BeforeAndAfterAll {
 
     // Run the tests.
     val database = PostgresDatabase(this.pool)
+    Await.result(database.exists, 10 seconds)
     test(database)
   }
 

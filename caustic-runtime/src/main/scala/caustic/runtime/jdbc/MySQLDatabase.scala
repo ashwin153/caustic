@@ -1,21 +1,19 @@
 package caustic.runtime
 package jdbc
 
-import java.sql.Connection
-import javax.sql.DataSource
+import com.mchange.v2.c3p0.PooledDataSource
 
+import java.sql.Connection
 import scala.collection.mutable
-import scala.concurrent.ExecutionContext
 
 /**
  * A MySQL backed database.
  *
  * @param underlying Underlying MySQL DataStore.
- * @param ec Implicit execution context.
  */
-case class MySQLDatabase(underlying: DataSource)(
-  implicit ec: ExecutionContext
-) extends RelationalDatabase(underlying) {
+case class MySQLDatabase(
+  underlying: PooledDataSource
+) extends JdbcDatabase(underlying) {
 
   override def schema: String =
     s""" CREATE TABLE IF NOT EXISTS `caustic`(

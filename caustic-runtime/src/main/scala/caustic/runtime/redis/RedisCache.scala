@@ -5,6 +5,7 @@ import caustic.runtime.redis.RedisCache._
 
 import akka.actor.ActorSystem
 import akka.util.ByteString
+import com.typesafe.config.Config
 import redis.{ByteStringDeserializer, ByteStringSerializer, RedisClient}
 
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream, ObjectInputStream, ObjectOutputStream}
@@ -40,6 +41,11 @@ case class RedisCache(
   ): Future[Unit] =
     this.client.del(keys.toSeq: _*).map(_ => Unit)
 
+  override def close(): Unit = {
+    this.client.stop()
+    super.close()
+  }
+
 }
 
 object RedisCache {
@@ -62,6 +68,9 @@ object RedisCache {
     result
   }
 
+  // Implicit Actor System.
+  implicit val system: ActorSystem = ActorSystem.create()
+
   /**
    * Constructs a Redis client backed by the specified database.
    *
@@ -76,5 +85,18 @@ object RedisCache {
     implicit system: ActorSystem
   ): RedisCache =
     RedisCache(database, RedisClient(host, port, password))
+
+  /**
+   *
+   * @param database
+   * @param config
+   * @return
+   */
+  def apply(database: Database, config: Config): RedisCache = {
+    val host = config.getString("host")
+    val port = config.getInt("port")
+    val password = config.getString("password")
+    RedisCache(database, host, port, Some(password))
+  }
 
 }

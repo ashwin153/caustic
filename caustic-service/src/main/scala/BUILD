@@ -2,13 +2,11 @@ scala_library(
     name='scala',
     sources=rglobs('*.scala'),
     dependencies=[
-        'caustic-runtime/src/main/scala',
-        'caustic-runtime/src/main/thrift',
-        '3rdparty/jvm:curator',
+        'caustic-runtime/src/main/thrift'
     ],
     provides=artifact(
         org='com.madavan',
-        name='caustic-service_2.12',
+        name='caustic-client_2.12',
         repo=public,
         publication_metadata=describe,
     ),

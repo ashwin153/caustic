@@ -5,6 +5,7 @@ import caustic.runtime.Database._
 
 import org.apache.thrift.async.AsyncMethodCallback
 
+import java.io.Closeable
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -16,7 +17,7 @@ import scala.util.{Failure, Success}
 /**
  * An asynchronous, transactional key-value store.
  */
-trait Database extends thrift.Database.AsyncIface {
+trait Database extends thrift.Database.AsyncIface with Closeable {
 
   /**
    * Asynchronously returns the latest revisions of the specified keys.

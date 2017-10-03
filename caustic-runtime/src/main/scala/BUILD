@@ -7,6 +7,7 @@ scala_library(
         '3rdparty/jvm:caffeine',
         '3rdparty/jvm:curator',
         '3rdparty/jvm:jackson',
+        '3rdparty/jvm:rediscala',
         scoped('3rdparty/jvm:mysql', scope='runtime'),
         scoped('3rdparty/jvm:postgres', scope='runtime'),
     ],

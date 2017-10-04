@@ -4,6 +4,12 @@ java_thrift_library(
     dependencies=[
         '3rdparty/jvm:thrift',
     ],
+    provides=artifact(
+        org='com.madavan',
+        name='caustic-thrift',
+        repo=public,
+        publication_metadata=describe,
+    ),
 )
 
 python_thrift_library(

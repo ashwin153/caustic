@@ -1,5 +1,5 @@
 java_thrift_library(
-    name='java',
+    name='thrift',
     sources=rglobs('*.thrift'),
     dependencies=[
         '3rdparty/jvm:thrift',
@@ -10,12 +10,4 @@ java_thrift_library(
         repo=public,
         publication_metadata=describe,
     ),
-)
-
-python_thrift_library(
-    name='python',
-    sources=rglobs('*.thrift'),
-    dependencies=[
-        '3rdparty/python:thrift',
-    ],
 )

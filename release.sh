@@ -8,13 +8,16 @@ if [[ "$response" =~ ^([yY][eE][sS]|[yY])+$ ]] ; then
   if [ -z "version" ] ; then
     ./pants publish.jar --publish-jar-no-dryrun \
       caustic-runtime/src/main/scala \
-      caustic-runtime/src/main/thrift:java
+      caustic-runtime/src/main/thrift \
+      caustic-common/src/main/scala
   else
     ./pants publish.jar --publish-jar-no-dryrun \
       --publish-jar-override=com.madavan#caustic-runtime_2.12=$version \
       --publish-jar-override=com.madavan#caustic-thrift=$version \
+      --publish-jar-override=com.madavan#caustic-common_2.12=$version \
       caustic-runtime/src/main/scala \
-      caustic-runtime/src/main/thrift:java
+      caustic-runtime/src/main/thrift \
+      caustic-common/src/main/scala
   fi
 
   # Promote to Maven Central

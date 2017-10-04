@@ -3,9 +3,9 @@ package caustic.common.concurrent
 import java.util.concurrent.locks.StampedLock
 
 /**
- * A Scala wrapper around the Java8 [[StampedLock]]. Provides a simple abstraction that hides the
+ * A Scala wrapper around the Java8 StampedLock. Provides a simple abstraction that hides the
  * semantics of acquiring and releasing shared, exclusive, and optimistic locks. The lock is not
- * reentrant. The [[StampedLock]] implementation benchmarks significantly better than standard
+ * reentrant. The StampedLock implementation benchmarks significantly better than standard
  * monitor synchronization and the various lock abstractions in the Java concurrency package.
  *
  * @param underlying Underlying lock.

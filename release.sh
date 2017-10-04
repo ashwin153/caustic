@@ -9,7 +9,7 @@ fi
 
 # Release Guidelines: https://github.com/ashwin153/caustic/wiki/Release
 read -p "Artifact version (defaults to incrementing patch version): " version
-read -r -p "$(echo -e -n "Confirm release of \033[0;33m$branch\033[0;0m? [y/N] ")" response
+read -r -p "$(echo -e -n "Confirm release of \033[0;33m$branch\033[0;0m? [y|N] ")" response
 
 # Publish Build Artifacts.
 if [[ "$response" =~ ^([yY][eE][sS]|[yY])+$ ]] ; then

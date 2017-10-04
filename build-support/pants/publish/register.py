@@ -14,7 +14,7 @@ repository = Repository(
 )
 
 metadata = OSSRHPublicationMetadata(
-    description='A library for expressing and executing transactions.',
+    description='Reinventing database transactions',
     url='https://github.com/ashwin153/caustic',
     licenses=[
         License(

@@ -149,3 +149,9 @@ trait Codec {
     not(lessEqual(x, y))
 
 }
+
+/**
+ * A Java-compatible, Thrift codec. Because implemented trait methods and package objects are not
+ * easily accessible from Java, we wrap the codec within an object to simplify interoperability.
+ */
+object JavaCodec extends Codec

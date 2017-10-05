@@ -1,5 +1,5 @@
 package caustic.runtime
-package relational
+package jdbc
 
 import com.mchange.v2.c3p0.ComboPooledDataSource
 import org.junit.runner.RunWith

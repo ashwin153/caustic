@@ -1,6 +1,6 @@
 package caustic.runtime
 
-import java.util.concurrent.{CountDownLatch, TimeUnit}
+import caustic.runtime.interpreter._
 
 import org.junit.runner.RunWith
 import org.mockito.Mockito._
@@ -12,6 +12,7 @@ import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.time.{Millis, Seconds, Span}
 
+import java.util.concurrent.{CountDownLatch, TimeUnit}
 import scala.concurrent.ExecutionContext.Implicits.global
 
 @RunWith(classOf[JUnitRunner])

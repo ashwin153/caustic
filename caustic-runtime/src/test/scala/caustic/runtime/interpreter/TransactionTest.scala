@@ -1,5 +1,6 @@
-package caustic.runtime
+package caustic.runtime.interpreter
 
+import caustic.runtime.{interpreter, thrift}
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.{FunSuite, Matchers}
@@ -36,7 +37,7 @@ class TransactionTest extends FunSuite with Matchers {
     floor(real(1.4)) shouldEqual real(1)
 
     // String Expressions.
-    caustic.runtime.length(text("Hello")) shouldEqual real(5.0)
+    interpreter.length(text("Hello")) shouldEqual real(5.0)
     slice(text("Hello"), real(1), real(3)) shouldEqual text("el")
     matches(text("a41i3"), text("[a-z1-4]+")) shouldEqual flag(true)
     matches(text("a41i3"), text("[a-z1-4]")) shouldEqual flag(false)
@@ -55,10 +56,10 @@ class TransactionTest extends FunSuite with Matchers {
     negate(text("")) shouldEqual flag(true)
     negate(text("foo")) shouldEqual flag(false)
 
-    caustic.runtime.equal(real(0), real(0.0)) shouldEqual flag(true)
-    caustic.runtime.equal(text("a"), text("a")) shouldEqual flag(true)
-    caustic.runtime.equal(text(""), real(0)) shouldEqual flag(false)
-    caustic.runtime.equal(flag(true), flag(false)) shouldEqual flag(false)
+    interpreter.equal(real(0), real(0.0)) shouldEqual flag(true)
+    interpreter.equal(text("a"), text("a")) shouldEqual flag(true)
+    interpreter.equal(text(""), real(0)) shouldEqual flag(false)
+    interpreter.equal(flag(true), flag(false)) shouldEqual flag(false)
     less(real(2), real(10)) shouldEqual flag(true)
     less(real(-1), real(1)) shouldEqual flag(true)
     less(text("a"), text("ab")) shouldEqual flag(true)

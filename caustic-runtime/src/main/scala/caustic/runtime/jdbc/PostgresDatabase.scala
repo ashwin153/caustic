@@ -1,5 +1,7 @@
 package caustic.runtime
-package relational
+package jdbc
+
+import caustic.runtime.interpreter._
 
 import java.sql.Connection
 import javax.sql.DataSource

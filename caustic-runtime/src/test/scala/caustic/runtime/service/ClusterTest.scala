@@ -45,7 +45,7 @@ class ClusterTest extends FunSuite with Matchers with BeforeAndAfterAll with Eve
     // Bootstrap an in-memory database server.
     val registry = Registry(this.curator, "/services/caustic")
     val server = Server(LocalDatabase.empty, 9000, registry)
-    server.start()
+    server.serve()
 
     // Connect and execute transactions.
     val client = Cluster(registry)
@@ -54,7 +54,7 @@ class ClusterTest extends FunSuite with Matchers with BeforeAndAfterAll with Eve
 
     // Cleanup client and server.
     client.close()
-    server.stop()
+    server.close()
   }
 
 }

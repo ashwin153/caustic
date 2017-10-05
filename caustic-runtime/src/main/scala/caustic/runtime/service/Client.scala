@@ -6,7 +6,7 @@ import scala.concurrent.duration.FiniteDuration
 import scala.util.Try
 
 /**
- * A Caustic client.
+ * A Caustic, Thrift client.
  */
 trait Client extends Closeable {
 

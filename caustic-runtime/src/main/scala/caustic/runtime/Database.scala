@@ -2,9 +2,9 @@ package caustic.runtime
 
 import caustic.common.concurrent.Backoff._
 import caustic.runtime.Database._
+import caustic.runtime.interpreter._
 
 import org.apache.thrift.async.AsyncMethodCallback
-import org.apache.thrift.TException
 
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
@@ -199,8 +199,9 @@ trait Database extends thrift.Database.AsyncIface {
       case Success(Real(r)) => resultHandler.onComplete(thrift.Literal.real(r))
       case Success(Flag(f)) => resultHandler.onComplete(thrift.Literal.flag(f))
       case Success(Text(t)) => resultHandler.onComplete(thrift.Literal.text(t))
-      case Failure(e: TException) => resultHandler.onError(e)
-      case Failure(e) => resultHandler.onError(ExecutionException(s"Unknown error $e"))
+      case Failure(ConflictException(k)) => resultHandler.onError(new thrift.ConflictException(k.asJava))
+      case Failure(ExecutionException(m)) => resultHandler.onError(new thrift.ExecutionException(m))
+      case Failure(e) => resultHandler.onError(new thrift.ExecutionException(s"Unknown error $e"))
     }
   }
 

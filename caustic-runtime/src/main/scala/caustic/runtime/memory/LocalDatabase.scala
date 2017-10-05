@@ -1,6 +1,8 @@
 package caustic.runtime
 package memory
 
+import caustic.runtime.interpreter._
+
 import com.github.benmanes.caffeine.{cache => caffeine}
 
 import scala.collection.JavaConverters._

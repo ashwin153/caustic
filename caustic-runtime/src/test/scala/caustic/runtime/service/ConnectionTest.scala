@@ -16,7 +16,7 @@ class ConnectionTest extends FunSuite with Matchers {
   test("Execute works on in-memory server.") {
     // Boostrap an in-memory database server.
     val server = Server(LocalDatabase.empty, 9000)
-    server.start()
+    server.serve()
 
     // Connect and execute transactions.
     val client = Connection("localhost", 9000)
@@ -24,7 +24,7 @@ class ConnectionTest extends FunSuite with Matchers {
 
     // Cleanup client and server.
     client.close()
-    server.stop()
+    server.close()
   }
 
 }

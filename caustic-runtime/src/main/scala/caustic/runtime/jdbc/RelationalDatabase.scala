@@ -1,10 +1,11 @@
 package caustic.runtime
-package relational
+package jdbc
+
+import caustic.runtime.interpreter._
 
 import java.sql.Connection
 import javax.sql.DataSource
 
-import scala.collection.JavaConverters._
 import scala.concurrent.{ExecutionContext, Future, blocking}
 
 /**

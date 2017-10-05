@@ -1,5 +1,7 @@
 package caustic.runtime
 
+import caustic.runtime.interpreter._
+
 /**
  * A versioned value. Revisions of a key are totally ordered by their associated version. Revisions
  * are the mechanism through which transactional consistency is achieved; if a newer revision exists

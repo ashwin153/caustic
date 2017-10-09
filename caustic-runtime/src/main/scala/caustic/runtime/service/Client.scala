@@ -10,7 +10,6 @@ import scala.util.Try
  */
 trait Client extends Closeable {
 
-
   /**
    * Attempts to execute the transaction and automatically retries failures with backoff.
    *
@@ -26,7 +25,7 @@ trait Client extends Closeable {
    * @param transaction Transaction to execute.
    * @return Execution result or an error on failure.
    */
-  final def execute(transaction: thrift.Transaction): Try[thrift.Literal] =
+  def execute(transaction: thrift.Transaction): Try[thrift.Literal] =
     execute(transaction, Seq.empty)
 
 }

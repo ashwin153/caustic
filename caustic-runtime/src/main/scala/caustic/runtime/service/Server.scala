@@ -34,7 +34,7 @@ object Server {
    * @param ec Implicit execution context.
    * @return Standalone Server.
    */
-  def apply(database: Database, port: Int)(
+  def standalone(database: Database, port: Int)(
     implicit ec: ExecutionContext
   ): StandaloneServer = {
     val transport = new TNonblockingServerSocket(port)
@@ -62,12 +62,12 @@ object Server {
    * @param ec Implicit execution context.
    * @return Discoverable Server.
    */
-  def apply(database: Database, port: Int, registry: Registry)(
+  def discoverable(database: Database, port: Int, registry: Registry)(
     implicit ec: ExecutionContext
   ): DiscoverableServer = {
     val instance = Instance(InetAddress.getLocalHost.getHostName, port)
     val announce = Process.sync(registry.register(instance), registry.unregister(instance))
-    DiscoverableServer(announce before Server(database, port).underlying)
+    DiscoverableServer(announce before standalone(database, port).underlying)
   }
 
   case class DiscoverableServer(underlying: Process[Unit :: Unit :: HNil])(

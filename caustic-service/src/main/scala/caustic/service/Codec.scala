@@ -49,8 +49,10 @@ trait Codec {
     thrift.Transaction.expression(thrift.Expression.store(new thrift.Store(n, v)))
   def branch(c: thrift.Transaction, p: thrift.Transaction, f: thrift.Transaction = Empty): thrift.Transaction =
     thrift.Transaction.expression(thrift.Expression.branch(new thrift.Branch(c, p, f)))
-  def cons(a: thrift.Transaction, rest: thrift.Transaction*): thrift.Transaction =
-    rest.foldLeft(a)((a, b) => thrift.Transaction.expression(thrift.Expression.cons(new thrift.Cons(a, b))))
+  def cons(a: thrift.Transaction, b: thrift.Transaction): thrift.Transaction =
+    thrift.Transaction.expression(thrift.Expression.cons(new thrift.Cons(a, b)))
+  def cons(a: thrift.Transaction, b: thrift.Transaction, rest: thrift.Transaction*): thrift.Transaction =
+    rest.foldLeft(cons(a, b))((x, y) => cons(x, y))
   def repeat(c: thrift.Transaction, b: thrift.Transaction): thrift.Transaction =
     thrift.Transaction.expression(thrift.Expression.repeat(new thrift.Repeat(c, b)))
   def rollback(r: thrift.Transaction): thrift.Transaction =
@@ -59,14 +61,16 @@ trait Codec {
     thrift.Transaction.expression(thrift.Expression.prefetch(new thrift.Prefetch(k)))
 
   // Math Expressions.
-  def add(x: thrift.Transaction, rest: thrift.Transaction*): thrift.Transaction =
-    rest.foldLeft(x)((a, b) => thrift.Transaction.expression(thrift.Expression.add(new thrift.Add(a, b))))
-  def sub(x: thrift.Transaction, rest: thrift.Transaction*): thrift.Transaction =
-    rest.foldLeft(x)((a, b) => thrift.Transaction.expression(thrift.Expression.sub(new thrift.Sub(a, b))))
-  def mul(x: thrift.Transaction, rest: thrift.Transaction*): thrift.Transaction =
-    rest.foldLeft(x)((a, b) => thrift.Transaction.expression(thrift.Expression.mul(new thrift.Mul(a, b))))
-  def div(x: thrift.Transaction, rest: thrift.Transaction*): thrift.Transaction =
-    rest.foldLeft(x)((a, b) => thrift.Transaction.expression(thrift.Expression.div(new thrift.Div(a, b))))
+  def add(x: thrift.Transaction, y: thrift.Transaction): thrift.Transaction =
+    thrift.Transaction.expression(thrift.Expression.add(new thrift.Add(x, y)))
+  def add(x: thrift.Transaction, y: thrift.Transaction, rest: thrift.Transaction*): thrift.Transaction =
+    rest.foldLeft(add(x, y))((a, b) => add(a, b))
+  def sub(x: thrift.Transaction, y: thrift.Transaction): thrift.Transaction =
+    thrift.Transaction.expression(thrift.Expression.sub(new thrift.Sub(x, y)))
+  def mul(x: thrift.Transaction, y: thrift.Transaction): thrift.Transaction =
+    thrift.Transaction.expression(thrift.Expression.mul(new thrift.Mul(x, y)))
+  def div(x: thrift.Transaction, y: thrift.Transaction): thrift.Transaction =
+    thrift.Transaction.expression(thrift.Expression.div(new thrift.Div(x, y)))
   def mod(x: thrift.Transaction, y: thrift.Transaction): thrift.Transaction =
     thrift.Transaction.expression(thrift.Expression.mod(new thrift.Mod(x, y)))
   def pow(x: thrift.Transaction, y: thrift.Transaction): thrift.Transaction =

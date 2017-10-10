@@ -32,8 +32,8 @@ if [[ "$response" =~ ^([yY][eE][sS]|[yY])+$ ]] ; then
     eval "$publish ${targets[@]}"
   else
     # Override Artifact Version.
-    overrides="${artifacts[@]/#/--publish-jar-override=com.madavan#}"
-    overrides="${overrides[@]/%/=$version}"
+    overrides=("${artifacts[@]/#/--publish-jar-override=com.madavan#}")
+    overrides=("${overrides[@]/%/=$version}")
     eval "$publish ${overrides[@]} ${targets[@]}"
   fi
 

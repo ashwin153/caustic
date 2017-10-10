@@ -2,6 +2,7 @@ package caustic.service
 
 import caustic.runtime.memory.LocalDatabase
 import caustic.runtime.thrift
+
 import org.apache.curator.framework.{CuratorFramework, CuratorFrameworkFactory}
 import org.apache.curator.retry.ExponentialBackoffRetry
 import org.apache.curator.test.TestingServer
@@ -9,6 +10,7 @@ import org.junit.runner.RunWith
 import org.scalatest.concurrent.Eventually
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.{BeforeAndAfterAll, FunSuite, Matchers}
+
 import scala.util.Success
 
 @RunWith(classOf[JUnitRunner])

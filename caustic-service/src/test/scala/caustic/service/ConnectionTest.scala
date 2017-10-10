@@ -6,6 +6,7 @@ import caustic.runtime.thrift
 import org.junit.runner.RunWith
 import org.scalatest.{FunSuite, Matchers}
 import org.scalatest.junit.JUnitRunner
+
 import scala.util.Success
 
 @RunWith(classOf[JUnitRunner])

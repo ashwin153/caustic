@@ -1,10 +1,8 @@
-package caustic.runtime
-package service
+package caustic.service
 
 import org.apache.curator.framework.CuratorFramework
 import org.apache.curator.framework.state.{ConnectionState, ConnectionStateListener}
 import org.apache.zookeeper.CreateMode
-
 import scala.collection.mutable
 
 /**
@@ -18,21 +16,21 @@ import scala.collection.mutable
 case class Registry(
   curator: CuratorFramework,
   namespace: String,
-  paths: mutable.Map[Instance, String],
-  announcers: mutable.Map[Instance, ConnectionStateListener]
+  paths: mutable.Map[Address, String] = mutable.Map.empty,
+  announcers: mutable.Map[Address, ConnectionStateListener] = mutable.Map.empty
 ) {
 
   /**
-   * A listener that re-registers an instance after disruptions in ZooKeeper connectivity.
+   * A ZooKeeper listener that re-registers an instance address after disruptions in connectivity.
    *
-   * @param instance Server instance.
+   * @param address Instance location.
    */
-  case class Announcer(instance: Instance) extends ConnectionStateListener {
+  case class Announcer(address: Address) extends ConnectionStateListener {
 
     override def stateChanged(curator: CuratorFramework, state: ConnectionState): Unit = {
       // Re-register the instance each time the ZooKeeper connection is established.
       if (state == ConnectionState.CONNECTED || state == ConnectionState.RECONNECTED)
-        register(instance)
+        register(address)
     }
 
   }
@@ -43,23 +41,23 @@ case class Registry(
    * during ZooKeeper connectivity disruptions. Instances are automatically re-registered whenever
    * ZooKeeper connectivity is resumed.
    *
-   * @param instance Instance to register.
+   * @param address Instance location.
    */
-  def register(instance: Instance): Unit = this.synchronized {
+  def register(address: Address): Unit = this.synchronized {
     // Unregister the instance if it already exists.
-    unregister(instance)
+    unregister(address)
 
     // Announce the instance in ZooKeeper.
     this.curator.blockUntilConnected()
-    this.paths += instance -> curator.create()
+    this.paths += address -> curator.create()
       .creatingParentContainersIfNeeded()
       .withProtection()
       .withMode(CreateMode.EPHEMERAL_SEQUENTIAL)
-      .forPath(s"${this.namespace}/instance", instance.toBytes)
+      .forPath(s"${this.namespace}/instance", address.toBytes)
 
     // Re-announce the instance every time connection is reestablished.
-    val announcer = Announcer(instance)
-    this.announcers += instance -> announcer
+    val announcer = Announcer(address)
+    this.announcers += address -> announcer
     this.curator.getConnectionStateListenable.addListener(announcer)
   }
 
@@ -68,33 +66,19 @@ case class Registry(
    * ZooKeeper connectivity disruptions, but instances must still unregister themselves whenever
    * they terminate.
    *
-   * @param instance Instance to unregister.
+   * @param address Instance location.
    */
-  def unregister(instance: Instance): Unit = this.synchronized {
-    if (this.paths.contains(instance)) {
+  def unregister(address: Address): Unit = this.synchronized {
+    if (this.paths.contains(address)) {
       // Remove the instance from ZooKeeper.
       this.curator.blockUntilConnected()
-      this.curator.delete().forPath(this.paths(instance))
-      this.curator.getConnectionStateListenable.removeListener(this.announcers(instance))
+      this.curator.delete().forPath(this.paths(address))
+      this.curator.getConnectionStateListenable.removeListener(this.announcers(address))
 
       // Delete the instance.
-      this.paths -= instance
-      this.announcers -= instance
+      this.paths -= address
+      this.announcers -= address
     }
   }
-
-}
-
-object Registry {
-
-  /**
-   * Constructs a registry at the specified namespace in ZooKeeper.
-   *
-   * @param curator ZooKeeper connection.
-   * @param namespace ZooKeeper base path.
-   * @return Default registry.
-   */
-  def apply(curator: CuratorFramework, namespace: String): Registry =
-    Registry(curator, namespace, mutable.Map.empty, mutable.Map.empty)
 
 }

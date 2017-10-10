@@ -14,10 +14,7 @@ import scala.collection.mutable
  * @param underlying Underlying text.
  * @param charset Default charset.
  */
-case class ZipList(
-  underlying: Seq[Byte],
-  charset: Charset
-) {
+case class ZipList(underlying: Seq[Byte], charset: Charset) {
 
   /**
    * Appends the element to the ZipList.

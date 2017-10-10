@@ -12,8 +12,6 @@ import scala.collection.mutable
  * @param parent Parent node or None if root.
  * @param symbol Optional symbol stored at node.
  * @param value Optional value stored at node.
- * @tparam K Type of symbols.
- * @tparam V Type of values.
  */
 class Trie[K, V] private (
   parent: Option[Trie[K, V]],

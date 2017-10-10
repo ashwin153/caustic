@@ -1,8 +1,8 @@
 package caustic.benchmark
 
+import caustic.runtime.Transaction
 import caustic.runtime.thrift
-import caustic.runtime.interpreter.Transaction
-import caustic.runtime.service._
+import caustic.service._
 
 import org.scalameter.api._
 

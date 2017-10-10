@@ -22,7 +22,7 @@ trait Cursor[T] { self =>
    * @param p Predicate function.
    * @return Future containing all records up to the entry that satisfies the predicate.
    */
-  final def advance(p: Entry[T] => Boolean)(
+  def advance(p: Entry[T] => Boolean)(
     implicit ec: ExecutionContext
   ): Future[Seq[Record[T]]] =
     next().flatMap {
@@ -37,7 +37,7 @@ trait Cursor[T] { self =>
    * @param n Number of records to advance.
    * @return Future containing all n records.
    */
-  final def advance(n: Long)(
+  def advance(n: Long)(
     implicit ec: ExecutionContext
   ): Future[Seq[Record[T]]] =
     if (n <= 0)
@@ -54,7 +54,7 @@ trait Cursor[T] { self =>
    *
    * @return Future containing all records until the first pending entry.
    */
-  final def advance()(
+  def advance()(
     implicit ec: ExecutionContext
   ): Future[Seq[Record[T]]] =
     advance {
@@ -73,7 +73,7 @@ trait Cursor[T] { self =>
    * @tparam U Type of function result.
    * @return Future that completes when the function has been applied to all records.
    */
-  final def foreach[U](f: Record[T] => U)(
+  def foreach[U](f: Record[T] => U)(
     implicit ec: ExecutionContext
   ): Future[Unit] =
     advance().map(_.foreach(f))
@@ -88,7 +88,7 @@ trait Cursor[T] { self =>
    * @tparam U Type of transformation result.
    * @return Cursor containing transformed records.
    */
-  final def transform[U](f: PartialFunction[Record[T], U])(
+  def transform[U](f: PartialFunction[Record[T], U])(
     implicit ec: ExecutionContext
   ): Cursor[U] = new Cursor[U] {
     override def next()(implicit ec: ExecutionContext): Future[Entry[U]] =
@@ -110,7 +110,7 @@ trait Cursor[T] { self =>
    * @tparam U Type of mapped cursor.
    * @return Cursor containing mapped records.
    */
-  final def map[U](f: Record[T] => U)(
+  def map[U](f: Record[T] => U)(
     implicit ec: ExecutionContext
   ): Cursor[U] =
     transform { case t => f(t) }
@@ -124,7 +124,7 @@ trait Cursor[T] { self =>
    * @param f Filtration function.
    * @return Cursor containing filtered records.
    */
-  final def filter(f: Record[T] => Boolean)(
+  def filter(f: Record[T] => Boolean)(
     implicit ec: ExecutionContext
   ): Cursor[T] =
     transform { case t if f(t) => t.payload }

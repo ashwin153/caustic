@@ -1,4 +1,6 @@
-package caustic.runtime
+package caustic
+
+import caustic.runtime.thrift
 
 import scala.language.implicitConversions
 

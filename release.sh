@@ -1,7 +1,20 @@
 #!/bin/bash
-branch=$(git symbolic-ref --short HEAD)
+declare -a targets=(
+  "caustic-common/src/main/scala"
+  "caustic-runtime/src/main/scala"
+  "caustic-runtime/src/main/thrift"
+  "caustic-service/src/main/scala"
+)
+
+declare -a artifacts=(
+  "caustic-common_2.12"
+  "caustic-runtime_2.12"
+  "caustic-thrift"
+  "caustic-service_2.12"
+)
 
 # Verify Branch is Clean.
+branch=$(git symbolic-ref --short HEAD)
 if [ -n "$(git status --porcelain)" ]; then 
   echo -e "Current branch \033[0;33m$branch\033[0m has uncommitted changes."
   exit 1
@@ -13,19 +26,15 @@ read -r -p "$(echo -e -n "Confirm release of \033[0;33m$branch\033[0;0m? [y|N] "
 
 # Publish Build Artifacts.
 if [[ "$response" =~ ^([yY][eE][sS]|[yY])+$ ]] ; then
+  publish="./pants publish.jar --publish-jar-no-dryrun"
   if [ -z "version" ] ; then
-    ./pants publish.jar --publish-jar-no-dryrun \
-      caustic-runtime/src/main/scala \
-      caustic-runtime/src/main/thrift \
-      caustic-common/src/main/scala
+    # Increment Patch Version.
+    eval "$publish ${targets[@]}"
   else
-    ./pants publish.jar --publish-jar-no-dryrun \
-      --publish-jar-override=com.madavan#caustic-runtime_2.12=$version \
-      --publish-jar-override=com.madavan#caustic-thrift=$version \
-      --publish-jar-override=com.madavan#caustic-common_2.12=$version \
-      caustic-runtime/src/main/scala \
-      caustic-runtime/src/main/thrift \
-      caustic-common/src/main/scala
+    # Override Artifact Version.
+    overrides="${artifacts[@]/#/--publish-jar-override=com.madavan#}"
+    overrides="${artifacts[@]/%/=$version}"
+    eval "$publish ${overrides[@]} ${targets[@]}"
   fi
 
   # Promote to Maven Central.

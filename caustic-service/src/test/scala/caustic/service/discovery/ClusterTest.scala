@@ -1,20 +1,17 @@
-package caustic.runtime.service
+package caustic.service
+package discovery
 
 import caustic.runtime.memory.LocalDatabase
 import caustic.runtime.thrift
-import java.util.concurrent.{CountDownLatch, TimeUnit}
-import org.apache.curator.framework.api.CuratorWatcher
-import org.apache.curator.framework.recipes.cache.{PathChildrenCacheEvent, PathChildrenCacheListener}
+
 import org.apache.curator.framework.{CuratorFramework, CuratorFrameworkFactory}
 import org.apache.curator.retry.ExponentialBackoffRetry
 import org.apache.curator.test.TestingServer
-import org.apache.zookeeper.Watcher.Event.EventType
-import org.apache.zookeeper.{WatchedEvent, Watcher}
 import org.junit.runner.RunWith
 import org.scalatest.concurrent.Eventually
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.{BeforeAndAfterAll, FunSuite, Matchers}
-import scala.concurrent.ExecutionContext.Implicits.global
+
 import scala.util.Success
 
 @RunWith(classOf[JUnitRunner])

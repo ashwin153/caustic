@@ -10,7 +10,7 @@ import java.util.concurrent.locks.StampedLock
  *
  * @param underlying Underlying lock.
  */
-class Lock(underlying: StampedLock) {
+case class Lock(underlying: StampedLock = new StampedLock) {
 
   /**
    * Returns the result of the provided code block, after acquiring a shared read lock. Because
@@ -59,15 +59,3 @@ class Lock(underlying: StampedLock) {
   }
 
 }
-
-object Lock {
-
-  /**
-   * Constructs a lock backed by a Java StampedLock.
-   *
-   * @return Lock.
-   */
-  def apply(): Lock = new Lock(new StampedLock)
-
-}
-

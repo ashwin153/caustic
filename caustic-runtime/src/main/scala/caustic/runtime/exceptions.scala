@@ -1,5 +1,4 @@
 package caustic.runtime
-package interpreter
 
 import caustic.common.concurrent.Backoff.NonRetryable
 

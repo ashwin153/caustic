@@ -1,7 +1,5 @@
 package caustic.runtime
 
-import caustic.runtime.interpreter._
-
 import org.junit.runner.RunWith
 import org.mockito.Mockito._
 import org.mockito.internal.stubbing.answers.CallsRealMethods

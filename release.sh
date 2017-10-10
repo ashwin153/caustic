@@ -27,13 +27,13 @@ read -r -p "$(echo -e -n "Confirm release of \033[0;33m$branch\033[0;0m? [y|N] "
 # Publish Build Artifacts.
 if [[ "$response" =~ ^([yY][eE][sS]|[yY])+$ ]] ; then
   publish="./pants publish.jar --publish-jar-no-dryrun"
-  if [ -z "version" ] ; then
+  if [ -z "$version" ] ; then
     # Increment Patch Version.
     eval "$publish ${targets[@]}"
   else
     # Override Artifact Version.
     overrides="${artifacts[@]/#/--publish-jar-override=com.madavan#}"
-    overrides="${artifacts[@]/%/=$version}"
+    overrides="${overrides[@]/%/=$version}"
     eval "$publish ${overrides[@]} ${targets[@]}"
   fi
 

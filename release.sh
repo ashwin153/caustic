@@ -26,20 +26,21 @@ read -r -p "$(echo -e -n "Confirm release of \033[0;33m$branch\033[0;0m? [y|N] "
 
 # Publish Build Artifacts.
 if [[ "$response" =~ ^([yY][eE][sS]|[yY])+$ ]] ; then
-  publish="./pants publish.jar --publish-jar-no-dryrun"
   if [ -z "$version" ] ; then
     # Increment Patch Version.
-    eval "$publish ${targets[@]}"
+    publish="./pants publish.jar --publish-jar-no-dryrun ${targets[@]}"
   else
     # Override Artifact Version.
     overrides=("${artifacts[@]/#/--publish-jar-override=com.madavan#}")
     overrides=("${overrides[@]/%/=$version}")
-    eval "$publish ${overrides[@]} ${targets[@]}"
+    publish="./pants publish.jar --publish-jar-no-dryrun ${overrides[@]} ${targets[@]}"
   fi
 
-  # Promote to Maven Central.
-  /usr/bin/open -a "/Applications/Google Chrome.app" \
-    'http://www.pantsbuild.org/release_jvm.html#promoting-to-maven-central'
-  /usr/bin/open -a "/Applications/Google Chrome.app" \
-    'https://oss.sonatype.org/#stagingRepositories'
+  if eval $publish ; then 
+    # Promote to Maven Central.
+    /usr/bin/open -a "/Applications/Google Chrome.app" \
+      'http://www.pantsbuild.org/release_jvm.html#promoting-to-maven-central'
+    /usr/bin/open -a "/Applications/Google Chrome.app" \
+      'https://oss.sonatype.org/#stagingRepositories'
+  fi
 fi

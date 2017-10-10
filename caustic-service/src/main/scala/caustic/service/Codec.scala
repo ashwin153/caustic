@@ -51,8 +51,6 @@ trait Codec {
     thrift.Transaction.expression(thrift.Expression.branch(new thrift.Branch(c, p, f)))
   def cons(a: thrift.Transaction, b: thrift.Transaction): thrift.Transaction =
     thrift.Transaction.expression(thrift.Expression.cons(new thrift.Cons(a, b)))
-  def cons(a: thrift.Transaction, b: thrift.Transaction, rest: thrift.Transaction*): thrift.Transaction =
-    rest.foldLeft(cons(a, b))((x, y) => cons(x, y))
   def repeat(c: thrift.Transaction, b: thrift.Transaction): thrift.Transaction =
     thrift.Transaction.expression(thrift.Expression.repeat(new thrift.Repeat(c, b)))
   def rollback(r: thrift.Transaction): thrift.Transaction =
@@ -63,8 +61,6 @@ trait Codec {
   // Math Expressions.
   def add(x: thrift.Transaction, y: thrift.Transaction): thrift.Transaction =
     thrift.Transaction.expression(thrift.Expression.add(new thrift.Add(x, y)))
-  def add(x: thrift.Transaction, y: thrift.Transaction, rest: thrift.Transaction*): thrift.Transaction =
-    rest.foldLeft(add(x, y))((a, b) => add(a, b))
   def sub(x: thrift.Transaction, y: thrift.Transaction): thrift.Transaction =
     thrift.Transaction.expression(thrift.Expression.sub(new thrift.Sub(x, y)))
   def mul(x: thrift.Transaction, y: thrift.Transaction): thrift.Transaction =

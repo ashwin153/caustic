@@ -1,34 +1,43 @@
 # Caustic
-[![Build Status](https://travis-ci.org/ashwin153/caustic.svg?branch=master)](https://travis-ci.org/ashwin153/caustic)
-[![Maven Central](https://img.shields.io/maven-central/v/com.madavan/caustic-runtime_2.12.svg)]()
+[![Build Status](https://travis-ci.org/ashwin153/caustic.svg?branch=master)][3]
+[![Maven Central](https://img.shields.io/maven-central/v/com.madavan/caustic-runtime_2.12.svg)][2]
 
-Databases are either easy to use or easy to scale. For example, relational databases were popularized in large part because of the programmability of SQL. However, this programmability comes at an incredible expense. Relational databases are notoriously difficult to support at scale, and so developers have increasingly turned toward more specialized NoSQL systems that scale well be shedding functionality.
+Databases are either easy to use or easy to scale. For example, relational databases were 
+popularized in large part because of the programmability of SQL. However, this programmability comes 
+at an incredible expense. Relational databases are notoriously difficult to support at scale, and so 
+developers have increasingly turned toward more specialized NoSQL systems that scale well be 
+shedding functionality.
 
-Developers are not only forced to choose between productivity and performance, but also stark differences between query languages makes their choice of database effectively permanent. Even databases that claim to support the same SQL standard only implement incompatible subsets of its functionality. The lack of a truly uniform interface tightly couples databases and the procedures that are executed against it.
+Developers are not only forced to choose between productivity and performance, but also stark 
+differences between query languages makes their choice of database effectively permanent. Even 
+databases that claim to support the same SQL standard only implement incompatible subsets of its 
+functionality. The lack of a truly uniform interface tightly couples databases and the procedures 
+that are executed against them.
 
-Caustic is a language for expressing and executing transactions on arbitrary key-value stores that is both straightforward to use and simple to integrate. In this article, we’ll discuss the implementation and implications of the transaction runtime and syntax. As a motivating example, consider the following distributed counter implementation in MySQL and Caustic. 
+Caustic is a language for expressing and executing transactions on arbitrary key-value stores that 
+is both straightforward to use and simple to integrate. 
 
-# Requirements
+## Requirements
 - Java 1.8
-- MySQL 5.0
-- PostgreSQL 9.5
+- MySQL 5.0+
+- PostgreSQL 9.5+
 - Python 2.7
 - Scala 2.12
 - ZooKeeper 3.4.10
 
-# Build
-Artifacts are published to the [Sonatype OSS Repository Hosting Service][3] and synced to [Maven Central][4]. Snapshots of the ```master``` branch are built using [Travis CI][5].
+## Build
+Artifacts are published to the [Sonatype OSS Repository Hosting Service][1] and synced to 
+[Maven Central][2]. Snapshots of the ```master``` branch are built using [Travis CI][3].
 
-## Pants
+### Pants
 ```python
 jar_library(name='caustic', jars=[
-    jar(org='com.madavan', name='caustic-runtime_2.12', rev='1.0.0'),
-    jar(org='com.madavan', name='caustic-postgres_2.12', rev='1.0.0'),
-    jar(org='com.madavan', name='caustic-mysql_2.12', rev='1.0.0'),
+    jar(org='com.madavan', name='caustic-runtime_2.12', rev='1.2.9'),
+    jar(org='com.madavan', name='caustic-service_2.12', rev='1.2.9'),
 ])
 ```
 
-## SBT
+### SBT
 ```scala
 scalaVersion := "2.12.1"
 
@@ -38,40 +47,32 @@ resolvers ++= Seq(
 )
 
 libraryDependencies ++= Seq(
-  "com.madavan" %% "caustic-runtime" % "1.0.0",
-  "com.madavan" %% "caustic-mysql" % "1.0.0",
-  "com.madavan" %% "caustic-postgres" % "1.0.0"
+  "com.madavan" %% "caustic-runtime" % "1.2.9",
+  "com.madavan" %% "caustic-service" % "1.2.9",
 )
 ```
 
-## Maven
+### Maven
 ```xml
 <dependency>
   <groupId>com.madavan</groupId>
   <artifactId>caustic-runtime_2.12</artifactId>
-  <version>1.0.0</version>
+  <version>1.2.9</version>
 </dependency>
 
 <dependency>
   <groupId>com.madavan</groupId>
-  <artifactId>caustic-mysql_2.12</artifactId>
-  <version>1.0.0</version>
-</dependency>
-
-<dependency>
-  <groupId>com.madavan</groupId>
-  <artifactId>caustic-postgres_2.12</artifactId>
-  <version>1.0.0</version>
+  <artifactId>caustic-service_2.12</artifactId>
+  <version>1.2.9</version>
 </dependency>
 ```
 
-# Documentation
-Refer to the [User Guide][6] to learn about how to use the system, and the [Wiki][7] for more information.
+## Documentation
+Refer to the [User Guide][4] to learn about how to use the system, and the [Wiki][5] for more 
+information about the implementation.
 
-[1]: https://en.wikipedia.org/wiki/Optimistic_concurrency_control
-[2]: https://en.wikipedia.org/wiki/Key-value_database
-[3]: https://oss.sonatype.org/index.html#nexus-search;quick~com.madavan
-[4]: https://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.madavan%22
-[5]: https://travis-ci.org/ashwin153/caustic
-[6]: https://github.com/ashwin153/caustic/wiki/User-Guide
-[7]: https://github.com/ashwin153/caustic/wiki/Home
+[1]: https://oss.sonatype.org/index.html#nexus-search;quick~com.madavan
+[2]: https://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.madavan%22
+[3]: https://travis-ci.org/ashwin153/caustic
+[4]: https://github.com/ashwin153/caustic/wiki/User-Guide
+[5]: https://github.com/ashwin153/caustic/wiki/Home

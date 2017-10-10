@@ -5,8 +5,6 @@ scala_library(
         'caustic-runtime/src/main/thrift',
         'caustic-common/src/main/scala',
         '3rdparty/jvm:caffeine',
-        '3rdparty/jvm:curator',
-        '3rdparty/jvm:jackson',
         '3rdparty/jvm:rediscala',
         scoped('3rdparty/jvm:mysql', scope='runtime'),
         scoped('3rdparty/jvm:postgres', scope='runtime'),

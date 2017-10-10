@@ -1,0 +1,14 @@
+scala_library(
+    name='scala',
+    sources=rglobs('*.scala'),
+    dependencies=[
+        'caustic-runtime/src/main/scala',
+        '3rdparty/jvm:curator',
+    ],
+    provides=artifact(
+        org='com.madavan',
+        name='caustic-service_2.12',
+        repo=public,
+        publication_metadata=describe,
+    ),
+)

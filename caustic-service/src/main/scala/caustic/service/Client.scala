@@ -1,17 +1,18 @@
-package caustic.runtime
-package service
+package caustic.service
+
+import caustic.runtime.thrift
 
 import java.io.Closeable
 import scala.concurrent.duration.FiniteDuration
 import scala.util.Try
 
 /**
- * A Caustic, Thrift client.
+ * A Thrift client.
  */
 trait Client extends Closeable {
 
   /**
-   * Attempts to execute the transaction and automatically retries failures with backoff.
+   * Returns the result of executing the transaction, and automatically retries failures.
    *
    * @param transaction Transaction to execute.
    * @param backoffs Backoff durations.

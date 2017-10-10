@@ -1,4 +1,4 @@
-package caustic.runtime.service
+package caustic.service
 
 import caustic.runtime.memory.LocalDatabase
 import caustic.runtime.thrift
@@ -6,8 +6,6 @@ import caustic.runtime.thrift
 import org.junit.runner.RunWith
 import org.scalatest.{FunSuite, Matchers}
 import org.scalatest.junit.JUnitRunner
-
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.Success
 
 @RunWith(classOf[JUnitRunner])

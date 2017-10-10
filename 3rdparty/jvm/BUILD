@@ -28,12 +28,6 @@ jar_library(name='thrift', jars=[
     jar(org='org.apache.thrift', name='libthrift', rev='0.10.0'),
 ])
 
-# Jackson
-jar_library(name='jackson', jars=[
-    jar(org='com.fasterxml.jackson.core', name='jackson-databind', rev='2.9.1'),
-    jar(org='com.fasterxml.jackson.module', name='jackson-module-scala_2.12', rev='2.9.1'),
-])
-
 # Curator
 jar_library(name='curator', jars=[
     jar(org='org.apache.curator', name='curator-framework', rev='4.0.0', excludes=[exclude('org.apache.zookeeper')]),

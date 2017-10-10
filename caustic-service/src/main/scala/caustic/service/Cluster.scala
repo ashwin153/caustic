@@ -1,6 +1,6 @@
-package caustic.runtime
-package service
+package caustic.service
 
+import caustic.runtime.thrift
 import org.apache.curator.framework.CuratorFramework
 import org.apache.curator.framework.recipes.cache._
 import scala.collection.concurrent.TrieMap
@@ -19,7 +19,7 @@ case class Cluster(
   connections: mutable.Map[String, Connection]
 ) extends Client with PathChildrenCacheListener {
 
-  // Setup the path cache.
+  // Setup the ZooKeeper cache.
   this.instances.getListenable.addListener(this)
   this.instances.start()
 
@@ -32,7 +32,8 @@ case class Cluster(
   override def childEvent(curator: CuratorFramework, event: PathChildrenCacheEvent): Unit =
     event.getType match {
       case PathChildrenCacheEvent.Type.CHILD_ADDED | PathChildrenCacheEvent.Type.CHILD_UPDATED =>
-        this.connections += event.getData.getPath -> Connection(Instance(event.getData.getData))
+        val address = Address(event.getData.getData)
+        this.connections += event.getData.getPath -> Connection(address.host, address.port)
       case PathChildrenCacheEvent.Type.CHILD_REMOVED =>
         this.connections.remove(event.getData.getPath).foreach(_.close())
       case _ =>
@@ -50,9 +51,7 @@ case class Cluster(
     } else {
       // Avoid race by synchronizing execution on the randomized client.
       val client = current(Random.nextInt(current.length))
-      client.synchronized {
-        client.execute(transaction, backoffs)
-      }
+      client.synchronized(client.execute(transaction, backoffs))
     }
   }
 

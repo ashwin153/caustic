@@ -10,6 +10,7 @@ scala_library(
         '3rdparty/jvm:rediscala',
         scoped('3rdparty/jvm:mysql', scope='runtime'),
         scoped('3rdparty/jvm:postgres', scope='runtime'),
+        '3rdparty/jvm:slf4j-simple',
     ],
     provides=artifact(
         org='com.madavan',

@@ -1,1 +1,0 @@
-/usr/bin/java -Xmx256m -cp /Users/ashwin/Documents/workspace/caustic/.pants.d/run/jvm/tmp8E0GQk.jar caustic.benchmark.SizeofBenchmark

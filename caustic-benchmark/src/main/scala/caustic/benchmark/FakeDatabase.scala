@@ -20,4 +20,6 @@ object FakeDatabase extends Database with Serializable {
     implicit ec: ExecutionContext
   ): Future[Unit] = Future.unit
 
+  override def close(): Unit = Unit
+
 }

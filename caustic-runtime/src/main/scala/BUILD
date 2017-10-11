@@ -2,8 +2,10 @@ scala_library(
     name='scala',
     sources=rglobs('*.scala'),
     dependencies=[
+        'caustic-runtime/src/main/resources',
         'caustic-runtime/src/main/thrift',
         'caustic-common/src/main/scala',
+        '3rdparty/jvm:c3p0',
         '3rdparty/jvm:caffeine',
         '3rdparty/jvm:rediscala',
         scoped('3rdparty/jvm:mysql', scope='runtime'),
@@ -15,4 +17,14 @@ scala_library(
         repo=public,
         publication_metadata=describe,
     ),
+)
+
+jvm_binary(
+    name='bin',
+    basename='caustic-runtime',
+    source='caustic/runtime/Main.scala',
+    main='caustic.runtime.Main',
+    dependencies=[
+        'caustic-runtime/src/main/scala',
+    ],
 )

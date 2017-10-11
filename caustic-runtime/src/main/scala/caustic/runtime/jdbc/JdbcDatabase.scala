@@ -1,9 +1,9 @@
 package caustic.runtime
 package jdbc
 
+import com.mchange.v2.c3p0.{ComboPooledDataSource, PooledDataSource}
+import com.typesafe.config.Config
 import java.sql.Connection
-import javax.sql.DataSource
-
 import scala.concurrent.{ExecutionContext, Future, blocking}
 
 /**
@@ -11,8 +11,8 @@ import scala.concurrent.{ExecutionContext, Future, blocking}
  *
  * @param underlying Underlying store.
  */
-abstract class RelationalDatabase(underlying: DataSource)(
-  implicit ec: ExecutionContext
+abstract class JdbcDatabase(
+  underlying: PooledDataSource
 ) extends Database {
 
   // Ensure that the table schema exists.
@@ -20,6 +20,8 @@ abstract class RelationalDatabase(underlying: DataSource)(
     val smt = con.createStatement()
     smt.execute(this.schema)
     smt.close()
+  } {
+    scala.concurrent.ExecutionContext.global
   }
 
   /**
@@ -103,5 +105,38 @@ abstract class RelationalDatabase(underlying: DataSource)(
         throw ConflictException(conflicts.keySet)
       }
     }
+
+  override def close(): Unit =
+    this.underlying.close()
+
+}
+
+object JdbcDatabase {
+
+  // Driver classes for the various supported dialects.
+  val drivers: Map[String, String] = Map(
+    "mysql" -> "com.mysql.cj.jdbc.Driver",
+    "postgres" -> "org.postgresql.Driver"
+  )
+
+  /**
+   *
+   * @param config
+   * @return
+   */
+  def apply(config: Config): JdbcDatabase = {
+    // Setup a C3P0 connection pool.
+    val pool = new ComboPooledDataSource()
+    pool.setUser(config.getString("username"))
+    pool.setPassword(config.getString("password"))
+    pool.setDriverClass(this.drivers(config.getString("dialect")))
+    pool.setJdbcUrl(config.getString("url"))
+
+    // Construct the corresponding database.
+    config.getString("dialect") match {
+      case "mysql" => MySQLDatabase(pool)
+      case "postgres" => PostgresDatabase(pool)
+    }
+  }
 
 }

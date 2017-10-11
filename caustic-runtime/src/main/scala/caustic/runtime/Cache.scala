@@ -81,4 +81,9 @@ trait Cache extends Database {
         Future.unit
     }
 
+  override def close(): Unit = {
+    // Propagate close to the underlying database.
+    this.database.close()
+  }
+
 }

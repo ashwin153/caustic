@@ -1,0 +1,8 @@
+.git
+.gitignore
+README.md
+LICENSE
+.cache
+.pants.d
+.pids
+.pants.workdir.file_lock

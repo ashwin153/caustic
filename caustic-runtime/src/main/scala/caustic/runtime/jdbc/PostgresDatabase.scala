@@ -1,21 +1,19 @@
 package caustic.runtime
 package jdbc
 
-import java.sql.Connection
-import javax.sql.DataSource
+import com.mchange.v2.c3p0.PooledDataSource
 
+import java.sql.Connection
 import scala.collection.mutable
-import scala.concurrent.ExecutionContext
 
 /**
  * A PostgreSQL backed database.
  *
  * @param underlying Underlying PostgreSQL DataSource.
- * @param ec Implicit execution context.
  */
-case class PostgresDatabase(underlying: DataSource)(
-  implicit ec: ExecutionContext
-) extends RelationalDatabase(underlying) {
+case class PostgresDatabase(
+  underlying: PooledDataSource
+) extends JdbcDatabase(underlying) {
 
   override def schema: String =
     s""" CREATE TABLE IF NOT EXISTS caustic (

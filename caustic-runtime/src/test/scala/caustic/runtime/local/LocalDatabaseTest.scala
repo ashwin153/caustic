@@ -1,5 +1,5 @@
 package caustic.runtime
-package memory
+package local
 
 import org.junit.runner.RunWith
 import org.scalatest.Outcome
@@ -9,6 +9,6 @@ import org.scalatest.junit.JUnitRunner
 class LocalDatabaseTest extends DatabaseTest {
 
   override def withFixture(test: OneArgTest): Outcome =
-    test(LocalDatabase.empty)
+    test(LocalDatabase())
 
 }

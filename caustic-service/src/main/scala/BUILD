@@ -3,6 +3,7 @@ scala_library(
     sources=rglobs('*.scala'),
     dependencies=[
         'caustic-runtime/src/main/scala',
+        'caustic-runtime/src/main/thrift',
         '3rdparty/jvm:curator',
     ],
     provides=artifact(

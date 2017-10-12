@@ -28,33 +28,23 @@ is both straightforward to use and simple to integrate.
 ## Artifacts
 Artifacts are published to the [Sonatype OSS Repository Hosting Service][1] and synced to 
 [Maven Central][2]. Snapshots of the ```master``` branch are built using [Travis CI][3] and images
-are available on [Docker][6]. The Maven coordinates of the core artifacts produced by the library
-are enumerated below. For most use cases, follow the guide [here][7] to bootstrap a server instance
-and use the client library to interact with the server.
+are available on [Docker][6]. The Maven coordinates of core build artifacts are as follows.
 
 ```
 <!-- Client Library -->
 <dependency>
   <groupId>com.madavan</groupId>
-  <artifactId>caustic-service_2.12</artifactId>
+  <artifactId>caustic-client_2.12</artifactId>
   <version>1.3.1</version>
 </dependency>
 
-<!-- Server Library ->
+<!-- Runtime Library -->
 <dependency>
   <groupId>com.madavan</groupId>
   <artifactId>caustic-runtime_2.12</artifactId>
   <version>1.3.1</version>
 </dependency>
-
-<!-- Common Library -->
-<dependency>
-  <groupId>com.madavan</groupId>
-  <artifactId>caustic-common_2.12</artifactId>
-  <version>1.3.1</version>
-</dependency>
 ```
-
 
 ## Documentation
 Refer to the [User Guide][4] to learn about how to use the system, and the [Wiki][5] for more 
@@ -66,4 +56,3 @@ information about the implementation.
 [4]: https://github.com/ashwin153/caustic/wiki/User-Guide
 [5]: https://github.com/ashwin153/caustic/wiki/Home
 [6]: https://hub.docker.com/r/ashwin153/caustic/
-[7]: https://github.com/ashwin153/caustic/wiki/Build#docker

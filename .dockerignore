@@ -6,3 +6,5 @@ LICENSE
 .pants.d
 .pids
 .pants.workdir.file_lock
+dist
+target

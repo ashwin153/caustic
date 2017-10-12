@@ -74,7 +74,7 @@ object Cluster {
    * @return Cluster.
    */
   def apply(registry: Registry): Cluster= {
-    val instances = new PathChildrenCache(registry.curator, registry.curator.getNamespace, true)
+    val instances = new PathChildrenCache(registry.curator, "/" + registry.curator.getNamespace, true)
     Cluster(instances, TrieMap.empty[String, Client])
   }
 

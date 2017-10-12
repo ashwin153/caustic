@@ -2,8 +2,9 @@ FROM ubuntu:latest
 MAINTAINER Ashwin Madavan (ashwin.madavan@gmail.com)
 
 # Install dependencies.
-RUN apt-get update && apt-get -y install curl python build-essential python-dev openjdk-8-jdk git
+RUN apt-get update && apt-get -y install curl python build-essential python-dev openjdk-8-jdk
 
 # Clone repository and bootstrap pants.
-RUN git clone https://github.com/ashwin153/caustic.git && cd /caustic && ./pants compile ::
+COPY . /caustic/
+RUN cd /caustic && ./pants compile ::
 WORKDIR /caustic

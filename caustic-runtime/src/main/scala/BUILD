@@ -7,6 +7,7 @@ scala_library(
         'caustic-common/src/main/scala',
         '3rdparty/jvm:c3p0',
         '3rdparty/jvm:caffeine',
+        '3rdparty/jvm:config',
         '3rdparty/jvm:rediscala',
         scoped('3rdparty/jvm:mysql', scope='runtime'),
         scoped('3rdparty/jvm:postgres', scope='runtime'),
@@ -18,14 +19,4 @@ scala_library(
         repo=public,
         publication_metadata=describe,
     ),
-)
-
-jvm_binary(
-    name='bin',
-    basename='caustic-runtime',
-    source='caustic/runtime/Main.scala',
-    main='caustic.runtime.Main',
-    dependencies=[
-        'caustic-runtime/src/main/scala',
-    ],
 )

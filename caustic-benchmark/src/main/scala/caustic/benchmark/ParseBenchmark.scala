@@ -2,7 +2,7 @@ package caustic.benchmark
 
 import caustic.runtime.Transaction
 import caustic.runtime.thrift
-import caustic.service._
+import caustic.service.client._
 
 import org.scalameter.api._
 

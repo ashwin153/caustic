@@ -46,22 +46,19 @@ object Server {
    * @return Server instance.
    */
   def apply(config: Config): Server = {
-    // Extract the runtime configuration.
-    val runtime = config.getConfig("caustic.runtime")
-
     // Setup the underlying database and iteratively construct caches.
-    val database = runtime.getString("server.database") match {
-      case "local" => LocalDatabase(runtime.getConfig("database.local"))
-      case "jdbc" => JdbcDatabase(runtime.getConfig("database.jdbc"))
+    val database = config.getString("caustic.runtime.server.database") match {
+      case "local" => LocalDatabase(config.getConfig("caustic.runtime.database.local"))
+      case "jdbc" => JdbcDatabase(config.getConfig("caustic.runtime.database.jdbc"))
     }
 
-    val underlying = runtime.getStringList("server.caches").asScala.foldRight(database) {
-      case ("local", db) => LocalCache(db, runtime.getConfig("cache.local"))
-      case ("redis", db) => RedisCache(db, runtime.getConfig("cache.redis"))
+    val underlying = config.getStringList("caustic.runtime.server.caches").asScala.foldRight(database) {
+      case ("local", db) => LocalCache(db, config.getConfig("caustic.runtime.cache.local"))
+      case ("redis", db) => RedisCache(db, config.getConfig("caustic.runtime.cache.redis"))
     }
 
     // Construct a database.
-    Server(underlying, runtime.getInt("server.port"))
+    Server(underlying, config.getInt("caustic.runtime.server.port"))
   }
 
 }

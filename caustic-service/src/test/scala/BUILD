@@ -3,8 +3,10 @@ junit_tests(
     sources=rglobs('*.scala'),
     dependencies=[
         'caustic-runtime/src/main/scala',
-        'caustic-service/src/main/scala',
+        'caustic-service/src/main/scala:client',
+        'caustic-service/src/main/scala:discovery',
         '3rdparty/jvm:c3p0',
+        '3rdparty/jvm:curator-test',
         '3rdparty/jvm:junit',
         '3rdparty/jvm:mockito',
         '3rdparty/jvm:scalatest',

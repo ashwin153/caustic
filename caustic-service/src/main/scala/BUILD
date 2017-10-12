@@ -1,8 +1,9 @@
 scala_library(
-    name='scala',
-    sources=rglobs('*.scala'),
+    name='client',
+    sources=rglobs('caustic/service/client/*.scala'),
     dependencies=[
-        'caustic-runtime/src/main/thrift'
+        'caustic-runtime/src/main/thrift',
+        'caustic-service/src/main/scala:discovery',
     ],
     provides=artifact(
         org='com.madavan',
@@ -10,4 +11,44 @@ scala_library(
         repo=public,
         publication_metadata=describe,
     ),
+)
+
+scala_library(
+    name='discovery',
+    sources=rglobs('caustic/service/discovery/*.scala'),
+    dependencies=[
+        'caustic-service/src/main/resources',
+        '3rdparty/jvm:config',
+        '3rdparty/jvm:curator',
+    ],
+    provides=artifact(
+        org='com.madavan',
+        name='caustic-discovery_2.12',
+        repo=public,
+        publication_metadata=describe,
+    ),
+)
+
+jvm_binary(
+    name='standalone',
+    basename='caustic-standalone',
+    source='caustic/service/server/Standalone.scala',
+    main='caustic.service.server.Standalone',
+    dependencies=[
+        'caustic-runtime/src/main/scala',
+        'caustic-service/src/main/scala:discovery',
+        '3rdparty/jvm:config',
+    ],
+)
+
+jvm_binary(
+    name='discoverable',
+    basename='caustic-discoverable',
+    source='caustic/service/server/Discoverable.scala',
+    main='caustic.service.server.Discoverable',
+    dependencies=[
+        'caustic-runtime/src/main/scala',
+        'caustic-service/src/main/scala:discovery',
+        '3rdparty/jvm:config',
+    ],
 )

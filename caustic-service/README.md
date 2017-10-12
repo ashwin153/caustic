@@ -23,6 +23,13 @@ path to a configuration file that overrides the [default server configuration][1
 ./pants run caustic-service/src/main/scala:standalone /path/to/application.conf -- -Dprop=value
 ```
 
+Servers are more easily run using Docker.
+
+```
+docker run -d -p 9090:9090 ashwin153/caustic ./pants run caustic-service/src/main/scala:standalone
+docker run -d -p 9090:9090 ashwin153/caustic ./pants run caustic-service/src/main/scala:discoverable
+```
+
 ## Client
 A ```Client``` may either be a ```Connection``` or a ```Client```. A ```Connection``` is a direct
 connection to a server instance, and is the only way to connect to a ```standalone``` instance. A

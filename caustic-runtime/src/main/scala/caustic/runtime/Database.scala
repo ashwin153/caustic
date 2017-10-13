@@ -1,7 +1,7 @@
 package caustic.runtime
 
-import caustic.common.concurrent.Backoff._
 import caustic.runtime.Database._
+import caustic.runtime.Backoff._
 
 import org.apache.thrift.async.AsyncMethodCallback
 

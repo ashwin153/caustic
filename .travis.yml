@@ -1,27 +1,31 @@
-# Setup Pants.
-# https://github.com/pantsbuild/pants/blob/master/.travis.yml
+################################################################################
+#                                  Setup Pants                                 #
+#            https://github.com/build/pants/blob/master/.travis.yml            #
+################################################################################
 env:
   global:
     - JAVA_HOME="$HOME/opt/jdk1.8.0_131"
-    - PANTS_CONFIG_OVERRIDE="['pants.ini', 'pants-travis.ini']"
+    - PANTS_CONFIG_OVERRIDE="['.ini', 'build-support/travis/pants.ini']"
 
 before_cache:
   - sudo chown -R travis:travis "${HOME}" "${TRAVIS_BUILD_DIR}"
   - find build-support -name "*.py[co]" -delete
-  - find ${HOME}/.ivy2/pants -type f -name "ivydata-*.properties" -delete
-  - rm -f ${HOME}/.ivy2/pants/*.{css,properties,xml,xsl}
-  - rm -rf ${HOME}/.ivy2/pants/com.example
-  - rm -rf ${HOME}/.cache/pants/stats
+  - find ${HOME}/.ivy2/ -type f -name "ivydata-*.properties" -delete
+  - rm -f ${HOME}/.ivy2//*.{css,properties,xml,xsl}
+  - rm -rf ${HOME}/.ivy2//com.example
+  - rm -rf ${HOME}/.cache//stats
   
 cache:
   directories:
-    - ${HOME}/.cache/pants
-    - ${HOME}/.ivy2/pants
+    - ${HOME}/.cache/
+    - ${HOME}/.ivy2/
     - build-support/isort.venv
-    - build-support/pants_dev_deps.venv
+    - build-support/_dev_deps.venv
 
-# Setup JDK.
-# https://github.com/foursquare/fsqio/blob/master/.travis.yml
+################################################################################
+#                                  Setup JDK                                   #
+#         https://github.com/foursquare/fsqio/blob/master/.travis.yml          #
+################################################################################
 before_script: |
   if ! ${HOME}/opt/jdk1.8.0_131/bin/java -version; then
     mkdir -p ~/opt
@@ -31,7 +35,10 @@ before_script: |
     tar xzf jdk-8u131-linux-x64.tar.gz -C ~/opt
   fi
 
-# Setup Databases.
+################################################################################
+#                               Setup Databases                                #
+#                https://docs.travis-ci.com/user/database-setup                #
+################################################################################
 services:
   - mysql
   - postgresql
@@ -43,7 +50,10 @@ before_install:
   - mysql -e 'CREATE DATABASE IF NOT EXISTS test;'
   - psql -c 'CREATE DATABASE test;' -U postgres
 
-# Compile and Test.
+################################################################################
+#                               Compile and Test                               #
+#         https://github.com/foursquare/fsqio/blob/master/.travis.yml          #
+################################################################################
 language: python
 python:
   - '2.7'

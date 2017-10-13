@@ -1,43 +1,45 @@
 #!/bin/bash
-declare -a targets=(
-  "caustic-common/src/main/scala"
+################################################################################
+#                     Declare Build Targets and Artifacts                      #
+#              https://github.com/ashwin153/caustic/wiki/Release               #
+################################################################################
+targets=(
   "caustic-runtime/src/main/scala"
   "caustic-runtime/src/main/thrift"
-  "caustic-service/src/main/scala"
+  "caustic-service/src/main/scala:client"
+  "caustic-service/src/main/scala:discovery"
 )
 
-declare -a artifacts=(
-  "caustic-common_2.12"
+artifacts=(
+  "caustic-client_2.12"
+  "caustic-discovery_2.12"
   "caustic-runtime_2.12"
   "caustic-thrift"
-  "caustic-service_2.12"
 )
 
-# Verify Branch is Clean.
+################################################################################
+#                      Publish Artifacts to Maven Central                      #
+#                                DO NOT MODIFY                                 #
+################################################################################
 branch=$(git symbolic-ref --short HEAD)
 if [ -n "$(git status --porcelain)" ]; then 
   echo -e "Current branch \033[0;33m$branch\033[0m has uncommitted changes."
   exit 1
 fi
 
-# Release Guidelines: https://github.com/ashwin153/caustic/wiki/Release
 read -p "Artifact version (defaults to incrementing patch version): " version
 read -r -p "$(echo -e -n "Confirm release of \033[0;33m$branch\033[0;0m? [y|N] ")" response
 
-# Publish Build Artifacts.
 if [[ "$response" =~ ^([yY][eE][sS]|[yY])+$ ]] ; then
   if [ -z "$version" ] ; then
-    # Increment Patch Version.
     publish="./pants publish.jar --publish-jar-no-dryrun ${targets[@]}"
   else
-    # Override Artifact Version.
     overrides=("${artifacts[@]/#/--publish-jar-override=com.madavan#}")
     overrides=("${overrides[@]/%/=$version}")
     publish="./pants publish.jar --publish-jar-no-dryrun ${overrides[@]} ${targets[@]}"
   fi
 
   if eval $publish ; then 
-    # Promote to Maven Central.
     /usr/bin/open -a "/Applications/Google Chrome.app" \
       'http://www.pantsbuild.org/release_jvm.html#promoting-to-maven-central'
     /usr/bin/open -a "/Applications/Google Chrome.app" \

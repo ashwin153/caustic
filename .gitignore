@@ -1,3 +1,6 @@
+################################################################################
+#                                  .gitignore                                  #
+################################################################################
 # macOS
 .DS_Store
 
@@ -9,8 +12,8 @@
 *.pyc
 
 # Vim
-.*.swp
 .*.swo
+.*.swp
 
 # IntelliJ 
 .idea/
@@ -18,16 +21,16 @@
 
 # Pants
 .cache
-.pants.d
 dist
-.pids
+.pants.d
 .pants.workdir.file_lock
+.pids
 
-# Benchmarks
+# Generated
 target/
 
 # LaTeX
-*.log
 *.aux
 *.dvi
+*.log
 *.out

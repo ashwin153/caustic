@@ -2,7 +2,7 @@ scala_library(
     name='scala',
     sources=rglobs('*.scala'),
     dependencies=[
-        'caustic-runtime/src/main/thrift:java',
+        'caustic-service/src/main/scala:client',
         'caustic-syntax/src/main/antlr:java',
     ],
     provides=artifact(

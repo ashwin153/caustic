@@ -63,11 +63,6 @@ jar_library(name='scalatest',
     dependencies=['//:scala-library', '//:scala-reflect']
 )
 
-# Shapeless
-jar_library(name='shapeless', jars=[
-    jar(org='com.chuusai', name='shapeless_2.12', rev='2.3.2'),
-])
-
 # SLF4J
 jar_library(name='slf4j-simple', jars=[
     jar(org='org.slf4j', name='slf4j-simple', rev='1.7.25'),

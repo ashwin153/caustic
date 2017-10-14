@@ -4,7 +4,6 @@ scala_library(
     dependencies=[
         'caustic-runtime/src/main/resources',
         'caustic-runtime/src/main/thrift',
-        'caustic-common/src/main/scala',
         '3rdparty/jvm:c3p0',
         '3rdparty/jvm:caffeine',
         '3rdparty/jvm:config',

@@ -2,11 +2,12 @@ scala_library(
     name='scala',
     sources=rglobs('*.scala'),
     dependencies=[
-        '3rdparty/jvm:shapeless',
+        'caustic-service/src/main/scala:client',
+        'caustic-syntax/src/main/antlr:java',
     ],
     provides=artifact(
         org='com.madavan',
-        name='caustic-common_2.12',
+        name='caustic-syntax_2.12',
         repo=public,
         publication_metadata=describe,
     ),

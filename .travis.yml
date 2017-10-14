@@ -5,22 +5,22 @@
 env:
   global:
     - JAVA_HOME="$HOME/opt/jdk1.8.0_131"
-    - PANTS_CONFIG_OVERRIDE="['.ini', 'build-support/travis/pants.ini']"
+    - PANTS_CONFIG_OVERRIDE="['pants.ini', 'build-support/travis/pants.ini']"
 
 before_cache:
   - sudo chown -R travis:travis "${HOME}" "${TRAVIS_BUILD_DIR}"
   - find build-support -name "*.py[co]" -delete
-  - find ${HOME}/.ivy2/ -type f -name "ivydata-*.properties" -delete
-  - rm -f ${HOME}/.ivy2//*.{css,properties,xml,xsl}
-  - rm -rf ${HOME}/.ivy2//com.example
-  - rm -rf ${HOME}/.cache//stats
-  
+  - find ${HOME}/.ivy2/pants -type f -name "ivydata-*.properties" -delete
+  - rm -f ${HOME}/.ivy2/pants/*.{css,properties,xml,xsl}
+  - rm -rf ${HOME}/.ivy2/pants/com.example
+  - rm -rf ${HOME}/.cache/pants/stats
+
 cache:
   directories:
-    - ${HOME}/.cache/
-    - ${HOME}/.ivy2/
+    - ${HOME}/.cache/pants
+    - ${HOME}/.ivy2/pants
     - build-support/isort.venv
-    - build-support/_dev_deps.venv
+    - build-support/pants_dev_deps.venv
 
 ################################################################################
 #                                  Setup JDK                                   #

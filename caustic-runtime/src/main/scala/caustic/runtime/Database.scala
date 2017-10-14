@@ -1,7 +1,7 @@
 package caustic.runtime
 
-import caustic.common.concurrent.Backoff._
 import caustic.runtime.Database._
+import caustic.runtime.Retry._
 
 import org.apache.thrift.async.AsyncMethodCallback
 
@@ -176,7 +176,7 @@ trait Database extends thrift.Database.AsyncIface with Closeable {
     // Recursively reduce the transaction, and then conditionally persist all changes made by the
     // transaction to the underlying database if and only if the versions of its various
     // dependencies have not changed. Filter out empty first changes to allow local variables.
-    retry(backoffs) {
+    attempt(backoffs) {
       evaluate(expression) recover {
         case e: RollbackException =>
           buffer.clear()

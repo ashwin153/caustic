@@ -1,6 +1,6 @@
 package caustic.runtime
 
-import caustic.common.concurrent.Backoff.NonRetryable
+import caustic.runtime.Retry.NonRetryable
 
 /**
  * A retryable failure that is thrown when a subset of keys cause a conflict.

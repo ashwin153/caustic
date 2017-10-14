@@ -19,8 +19,6 @@ cache:
   directories:
     - ${HOME}/.cache/pants
     - ${HOME}/.ivy2/pants
-    - build-support/isort.venv
-    - build-support/pants_dev_deps.venv
 
 ################################################################################
 #                                  Setup JDK                                   #

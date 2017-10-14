@@ -1,26 +1,16 @@
-# Scala Library
-jar_library(name='scala-library', scope='forced', jars=[
-    jar(org='org.scala-lang', name='scala-library', rev='2.12.1')
-])
+################################################################################
+#                                    ANTLR                                     # 
+#                            https://git.io/vd1nU                              #
+################################################################################
+target(name='antlr-4', dependencies=['3rdparty/jvm:antlr'])
 
-# Scala Reflection
-jar_library(name='scala-reflect', jars=[
-    jar(org='org.scala-lang', name='scala-reflect', rev='2.12.1', intransitive=True)
-])
+################################################################################
+#                                    Scala                                     #
+#                    https://www.pantsbuild.org/scala.html                     #
+################################################################################
+target(name='scalac', dependencies=['3rdparty/jvm:scala-compiler'])
+target(name='scala-library', dependencies=['3rdparty/jvm:scala-library'])
+target(name='scala-reflect', dependencies=['3rdparty/jvm:scala-reflect'])
+target(name='scala-repl', dependencies=[':scalac', ':scala-library', ':scala-reflect'])
 
-# Scala Compiler
-jar_library(
-    name='scalac',
-    jars=[jar(org='org.scala-lang', name='scala-compiler', rev='2.12.1')],
-    dependencies=[':scala-reflect', ':scala-library'],
-)
-
-# Scala REPL
-target(name='scala-repl', dependencies=[':scalac', ':scala-reflect', ':scala-library'])
-
-# ANTLR
-jar_library(name='antlr-4', jars=[
-    jar(org='org.antlr', name='antlr4', rev='4.7'),
-    jar(org='org.antlr', name='antlr4-runtime', rev='4.7'),
-])
 

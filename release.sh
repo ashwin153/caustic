@@ -25,10 +25,10 @@ branch=$(git symbolic-ref --short HEAD)
 if [ -n "$(git status --porcelain)" ]; then 
   echo -e "Current branch \033[0;33m$branch\033[0m has uncommitted changes."
   exit 1
+else
+  read -p "Artifact version (defaults to incrementing patch version): " version
+  read -r -p "$(echo -e -n "Confirm release of \033[0;33m$branch\033[0;0m? [y|N] ")" response
 fi
-
-read -p "Artifact version (defaults to incrementing patch version): " version
-read -r -p "$(echo -e -n "Confirm release of \033[0;33m$branch\033[0;0m? [y|N] ")" response
 
 if [[ "$response" =~ ^([yY][eE][sS]|[yY])+$ ]] ; then
   if [ -z "$version" ] ; then

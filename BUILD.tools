@@ -11,6 +11,10 @@ target(name='antlr-4', dependencies=['3rdparty/jvm:antlr'])
 target(name='scalac', dependencies=['3rdparty/jvm:scala-compiler'])
 target(name='scala-library', dependencies=['3rdparty/jvm:scala-library'])
 target(name='scala-reflect', dependencies=['3rdparty/jvm:scala-reflect'])
-target(name='scala-repl', dependencies=[':scalac', ':scala-library', ':scala-reflect'])
+target(name='scala-repl', dependencies=[':ammonite'])
 
-
+################################################################################
+#                                  Ammonite                                    # 
+#       https://github.com/foursquare/fsqio/blob/master/BUILD.opensource       #
+################################################################################
+target(name='ammonite', dependencies=['3rdparty/jvm:ammonite'])

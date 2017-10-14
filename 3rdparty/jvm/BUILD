@@ -1,3 +1,8 @@
+# Ammonite
+jar_library(name='ammonite', jars=[
+    jar(org='com.lihaoyi', name = 'ammonite_2.12.1', rev='1.0.2'),
+])
+
 # ANTLR
 jar_library(name='antlr', jars=[
     jar(org='org.antlr', name='antlr4', rev='4.7'),

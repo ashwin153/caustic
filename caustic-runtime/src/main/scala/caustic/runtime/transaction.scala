@@ -10,6 +10,7 @@ import scala.annotation.tailrec
 sealed trait Transaction
 case class Expression(operator: Operator, operands: List[Transaction]) extends Transaction
 sealed trait Literal extends Transaction
+case object None extends Literal
 case class Flag(value: Boolean) extends Literal
 case class Real(value: Double) extends Literal
 case class Text(value: String) extends Literal
@@ -36,6 +37,7 @@ object Transaction {
           case l if l.isSetFlag => flag(l.getFlag)
           case l if l.isSetReal => real(l.getReal)
           case l if l.isSetText => text(l.getText)
+          case l if l.isSetNone => None
         }
 
         convert(rest, literal :: processed)

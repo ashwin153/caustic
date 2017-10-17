@@ -50,6 +50,7 @@ case class MySQLDatabase(
         case 0 => flag(results.getBoolean("value"))
         case 1 => real(results.getDouble("value"))
         case 2 => text(results.getString("value"))
+        case 3 => None
       }
 
       buffer += (key -> Revision(version, value))
@@ -87,6 +88,9 @@ case class MySQLDatabase(
       case Text(value) =>
         statement.setInt(3, 2)
         statement.setString(4, value)
+      case None =>
+        statement.setInt(3, 3)
+        statement.setString(4, "")
     }
 
     // Execute and close the statement.

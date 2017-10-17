@@ -17,6 +17,7 @@ union Literal {
   1: bool flag,
   2: double real,
   3: string text,
+  4: bool none
 }
 
 /**

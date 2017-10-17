@@ -55,6 +55,8 @@ class TransactionTest extends FunSuite with Matchers {
     negate(text("")) shouldEqual flag(true)
     negate(text("foo")) shouldEqual flag(false)
 
+    caustic.runtime.equal(None, None) shouldEqual flag(true)
+    caustic.runtime.equal(None, real(0.0)) shouldEqual flag(false)
     caustic.runtime.equal(real(0), real(0.0)) shouldEqual flag(true)
     caustic.runtime.equal(text("a"), text("a")) shouldEqual flag(true)
     caustic.runtime.equal(text(""), real(0)) shouldEqual flag(false)

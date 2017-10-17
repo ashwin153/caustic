@@ -116,17 +116,16 @@ trait Database extends thrift.Database.AsyncIface with Closeable {
       case (Expression(Cons, first :: second :: Nil) :: rest, rem) =>
         reduce(first :: Cons :: rest, second :: rem)
       case (Expression(Repeat, c :: b :: Nil) :: rest, rem) =>
-        reduce(branch(c, cons(b, repeat(c, b)), text("")) :: rest, rem)
+        reduce(branch(c, cons(b, repeat(c, b)), None) :: rest, rem)
       case (Expression(Prefetch, Text(k) :: Nil) :: rest, rem) =>
-        reduce(rest, k.split(",").map(x => read(Text(x))).reduceLeftOption(cons)
-          .getOrElse(text("")) :: rem)
+        reduce(rest, k.split(",").map(x => read(Text(x))).reduceLeftOption(cons).getOrElse(None) :: rem)
       case ((e: Expression) :: rest, rem) =>
         reduce(e.operands.reverse ::: e.operator :: rest, rem)
 
       // Simplify Core Expressions.
       case (Read :: rest, k :: rem) => reduce(rest, read(k) :: rem)
       case (Write :: rest, k :: v :: rem) => reduce(rest, write(k, v) :: rem)
-      case (Load :: rest, Text(k) :: rem) => reduce(rest, locals.getOrElse(k, text("")) :: rem)
+      case (Load :: rest, Text(k) :: rem) => reduce(rest, locals.getOrElse(k, None) :: rem)
       case (Load :: rest, k :: rem) => reduce(rest, load(k) :: rem)
       case (Store :: rest, Text(k) :: (v: Literal) :: rem) => locals += k -> v; reduce(rest, v :: rem)
       case (Store :: rest, k :: v :: rem) => reduce(rest, store(k, v) :: rem)

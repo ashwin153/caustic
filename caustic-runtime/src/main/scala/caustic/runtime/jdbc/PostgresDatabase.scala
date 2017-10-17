@@ -50,6 +50,7 @@ case class PostgresDatabase(
         case 0 => flag(results.getBoolean("value"))
         case 1 => real(results.getDouble("value"))
         case 2 => text(results.getString("value"))
+        case 3 => None
       }
 
       buffer += (key -> Revision(version, value))
@@ -91,6 +92,11 @@ case class PostgresDatabase(
         statement.setInt(6, 2)
         statement.setString(4, value)
         statement.setString(7, value)
+      case None =>
+        statement.setInt(3, 3)
+        statement.setInt(6, 3)
+        statement.setString(4, "")
+        statement.setString(7, "")
     }
 
     // Execute and close the statement.

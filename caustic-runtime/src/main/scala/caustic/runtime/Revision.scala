@@ -17,6 +17,6 @@ case class Revision(
 object Revision {
 
   // Cache the initial revision, because it is created for each key.
-  val Initial: Revision = Revision(0L, text(""))
+  val Initial: Revision = Revision(0L, None)
 
 }

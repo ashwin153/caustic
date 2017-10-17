@@ -22,24 +22,28 @@ package object runtime {
 
   // Simplify Expressions.
   def read(k: Transaction): Transaction = k match {
+    case None => throw ExecutionException(s"Read undefined for key None")
     case Real(a) => throw ExecutionException(s"Read undefined for key $a")
     case Flag(a) => throw ExecutionException(s"Read undefined for key $a")
     case _ => Expression(Read, k :: Nil)
   }
 
   def write(k: Transaction, v: Transaction): Transaction = (k, v) match {
+    case (None, _) => throw ExecutionException(s"Write undefined for key None")
     case (Real(a), _) => throw ExecutionException(s"Write undefined for key $a")
     case (Flag(a), _) => throw ExecutionException(s"Write undefined for key $a")
     case _ => Expression(Write, k :: v :: Nil)
   }
 
   def load(k: Transaction): Transaction = k match {
+    case None => throw ExecutionException(s"Load undefined for variable None")
     case Real(a) => throw ExecutionException(s"Load undefined for variable $a")
     case Flag(a) => throw ExecutionException(s"Load undefined for variable $a")
     case _ => Expression(Load, k :: Nil)
   }
 
   def store(k: Transaction, v: Transaction): Transaction = (k, v) match {
+    case (None, _) => throw ExecutionException(s"Store undefined for variable None")
     case (Real(a), _) => throw ExecutionException(s"Store undefined for variable $a")
     case (Flag(a), _) => throw ExecutionException(s"Store undefined for variable $a")
     case _ => Expression(Store, k :: v :: Nil)
@@ -51,6 +55,7 @@ package object runtime {
   }
 
   def repeat(c: Transaction, b: Transaction): Transaction = (c, b) match {
+    case (None, _) => throw ExecutionException(s"Repeat undefined for condition None")
     case (Real(a), _) => throw ExecutionException(s"Repeat undefined for condition $a")
     case (Text(a), _) => throw ExecutionException(s"Repeat undefined for condition $a")
     case (Flag(true), _) => throw ExecutionException(s"Repeat causes infinite loop")
@@ -58,6 +63,7 @@ package object runtime {
   }
 
   def branch(c: Transaction, p: Transaction, f: Transaction): Transaction = (c, p, f) match {
+    case (None, _, _) => throw ExecutionException(s"Branch undefined for condition None")
     case (Real(a), _, _) => throw ExecutionException(s"Branch undefined for condition $a")
     case (Text(a), _, _) => throw ExecutionException(s"Branch undefined for condition $a")
     case _ => Expression(Branch, c :: p :: f :: Nil)
@@ -68,6 +74,7 @@ package object runtime {
   }
 
   def prefetch(k: Transaction): Transaction = k match {
+    case None => throw ExecutionException(s"Prefetch undefined for keys None")
     case Real(a) => throw ExecutionException(s"Prefetch undefined for keys $a")
     case Flag(a) => throw ExecutionException(s"Prefetch undefined for keys $a")
     case _ => Expression(Prefetch, k :: Nil)
@@ -83,6 +90,7 @@ package object runtime {
     case (Text(a), Real(b)) => text(a + b.toString)
     case (Text(a), Flag(b)) => text(a + b.toString)
     case (Text(a), Text(b)) => text(a + b)
+    case (a: Literal, b: Literal) => throw ExecutionException(s"Add undefined for $a, $b")
     case _ => Expression(Add, x :: y :: Nil)
   }
 
@@ -152,6 +160,7 @@ package object runtime {
     case (Text(a), Real(b)) => flag(a.nonEmpty && b != 0)
     case (Text(a), Flag(b)) => flag(a.nonEmpty && b)
     case (Text(a), Text(b)) => flag(a.nonEmpty && b.nonEmpty)
+    case (a: Literal, b: Literal) => throw ExecutionException(s"Both undefined for $a, $b")
     case _ => Expression(Both, x :: y :: Nil)
   }
 
@@ -165,6 +174,7 @@ package object runtime {
     case (Text(a), Real(b)) => flag(a.nonEmpty || b != 0)
     case (Text(a), Flag(b)) => flag(a.nonEmpty || b)
     case (Text(a), Text(b)) => flag(a.nonEmpty || b.nonEmpty)
+    case (a: Literal, b: Literal) => throw ExecutionException(s"Either undefined for $a, $b")
     case _ => Expression(Either, x :: y :: Nil)
   }
 
@@ -172,6 +182,7 @@ package object runtime {
     case Real(a) => flag(a == 0)
     case Flag(a) => flag(!a)
     case Text(a) => flag(a.isEmpty)
+    case a: Literal => throw ExecutionException(s"Negate undefined for $a")
     case _ => Expression(Negate, x :: Nil)
   }
 
@@ -208,6 +219,9 @@ package object runtime {
   }
 
   def equal(x: Transaction, y: Transaction): Transaction = (x, y) match {
+    case (None, None) => flag(true)
+    case (None, _: Literal) => flag(false)
+    case (_: Literal, None) => flag(false)
     case (Real(a), Real(b)) => flag(a == b)
     case (Flag(a), Flag(b)) => flag(a == b)
     case (Text(a), Text(b)) => flag(a == b)
@@ -216,10 +230,12 @@ package object runtime {
   }
 
   def less(x: Transaction, y: Transaction): Transaction = (x, y) match {
+    case (None, None) => flag(false)
+    case (None, _: Literal) => flag(true)
+    case (_: Literal, None) => flag(false)
     case (Real(a), Real(b)) => flag(a < b)
     case (Flag(a), Flag(b)) => flag(a < b)
     case (Text(a), Text(b)) => flag(a < b)
-    case (a: Literal, b: Literal) => throw ExecutionException(s"Less undefined for $a, $b")
     case _ => Expression(Less, x :: y :: Nil)
   }
 

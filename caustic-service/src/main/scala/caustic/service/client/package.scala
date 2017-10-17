@@ -147,6 +147,6 @@ package object client {
   def notEqual(x: thrift.Transaction, y: thrift.Transaction): thrift.Transaction =
     not(equal(x, y))
   def or(x: thrift.Transaction, y: thrift.Transaction): thrift.Transaction =
-    thrift.Transaction.expression(thrift.Expression.either(new thrift.Either(x, y)))   |
+    thrift.Transaction.expression(thrift.Expression.either(new thrift.Either(x, y)))
 
 }

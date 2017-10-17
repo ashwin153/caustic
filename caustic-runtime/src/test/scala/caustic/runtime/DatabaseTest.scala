@@ -30,7 +30,7 @@ abstract class DatabaseTest extends fixture.FunSuite
 
   test("Execute is strongly consistent.") { db =>
     // Get on an unknown key returns the empty string.
-    whenReady(db.execute(read(text("x"))))(_ shouldEqual text(""))
+    whenReady(db.execute(read(text("x"))))(_ shouldEqual None)
 
     // Get on a inserted key returns the inserted value.
     whenReady(db.execute(write(text("x"), real(1))))(_ shouldEqual real(1))

@@ -1,6 +1,7 @@
 # Caustic
 [![Build Status](https://travis-ci.org/ashwin153/caustic.svg?branch=master)][3]
 [![Maven Central](https://img.shields.io/maven-central/v/com.madavan/caustic-runtime_2.12.svg)][2]
+[![Docker](https://img.shields.io/docker/build/ashwin153/caustic.svg)][6]
 
 Databases are either easy to use or easy to scale. For example, relational databases were 
 popularized in large part because of the programmability of SQL. However, this programmability comes 

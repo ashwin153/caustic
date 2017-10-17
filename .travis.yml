@@ -59,3 +59,17 @@ python:
 script: |
   ./pants compile ::
   ./pants test ::
+
+################################################################################
+#                                Push to Docker                                #
+#                   https://docs.travis-ci.com/user/docker/                    #
+################################################################################
+services:
+  - docker
+
+after_success: |
+  if [ "$TRAVIS_BRANCH" == "master" ] ; then
+    docker build -t ashwin153/caustic .
+    docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD"
+    docker push ashwin153/caustic
+  fi

@@ -17,8 +17,13 @@ union Literal {
   1: bool flag,
   2: double real,
   3: string text,
-  4: bool none
+  4: None none
 }
+
+/**
+ * A null value.
+ */
+struct None {}
 
 /**
  * A value transformation. Expressions apply a transformation to Literals or the results of other

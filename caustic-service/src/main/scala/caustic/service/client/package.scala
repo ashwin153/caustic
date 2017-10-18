@@ -14,7 +14,7 @@ package object client {
     text(x)
 
   // Constants.
-  val None: thrift.Transaction = thrift.Transaction.literal(thrift.Literal.none(true))
+  val None: thrift.Transaction = thrift.Transaction.literal(thrift.Literal.none(new thrift.None()))
   val True: thrift.Transaction = flag(true)
   val False: thrift.Transaction = flag(false)
   val Zero: thrift.Transaction = real(0)

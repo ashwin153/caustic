@@ -1,4 +1,4 @@
-package caustic.benchmark
+package caustic.benchmarks
 
 import caustic.runtime._
 

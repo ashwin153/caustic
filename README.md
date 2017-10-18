@@ -48,8 +48,6 @@ are available on [Docker][5]. The Maven coordinates of core build artifacts are 
 </dependency>
 ```
 
-## Documentation
-
 [1]: https://oss.sonatype.org/index.html#nexus-search;quick~com.madavan
 [2]: https://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.madavan%22
 [3]: https://github.com/ashwin153/caustic/wiki/Home

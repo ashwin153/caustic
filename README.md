@@ -19,6 +19,13 @@ Caustic is a language for expressing and executing transactions on arbitrary key
 is both straightforward to use and simple to integrate. Please refer to the [Wiki][3] for more 
 information about the implementation.
 
+## Overview
+- ```caustic-assets```: Pictures, documentation, and musings.
+- ```caustic-benchmarks```: Performance tests.
+- ```caustic-compiler```: Programming language.
+- ```caustic-runtime```: Transaction executor.
+- ```caustic-service```: Runtime interface.  
+
 ## Requirements
 - Java 1.8
 - MySQL 5.0+

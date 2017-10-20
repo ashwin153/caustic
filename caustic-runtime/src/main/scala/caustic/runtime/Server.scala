@@ -3,7 +3,7 @@ package caustic.runtime
 import caustic.runtime.jdbc.JdbcDatabase
 import caustic.runtime.local.{LocalCache, LocalDatabase}
 import caustic.runtime.redis.RedisCache
-import com.typesafe.config.Config
+import com.typesafe.config.{Config, ConfigFactory}
 import org.apache.thrift.server.TNonblockingServer
 import org.apache.thrift.transport.TNonblockingServerSocket
 import java.io.Closeable
@@ -39,26 +39,35 @@ case class Server(
 
 object Server {
 
+  // Configuration Root.
+  val root: String = "caustic.runtime.server"
+
   /**
-   * Constructs a server from the provided configuration.
    *
-   * @param config Configuration.
-   * @return Server instance.
+   * @return
+   */
+  def apply(): Server =
+    Server(ConfigFactory.load())
+
+  /**
+   *
+   * @param config
+   * @return
    */
   def apply(config: Config): Server = {
     // Setup the underlying database and iteratively construct caches.
-    val database = config.getString("caustic.runtime.server.database") match {
-      case "local" => LocalDatabase(config.getConfig("caustic.runtime.database.local"))
-      case "jdbc" => JdbcDatabase(config.getConfig("caustic.runtime.database.jdbc"))
+    val database = config.getString(s"$root.database") match {
+      case "local" => LocalDatabase(config)
+      case "jdbc" => JdbcDatabase(config)
     }
 
-    val underlying = config.getStringList("caustic.runtime.server.caches").asScala.foldRight(database) {
-      case ("local", db) => LocalCache(db, config.getConfig("caustic.runtime.cache.local"))
-      case ("redis", db) => RedisCache(db, config.getConfig("caustic.runtime.cache.redis"))
+    val underlying = config.getStringList(s"$root.caches").asScala.foldRight(database) {
+      case ("local", db) => LocalCache(db, config)
+      case ("redis", db) => RedisCache(db, config)
     }
 
     // Construct a database.
-    Server(underlying, config.getInt("caustic.runtime.server.port"))
+    Server(underlying, config.getInt(s"$root.port"))
   }
 
 }

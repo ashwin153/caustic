@@ -42,6 +42,9 @@ case class LocalCache(
 
 object LocalCache {
 
+  // Configuration Root.
+  val root: String = "caustic.runtime.cache.local"
+
   /**
    * Constructs a LocalCache backed by the specified database.
    *
@@ -64,8 +67,8 @@ object LocalCache {
    * @return
    */
   def apply(database: Database, config: Config): LocalCache = {
-    val capacity = config.getBytes("capacity")
-    val expiration = Duration.fromNanos(config.getDuration("expiration").toNanos)
+    val capacity = config.getBytes(s"$root.capacity")
+    val expiration = Duration.fromNanos(config.getDuration(s"$root.expiration").toNanos)
     LocalCache(database, capacity, expiration)
   }
 

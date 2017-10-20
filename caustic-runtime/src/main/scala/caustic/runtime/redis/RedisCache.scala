@@ -50,6 +50,9 @@ case class RedisCache(
 
 object RedisCache {
 
+  // Configuration Root.
+  val root: String = "caustic.runtime.cache.redis"
+
   // Redis Serializer.
   implicit val serializer: ByteStringSerializer[Revision] = revision => {
     val bytes = new ByteArrayOutputStream()

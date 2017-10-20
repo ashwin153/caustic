@@ -45,6 +45,9 @@ case class LocalDatabase(
 
 object LocalDatabase {
 
+  // Configuration root.
+  val root: String = "caustic.runtime.database.local"
+
   /**
    * Constructs an empty, in-memory database.
    *

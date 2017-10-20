@@ -14,7 +14,6 @@ package object client {
     text(x)
 
   // Constants.
-  val None: thrift.Transaction = thrift.Transaction.literal(thrift.Literal.none(new thrift.None()))
   val True: thrift.Transaction = flag(true)
   val False: thrift.Transaction = flag(false)
   val Zero: thrift.Transaction = real(0)
@@ -24,6 +23,7 @@ package object client {
   val E: thrift.Transaction = real(math.E)
   val Pi: thrift.Transaction = real(math.Pi)
   val Empty: thrift.Transaction = text("")
+  val None: thrift.Transaction = thrift.Transaction.literal(thrift.Literal.none(new thrift.None()))
 
   // Literals Values.
   def flag(x: Boolean): thrift.Transaction =
@@ -55,7 +55,7 @@ package object client {
 
   // Math Expressions.
   def abs(x: thrift.Transaction): thrift.Transaction =
-    branch(lessThan(x, Zero), sub(Zero, x), x)
+    branch(less(x, Zero), sub(Zero, x), x)
   def add(x: thrift.Transaction, y: thrift.Transaction): thrift.Transaction =
     thrift.Transaction.expression(thrift.Expression.add(new thrift.Add(x, y)))
   def ceil(x: thrift.Transaction): thrift.Transaction =
@@ -80,16 +80,16 @@ package object client {
     thrift.Transaction.expression(thrift.Expression.floor(new thrift.Floor(x)))
   def log(x: thrift.Transaction): thrift.Transaction =
     thrift.Transaction.expression(thrift.Expression.log(new thrift.Log(x)))
+  def log(x: thrift.Transaction, b: thrift.Transaction): thrift.Transaction =
+    div(log(x), log(b))
   def mod(x: thrift.Transaction, y: thrift.Transaction): thrift.Transaction =
     thrift.Transaction.expression(thrift.Expression.mod(new thrift.Mod(x, y)))
   def mul(x: thrift.Transaction, y: thrift.Transaction): thrift.Transaction =
     thrift.Transaction.expression(thrift.Expression.mul(new thrift.Mul(x, y)))
-  def neg(x: thrift.Transaction): thrift.Transaction =
-    sub(Zero, x)
   def pow(x: thrift.Transaction, y: thrift.Transaction): thrift.Transaction =
     thrift.Transaction.expression(thrift.Expression.pow(new thrift.Pow(x, y)))
   def round(x: thrift.Transaction): thrift.Transaction =
-    branch(lessThan(sub(x, floor(x)), Half), floor(x), ceil(x))
+    branch(less(sub(x, floor(x)), Half), floor(x), ceil(x))
   def sec(x: thrift.Transaction): thrift.Transaction =
     div(One, cos(x))
   def sech(x: thrift.Transaction): thrift.Transaction =
@@ -114,6 +114,8 @@ package object client {
     x.foldLeft(Empty)(add)
   def contains(x: thrift.Transaction, y: thrift.Transaction): thrift.Transaction =
     thrift.Transaction.expression(thrift.Expression.contains(new thrift.Contains(x, y)))
+  def endsWith(x: thrift.Transaction, y: thrift.Transaction): thrift.Transaction =
+    equal(slice(x, sub(length(x), length(y))), y)
   def indexOf(x: thrift.Transaction, y: thrift.Transaction): thrift.Transaction =
     thrift.Transaction.expression(thrift.Expression.indexOf(new thrift.IndexOf(x, y)))
   def length(x: thrift.Transaction): thrift.Transaction =
@@ -124,29 +126,31 @@ package object client {
     thrift.Transaction.expression(thrift.Expression.slice(new thrift.Slice(x, l, h)))
   def slice(x: thrift.Transaction, l: thrift.Transaction): thrift.Transaction =
     slice(x, l, length(x))
+  def startsWith(x: thrift.Transaction, y: thrift.Transaction): thrift.Transaction =
+    equal(slice(x, Zero, length(y)), y)
 
   // Logical Expressions.
-  def and(x: thrift.Transaction, y: thrift.Transaction): thrift.Transaction =
+  def both(x: thrift.Transaction, y: thrift.Transaction): thrift.Transaction =
     thrift.Transaction.expression(thrift.Expression.both(new thrift.Both(x, y)))
+  def either(x: thrift.Transaction, y: thrift.Transaction): thrift.Transaction =
+    thrift.Transaction.expression(thrift.Expression.either(new thrift.Either(x, y)))
   def equal(x: thrift.Transaction, y: thrift.Transaction): thrift.Transaction =
     thrift.Transaction.expression(thrift.Expression.equal(new thrift.Equal(x, y)))
+  def greater(x: thrift.Transaction, y: thrift.Transaction): thrift.Transaction =
+    negate(lessEqual(x, y))
   def greaterEqual(x: thrift.Transaction, y: thrift.Transaction): thrift.Transaction =
-    not(lessThan(x, y))
-  def greaterThan(x: thrift.Transaction, y: thrift.Transaction): thrift.Transaction =
-    not(lessEqual(x, y))
-  def lessEqual(x: thrift.Transaction, y: thrift.Transaction): thrift.Transaction =
-    or(equal(x, y), lessThan(x, y))
-  def lessThan(x: thrift.Transaction, y: thrift.Transaction): thrift.Transaction =
+    negate(less(x, y))
+  def less(x: thrift.Transaction, y: thrift.Transaction): thrift.Transaction =
     thrift.Transaction.expression(thrift.Expression.less(new thrift.Less(x, y)))
+  def lessEqual(x: thrift.Transaction, y: thrift.Transaction): thrift.Transaction =
+    either(equal(x, y), less(x, y))
   def max(x: thrift.Transaction, y: thrift.Transaction): thrift.Transaction =
-    branch(lessThan(x, y), y, x)
+    branch(less(x, y), y, x)
   def min(x: thrift.Transaction, y: thrift.Transaction): thrift.Transaction =
-    branch(lessThan(x, y), x, y)
-  def not(x: thrift.Transaction): thrift.Transaction =
+    branch(less(x, y), x, y)
+  def negate(x: thrift.Transaction): thrift.Transaction =
     thrift.Transaction.expression(thrift.Expression.negate(new thrift.Negate(x)))
   def notEqual(x: thrift.Transaction, y: thrift.Transaction): thrift.Transaction =
-    not(equal(x, y))
-  def or(x: thrift.Transaction, y: thrift.Transaction): thrift.Transaction =
-    thrift.Transaction.expression(thrift.Expression.either(new thrift.Either(x, y)))
+    negate(equal(x, y))
 
 }

@@ -66,10 +66,12 @@ abstract class JdbcDatabase(
     Future {
       blocking {
         con = this.underlying.getConnection()
+        con.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE)
         con.setAutoCommit(false)
         val res = f(con)
         con.commit()
         con.setAutoCommit(true)
+        con.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED)
         con.close()
         res
       }
@@ -96,7 +98,7 @@ abstract class JdbcDatabase(
     transaction { con =>
       // Determine if the dependencies conflict with the underlying database.
       val current = if (depends.isEmpty) Map.empty[Key, Revision] else select(con, depends.keySet)
-      val conflicts = depends.filter { case (k, v) => current.get(k).exists(_.version > v) }
+      val conflicts = current filter { case (k, r) => depends(k) < r.version }
 
       // Throw an exception on conflict or perform updates otherwise.
       if (conflicts.isEmpty) {
@@ -113,6 +115,9 @@ abstract class JdbcDatabase(
 
 object JdbcDatabase {
 
+  // Configuration root.
+  val root: String = "caustic.runtime.database.jdbc"
+
   // Driver classes for the various supported dialects.
   val drivers: Map[String, String] = Map(
     "mysql" -> "com.mysql.cj.jdbc.Driver",
@@ -127,13 +132,13 @@ object JdbcDatabase {
   def apply(config: Config): JdbcDatabase = {
     // Setup a C3P0 connection pool.
     val pool = new ComboPooledDataSource()
-    pool.setUser(config.getString("username"))
-    pool.setPassword(config.getString("password"))
-    pool.setDriverClass(this.drivers(config.getString("dialect")))
-    pool.setJdbcUrl(config.getString("url"))
+    pool.setUser(config.getString(s"$root.username"))
+    pool.setPassword(config.getString(s"$root.password"))
+    pool.setDriverClass(drivers(config.getString(s"$root.dialect")))
+    pool.setJdbcUrl(config.getString(s"$root.url"))
 
     // Construct the corresponding database.
-    config.getString("dialect") match {
+    config.getString(s"$root.dialect") match {
       case "mysql" => MySQLDatabase(pool)
       case "postgres" => PostgresDatabase(pool)
     }

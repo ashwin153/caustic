@@ -1,7 +1,6 @@
-package caustic.service.client
+package caustic.runtime.service
 
 import caustic.runtime.thrift
-import caustic.service.discovery.Address
 
 import org.apache.thrift.protocol.TBinaryProtocol
 import org.apache.thrift.transport.{TFramedTransport, TSocket}

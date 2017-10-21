@@ -1,35 +1,50 @@
 package caustic.runtime
 
+import caustic.runtime.service.{Address, Registry}
+import caustic.runtime.service._
 import caustic.runtime.jdbc.JdbcDatabase
 import caustic.runtime.local.{LocalCache, LocalDatabase}
 import caustic.runtime.redis.RedisCache
-import com.typesafe.config.{Config, ConfigFactory}
 import org.apache.thrift.server.TNonblockingServer
 import org.apache.thrift.transport.TNonblockingServerSocket
+import pureconfig._
 import java.io.Closeable
-import scala.collection.JavaConverters._
-import scala.concurrent.{ExecutionContext, Future}
 
 /**
- * A server instance.
  *
- * @param database Underlying database.
- * @param port Port number.
+ * @param database
+ * @param port
+ * @param registry
  */
 case class Server(
   database: Database,
-  port: Int
+  port: Int,
+  registry: Option[Registry] = scala.None
 ) extends Closeable {
 
-  // Construct a Thrift server and serve it asynchronously.
-  val transport = new TNonblockingServerSocket(this.port)
-  val processor = new thrift.Database.AsyncProcessor(this.database)
-  val arguments = new TNonblockingServer.Args(this.transport).processor(this.processor)
-  val server = new TNonblockingServer(this.arguments)
-  val thread = new Thread(() => this.server.serve())
+  // Construct a Thrift server.
+  private val transport = new TNonblockingServerSocket(this.port)
+  private val processor = new thrift.Database.AsyncProcessor(this.database)
+  private val arguments = new TNonblockingServer.Args(this.transport).processor(this.processor)
+  private val server = new TNonblockingServer(this.arguments)
+  private val thread = new Thread(() => this.server.serve())
+
+  // Asynchronously serve the database.
   this.thread.start()
 
+  // Announce the server in the registry.
+  this.registry.foreach(_.register(Address.local(this.port)))
+
+  /**
+   *
+   * @return
+   */
+  def address: Address = Address.local(this.port)
+
   override def close(): Unit = {
+    // Remove the server from the registry.
+    this.registry.foreach(_.unregister(Address.local(this.port)))
+
     // Close the Thrift server and underlying database.
     this.server.stop()
     this.database.close()
@@ -39,15 +54,26 @@ case class Server(
 
 object Server {
 
-  // Configuration Root.
-  val root: String = "caustic.runtime.server"
+  /**
+   *
+   * @param port
+   * @param caches
+   * @param database
+   * @param discoverable
+   */
+  case class Config(
+    port: Int,
+    caches: List[String],
+    database: String,
+    discoverable: Boolean
+  )
 
   /**
    *
    * @return
    */
   def apply(): Server =
-    Server(ConfigFactory.load())
+    Server(loadConfigOrThrow[Config]("caustic.server"))
 
   /**
    *
@@ -55,19 +81,22 @@ object Server {
    * @return
    */
   def apply(config: Config): Server = {
-    // Setup the underlying database and iteratively construct caches.
-    val database = config.getString(s"$root.database") match {
-      case "local" => LocalDatabase(config)
-      case "jdbc" => JdbcDatabase(config)
+    // Setup the underlying database and caches.
+    val underlying = config.caches.foldRight {
+      config.database match {
+        case "local" => LocalDatabase()
+        case "jdbc" => JdbcDatabase()
+      }
+    } { case (cache, db) =>
+      cache match {
+        case "local" => LocalCache(db)
+        case "redis" => RedisCache(db)
+      }
     }
 
-    val underlying = config.getStringList(s"$root.caches").asScala.foldRight(database) {
-      case ("local", db) => LocalCache(db, config)
-      case ("redis", db) => RedisCache(db, config)
-    }
-
-    // Construct a database.
-    Server(underlying, config.getInt(s"$root.port"))
+    // Setup a server and optionally bootstrap a registry.
+    val registry = Option(config.discoverable) collect { case true => Registry() }
+    Server(underlying, config.port, registry)
   }
 
 }

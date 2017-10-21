@@ -1,4 +1,4 @@
-package caustic.service.client
+package caustic.runtime.service
 
 import java.util.concurrent.ThreadLocalRandom
 import scala.concurrent.duration.{Duration, FiniteDuration}

@@ -1,8 +1,9 @@
-package caustic.service.client
+package caustic.runtime.service
 
-import caustic.runtime.{Server, thrift}
-import caustic.runtime.local.LocalDatabase
-import caustic.service.discovery.{Address, Registry}
+import caustic.runtime.Server
+import caustic.runtime.service._
+import caustic.runtime.thrift
+
 import org.apache.curator.framework.{CuratorFramework, CuratorFrameworkFactory}
 import org.apache.curator.retry.ExponentialBackoffRetry
 import org.apache.curator.test.TestingServer
@@ -38,9 +39,9 @@ class ClusterTest extends FunSuite with Matchers with BeforeAndAfterAll with Eve
 
   test("Execute works on in-memory server.") {
     // Bootstrap a server and register it.
-    val server = Server(LocalDatabase(), 9090)
     val registry = Registry(this.curator)
     registry.register(Address("localhost", 9090))
+    val server = Server()
 
     // Execute a transaction.
     val cluster = Cluster(registry)

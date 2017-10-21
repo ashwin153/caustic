@@ -2,7 +2,8 @@ package caustic.runtime
 package local
 
 import com.github.benmanes.caffeine.{cache => caffeine}
-import com.typesafe.config.Config
+import pureconfig._
+
 import java.util.concurrent.TimeUnit
 import scala.collection.JavaConverters._
 import scala.concurrent.duration.Duration
@@ -42,23 +43,21 @@ case class LocalCache(
 
 object LocalCache {
 
-  // Configuration Root.
-  val root: String = "caustic.runtime.cache.local"
+  /**
+   *
+   * @param capacity
+   * @param expiration
+   */
+  case class Config(
+    capacity: Long,
+    expiration: Duration
+  )
 
   /**
-   * Constructs a LocalCache backed by the specified database.
    *
-   * @param database Underlying database.
-   * @param capacity Maximum size in bytes.
-   * @param expiration Expiration duration.
-   * @return LocalCache.
    */
-  def apply(database: Database, capacity: Long, expiration: Duration): LocalCache =
-    LocalCache(database, caffeine.Caffeine.newBuilder()
-      .weigher((k: Key, r: Revision) => sizeof(k) + sizeof(r))
-      .maximumWeight(capacity)
-      .expireAfterAccess(expiration.toMillis, TimeUnit.MILLISECONDS)
-      .build[Key, Revision]())
+  def apply(database: Database): LocalCache =
+    LocalCache(database, loadConfigOrThrow[Config]("caustic.cache.local"))
 
   /**
    *
@@ -66,11 +65,22 @@ object LocalCache {
    * @param config
    * @return
    */
-  def apply(database: Database, config: Config): LocalCache = {
-    val capacity = config.getBytes(s"$root.capacity")
-    val expiration = Duration.fromNanos(config.getDuration(s"$root.expiration").toNanos)
-    LocalCache(database, capacity, expiration)
-  }
+  def apply(database: Database, config: Config): LocalCache =
+    LocalCache(database, config.capacity, config.expiration)
+
+  /**
+   *
+   * @param database
+   * @param capacity
+   * @param expiration
+   * @return
+   */
+  def apply(database: Database, capacity: Long, expiration: Duration): LocalCache =
+    LocalCache(database, caffeine.Caffeine.newBuilder()
+      .weigher((k: Key, r: Revision) => sizeof(k) + sizeof(r))
+      .maximumWeight(capacity)
+      .expireAfterAccess(expiration.toMillis, TimeUnit.MILLISECONDS)
+      .build[Key, Revision]())
 
   /**
    * Returns the approximate size of the key-revision pair. In-memory caches are typically bounded

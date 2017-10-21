@@ -31,7 +31,7 @@ class MySQLDatabaseTest extends DatabaseTest with BeforeAndAfterAll {
     con.close()
 
     // Run the tests.
-    val database = MySQLDatabase(this.pool)
+    val database = JdbcDatabase(this.pool, MySQLDialect)
     Await.result(database.exists, 10 seconds)
     test(database)
   }

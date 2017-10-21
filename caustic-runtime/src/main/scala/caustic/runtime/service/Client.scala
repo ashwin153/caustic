@@ -1,4 +1,4 @@
-package caustic.service.client
+package caustic.runtime.service
 
 import caustic.runtime.thrift
 

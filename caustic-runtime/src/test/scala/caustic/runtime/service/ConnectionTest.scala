@@ -1,7 +1,8 @@
-package caustic.service.client
+package caustic.runtime.service
 
-import caustic.runtime.local.LocalDatabase
-import caustic.runtime.{Server, thrift}
+import caustic.runtime.Server
+import caustic.runtime.service._
+import caustic.runtime.thrift
 
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
@@ -13,7 +14,7 @@ class ConnectionTest extends FunSuite with Matchers {
 
   test("Execute works on in-memory server.") {
     // Bootstrap an in-memory database server.
-    val server = Server(LocalDatabase(), 9000)
+    val server = Server()
 
     // Connect and execute transactions.
     val client = Connection("localhost", 9000)

@@ -1,9 +1,13 @@
 package caustic.runtime
 package jdbc
 
+import JdbcDatabase._
+
 import com.mchange.v2.c3p0.{ComboPooledDataSource, PooledDataSource}
-import com.typesafe.config.Config
+import pureconfig._
+
 import java.sql.Connection
+import javax.sql.DataSource
 import scala.concurrent.{ExecutionContext, Future, blocking}
 
 /**
@@ -11,78 +15,13 @@ import scala.concurrent.{ExecutionContext, Future, blocking}
  *
  * @param underlying Underlying store.
  */
-abstract class JdbcDatabase(
-  underlying: PooledDataSource
+case class JdbcDatabase(
+  underlying: PooledDataSource,
+  dialect: Dialect
 ) extends Database {
 
-  // Ensure that the table schema exists.
-  val exists: Future[Unit] = this.transaction { con =>
-    val smt = con.createStatement()
-    smt.execute(this.schema)
-    smt.close()
-  } {
-    scala.concurrent.ExecutionContext.global
-  }
-
-  /**
-   * Returns the SQL query that creates the table schema if and only if it doesn't already exist.
-   *
-   * @return SQL create table if not exists query.
-   */
-  def schema: String
-
-  /**
-   * A select query for the key, versions and values of the specified keys.
-   *
-   * @param con JDBC connection.
-   * @param keys Keys to select.
-   * @return SQL select query.
-   */
-  def select(con: Connection, keys: Set[Key]): Map[Key, Revision]
-
-  /**
-   * A upsert query that inserts or updates the specified key, revision, and value.
-   *
-   * @param con JDBC connection.
-   * @param key Key to upsert.
-   * @param revision Revision to upsert.
-   * @return SQL update query.
-   */
-  def upsert(con: Connection, key: Key, revision: Revision): Unit
-
-  /**
-   * Asynchronously performs the JDBC transaction on the underlying DataSource. Transactions are
-   * modeled as method calls on a JDBC connection that atomically commit and safely rollback.
-   *
-   * @param f Transaction function.
-   * @param ec Implicit execution context.
-   * @tparam R Type of return value.
-   * @return Result of performing the transaction.
-   */
-  def transaction[R](f: Connection => R)(
-    implicit ec: ExecutionContext
-  ): Future[R] = {
-    var con: Connection = null
-    Future {
-      blocking {
-        con = this.underlying.getConnection()
-        con.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE)
-        con.setAutoCommit(false)
-        val res = f(con)
-        con.commit()
-        con.setAutoCommit(true)
-        con.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED)
-        con.close()
-        res
-      }
-    } recoverWith {
-      case e: Exception if con != null =>
-        con.rollback()
-        con.setAutoCommit(true)
-        con.close()
-        Future.failed(e)
-    }
-  }
+  // Verify that the table schema exists.
+  val exists: Future[Unit] = transaction(this.underlying)(this.dialect.create)
 
   override def get(keys: Set[Key])(
     implicit ec: ExecutionContext
@@ -90,21 +29,21 @@ abstract class JdbcDatabase(
     if (keys.isEmpty)
       Future(Map.empty)
     else
-      transaction(select(_, keys))
+      transaction(this.underlying)(this.dialect.select(_, keys))
 
   override def cput(depends: Map[Key, Version], changes: Map[Key, Revision])(
     implicit ec: ExecutionContext
   ): Future[Unit] =
-    transaction { con =>
+    transaction(this.underlying) { con =>
       // Determine if the dependencies conflict with the underlying database.
-      val current = if (depends.isEmpty) Map.empty[Key, Revision] else select(con, depends.keySet)
+      val current = if (depends.isEmpty) Map.empty else this.dialect.select(con, depends.keySet)
       val conflicts = current filter { case (k, r) => depends(k) < r.version }
 
       // Throw an exception on conflict or perform updates otherwise.
       if (conflicts.isEmpty) {
-        changes.foreach { case (k, r) => upsert(con, k, r) }
+        this.dialect.upsert(con, changes)
       } else {
-        throw ConflictException(conflicts.keySet)
+        throw ConflictException(conflicts.keys.toSet)
       }
     }
 
@@ -115,32 +54,99 @@ abstract class JdbcDatabase(
 
 object JdbcDatabase {
 
-  // Configuration root.
-  val root: String = "caustic.runtime.database.jdbc"
+  // Implicit global execution context.
+  implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.global
 
-  // Driver classes for the various supported dialects.
-  val drivers: Map[String, String] = Map(
-    "mysql" -> "com.mysql.cj.jdbc.Driver",
-    "postgres" -> "org.postgresql.Driver"
+  /**
+   *
+   * @param username
+   * @param password
+   * @param dialect
+   * @param url
+   */
+  case class Config(
+    username: String,
+    password: String,
+    dialect: String,
+    url: String
   )
+
+  /**
+   *
+   * @return
+   */
+  def apply(): JdbcDatabase =
+    JdbcDatabase(loadConfigOrThrow[Config]("caustic.database.jdbc"))
 
   /**
    *
    * @param config
    * @return
    */
-  def apply(config: Config): JdbcDatabase = {
+  def apply(config: Config): JdbcDatabase =
+    JdbcDatabase(config.username, config.password, config.dialect, config.url)
+
+  /**
+   *
+   * @param username
+   * @param password
+   * @param dialect
+   * @param url
+   */
+  def apply(
+    username: String,
+    password: String,
+    dialect: String,
+    url: String
+  ): JdbcDatabase = {
+    // Determine the underlying SQL dialect.
+    val underlying = dialect match {
+      case "mysql" => MySQLDialect
+      case "postgres" => PostgresDialect
+    }
+
     // Setup a C3P0 connection pool.
     val pool = new ComboPooledDataSource()
-    pool.setUser(config.getString(s"$root.username"))
-    pool.setPassword(config.getString(s"$root.password"))
-    pool.setDriverClass(drivers(config.getString(s"$root.dialect")))
-    pool.setJdbcUrl(config.getString(s"$root.url"))
+    pool.setUser(username)
+    pool.setPassword(password)
+    pool.setDriverClass(underlying.driver)
+    pool.setJdbcUrl(url)
 
     // Construct the corresponding database.
-    config.getString(s"$root.dialect") match {
-      case "mysql" => MySQLDatabase(pool)
-      case "postgres" => PostgresDatabase(pool)
+    JdbcDatabase(pool, underlying)
+  }
+
+  /**
+   *
+   * @param source
+   * @param f
+   * @param ec
+   * @tparam R
+   * @return
+   */
+  def transaction[R](source: DataSource)(f: Connection => R)(
+    implicit ec: ExecutionContext
+  ): Future[R] = {
+    var con: Connection = null
+    Future {
+      blocking {
+        con = source.getConnection()
+        con.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE)
+        con.setAutoCommit(false)
+        val res = f(con)
+        con.commit()
+        con.setAutoCommit(true)
+        con.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED)
+        con.close()
+        res
+      }
+    } recoverWith {
+        case e: Exception if con != null =>
+          con.rollback()
+          con.setAutoCommit(true)
+          con.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED)
+          con.close()
+          Future.failed(e)
     }
   }
 

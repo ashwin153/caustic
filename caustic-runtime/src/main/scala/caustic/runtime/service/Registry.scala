@@ -1,12 +1,14 @@
-package caustic.service.discovery
+package caustic.runtime.service
 
-import com.typesafe.config.Config
-import java.io.Closeable
-import org.apache.curator.framework.{CuratorFramework, CuratorFrameworkFactory}
 import org.apache.curator.framework.state.{ConnectionState, ConnectionStateListener}
+import org.apache.curator.framework.{CuratorFramework, CuratorFrameworkFactory}
 import org.apache.curator.retry.ExponentialBackoffRetry
 import org.apache.zookeeper.CreateMode
+import pureconfig._
+
+import java.io.Closeable
 import scala.collection.mutable
+import scala.concurrent.duration.Duration
 
 /**
  * An instance registry. Thread-safe.
@@ -89,18 +91,38 @@ case class Registry(
 object Registry {
 
   /**
-   * Constructs a registry from the provided configuration.
    *
-   * @param config Configuration.
-   * @return Registry.
+   * @param zookeeper
+   * @param namespace
+   * @param connectionTimeout
+   * @param sessionTimeout
+   */
+  case class Config(
+    zookeeper: String,
+    namespace: String,
+    connectionTimeout: Duration,
+    sessionTimeout: Duration
+  )
+
+  /**
+   *
+   * @return
+   */
+  def apply(): Registry =
+    Registry(loadConfigOrThrow[Config]("caustic.registry"))
+
+  /**
+   *
+   * @param config
+   * @return
    */
   def apply(config: Config): Registry = {
     val curator = CuratorFrameworkFactory.builder()
-      .connectString(config.getString("caustic.service.zookeeper.connect-string"))
-      .namespace(config.getString("caustic.service.zookeeper.namespace"))
+      .connectString(config.zookeeper)
+      .namespace(config.namespace)
       .retryPolicy(new ExponentialBackoffRetry(1000, 3))
-      .connectionTimeoutMs(config.getDuration("caustic.service.zookeeper.connection-timeout").toMillis.toInt)
-      .sessionTimeoutMs(config.getDuration("caustic.service.zookeeper.session-timeout").toMillis.toInt)
+      .connectionTimeoutMs(config.connectionTimeout.toMillis.toInt)
+      .sessionTimeoutMs(config.sessionTimeout.toMillis.toInt)
       .build()
 
     // Close the generated CuratorFramework connection.

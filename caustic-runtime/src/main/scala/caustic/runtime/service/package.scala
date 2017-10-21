@@ -1,9 +1,9 @@
-package caustic.service
+package caustic.runtime
 
 import caustic.runtime.thrift
 import scala.language.implicitConversions
 
-package object client {
+package object service {
 
   // Implicit Conversions.
   implicit def bol2flag(x: Boolean): thrift.Transaction =

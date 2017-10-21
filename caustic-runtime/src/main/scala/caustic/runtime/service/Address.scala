@@ -1,5 +1,6 @@
-package caustic.service.discovery
+package caustic.runtime.service
 
+import java.net.InetAddress
 import java.nio.charset.Charset
 
 /**
@@ -24,6 +25,14 @@ object Address {
 
   // Default byte representation.
   val Repr: Charset = Charset.forName("UTF-8")
+
+  /**
+   *
+   * @param port
+   * @return
+   */
+  def local(port: Int): Address =
+    Address(InetAddress.getLocalHost.getHostAddress, port)
 
   /**
    * Constructs an address from the serialized bytes.

@@ -2,14 +2,13 @@ package caustic.runtime
 package local
 
 import com.github.benmanes.caffeine.{cache => caffeine}
-import com.typesafe.config.Config
+
 import scala.collection.JavaConverters._
 import scala.concurrent.{ExecutionContext, Future}
 
 /**
- * An in-memory, Caffeine database. Thread-safe.
  *
- * @param underlying Underlying data store.
+ * @param underlying
  */
 case class LocalDatabase(
   underlying: caffeine.Cache[Key, Revision]
@@ -45,23 +44,30 @@ case class LocalDatabase(
 
 object LocalDatabase {
 
-  // Configuration root.
-  val root: String = "caustic.runtime.database.local"
-
   /**
-   * Constructs an empty, in-memory database.
    *
-   * @return Empty LocalDatabase.
+   * @return
    */
   def apply(): LocalDatabase =
     LocalDatabase(caffeine.Caffeine.newBuilder().build[Key, Revision]())
 
   /**
    *
-   * @param config
+   * @param items
    * @return
    */
-  def apply(config: Config): LocalDatabase =
-    LocalDatabase()
+  def apply(items: (Key, Revision)*): LocalDatabase =
+    LocalDatabase(items.toMap)
+
+  /**
+   *
+   * @param initial
+   * @return
+   */
+  def apply(initial: Map[Key, Revision]): LocalDatabase = {
+    val database = LocalDatabase()
+    database.underlying.putAll(initial.asJava)
+    database
+  }
 
 }

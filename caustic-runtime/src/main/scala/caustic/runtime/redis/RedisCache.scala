@@ -5,7 +5,7 @@ import caustic.runtime.redis.RedisCache._
 
 import akka.actor.ActorSystem
 import akka.util.ByteString
-import com.typesafe.config.Config
+import pureconfig._
 import redis.{ByteStringDeserializer, ByteStringSerializer, RedisClient}
 
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream, ObjectInputStream, ObjectOutputStream}
@@ -50,9 +50,6 @@ case class RedisCache(
 
 object RedisCache {
 
-  // Configuration Root.
-  val root: String = "caustic.runtime.cache.redis"
-
   // Redis Serializer.
   implicit val serializer: ByteStringSerializer[Revision] = revision => {
     val bytes = new ByteArrayOutputStream()
@@ -75,19 +72,24 @@ object RedisCache {
   implicit val system: ActorSystem = ActorSystem.create()
 
   /**
-   * Constructs a Redis client backed by the specified database.
    *
-   * @param database Underlying database.
-   * @param host Redis hostname.
-   * @param port Redis port number.
-   * @param password Optional Redis password.
-   * @param system Implicit actor system.
-   * @return RedisCache.
+   * @param host
+   * @param port
+   * @param password
    */
-  def apply(database: Database, host: String, port: Int, password: Option[String])(
-    implicit system: ActorSystem
-  ): RedisCache =
-    RedisCache(database, RedisClient(host, port, password))
+  case class Config(
+    host: String,
+    port: Int,
+    password: Option[String]
+  )
+
+  /**
+   *
+   * @param database
+   * @return
+   */
+  def apply(database: Database): RedisCache =
+    RedisCache(database, loadConfigOrThrow[Config]("caustic.cache.redis"))
 
   /**
    *
@@ -95,11 +97,21 @@ object RedisCache {
    * @param config
    * @return
    */
-  def apply(database: Database, config: Config): RedisCache = {
-    val host = config.getString("host")
-    val port = config.getInt("port")
-    val password = config.getString("password")
-    RedisCache(database, host, port, Some(password))
-  }
+  def apply(database: Database, config: Config): RedisCache =
+    RedisCache(database, config.host, config.port, config.password)
+
+  /**
+   *
+   * @param database
+   * @param host
+   * @param port
+   * @param password
+   * @param system
+   * @return
+   */
+  def apply(database: Database, host: String, port: Int, password: Option[String])(
+    implicit system: ActorSystem
+  ): RedisCache =
+    RedisCache(database, RedisClient(host, port, password))
 
 }

@@ -32,7 +32,7 @@ class PostgresDatabaseTest extends DatabaseTest with BeforeAndAfterAll {
     con.close()
 
     // Run the tests.
-    val database = PostgresDatabase(this.pool)
+    val database = JdbcDatabase(this.pool, PostgresDialect)
     Await.result(database.exists, 10 seconds)
     test(database)
   }

@@ -56,6 +56,11 @@ jar_library(name='postgres', jars=[
     jar(org='postgresql', name='postgresql', rev='9.1-901.jdbc4'),
 ])
 
+# Pureconfig
+jar_library(name='pureconfig', jars=[
+    jar(org='com.github.pureconfig', name='pureconfig_2.12', rev='0.8.0'),
+])
+
 # Rediscala
 jar_library(name='rediscala', jars=[
     jar(org='com.github.etaty', name='rediscala_2.12', rev='1.8.0'),

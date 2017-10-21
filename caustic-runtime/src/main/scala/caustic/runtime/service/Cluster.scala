@@ -1,7 +1,6 @@
-package caustic.service.client
+package caustic.runtime.service
 
 import caustic.runtime.thrift
-import caustic.service.discovery.{Address, Registry}
 
 import org.apache.curator.framework.CuratorFramework
 import org.apache.curator.framework.recipes.cache._
@@ -73,7 +72,7 @@ object Cluster {
    * @param registry Underlying registry.
    * @return Cluster.
    */
-  def apply(registry: Registry): Cluster= {
+  def apply(registry: Registry): Cluster = {
     val instances = new PathChildrenCache(registry.curator, "/" + registry.curator.getNamespace, true)
     Cluster(instances, TrieMap.empty[String, Client])
   }

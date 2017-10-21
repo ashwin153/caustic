@@ -1,8 +1,8 @@
 package caustic.benchmarks
 
 import caustic.runtime
-import caustic.runtime.{Transaction, thrift}
-import caustic.service.client
+import caustic.runtime.thrift
+import caustic.runtime.service
 
 import org.scalameter.api._
 import scala.concurrent.Await
@@ -22,7 +22,7 @@ object RuntimeBenchmark extends Bench.OfflineReport {
   // Benchmark thrift transactions containing sequential reads.
   val TTransactions: Gen[thrift.Transaction] = Gen
     .exponential("size")(2, 1 << 10, 2)
-    .map(size => Seq.fill(size)(client.read(client.text("x"))).reduce(client.cons))
+    .map(size => Seq.fill(size)(service.read(service.text("x"))).reduce(service.cons))
 
   performance of "Runtime" in {
     measure method "Database.execute" in {
@@ -32,7 +32,7 @@ object RuntimeBenchmark extends Bench.OfflineReport {
     }
 
     measure method "Transaction.parse" in {
-      using(this.TTransactions) curve "Parse Latency" in { Transaction.parse }
+      using(this.TTransactions) curve "Parse Latency" in { runtime.Transaction.parse }
     }
   }
 

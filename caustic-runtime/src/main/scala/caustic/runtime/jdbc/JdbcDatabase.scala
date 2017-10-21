@@ -40,10 +40,10 @@ case class JdbcDatabase(
       val conflicts = current filter { case (k, r) => depends(k) < r.version }
 
       // Throw an exception on conflict or perform updates otherwise.
-      if (conflicts.isEmpty) {
-        this.dialect.upsert(con, changes)
-      } else {
+      if (conflicts.nonEmpty) {
         throw ConflictException(conflicts.keys.toSet)
+      } else if (changes.nonEmpty) {
+        this.dialect.upsert(con, changes)
       }
     }
 

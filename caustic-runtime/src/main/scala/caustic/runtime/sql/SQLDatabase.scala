@@ -1,7 +1,7 @@
 package caustic.runtime
-package jdbc
+package sql
 
-import JdbcDatabase._
+import SQLDatabase._
 
 import com.mchange.v2.c3p0.{ComboPooledDataSource, PooledDataSource}
 import pureconfig._
@@ -15,7 +15,7 @@ import scala.concurrent.{ExecutionContext, Future, blocking}
  *
  * @param underlying Underlying store.
  */
-case class JdbcDatabase(
+case class SQLDatabase(
   underlying: PooledDataSource,
   dialect: Dialect
 ) extends Database {
@@ -52,7 +52,7 @@ case class JdbcDatabase(
 
 }
 
-object JdbcDatabase {
+object SQLDatabase {
 
   // Implicit global execution context.
   implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.global
@@ -75,16 +75,16 @@ object JdbcDatabase {
    *
    * @return
    */
-  def apply(): JdbcDatabase =
-    JdbcDatabase(loadConfigOrThrow[Config]("caustic.database.jdbc"))
+  def apply(): SQLDatabase =
+    SQLDatabase(loadConfigOrThrow[Config]("caustic.database.sql"))
 
   /**
    *
    * @param config
    * @return
    */
-  def apply(config: Config): JdbcDatabase =
-    JdbcDatabase(config.username, config.password, config.dialect, config.url)
+  def apply(config: Config): SQLDatabase =
+    SQLDatabase(config.username, config.password, config.dialect, config.url)
 
   /**
    *
@@ -98,11 +98,11 @@ object JdbcDatabase {
     password: String,
     dialect: String,
     url: String
-  ): JdbcDatabase = {
+  ): SQLDatabase = {
     // Determine the underlying SQL dialect.
     val underlying = dialect match {
       case "mysql" => MySQLDialect
-      case "postgres" => PostgresDialect
+      case "postgresql" => PostgreSQLDialect
     }
 
     // Setup a C3P0 connection pool.
@@ -113,7 +113,7 @@ object JdbcDatabase {
     pool.setJdbcUrl(url)
 
     // Construct the corresponding database.
-    JdbcDatabase(pool, underlying)
+    SQLDatabase(pool, underlying)
   }
 
   /**

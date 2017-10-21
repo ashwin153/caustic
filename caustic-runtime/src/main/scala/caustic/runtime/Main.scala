@@ -3,9 +3,6 @@ package caustic.runtime
 import java.io.File
 import java.net.{URL, URLClassLoader}
 
-/**
- *
- */
 object Main extends App {
 
   if (args.length > 1) {

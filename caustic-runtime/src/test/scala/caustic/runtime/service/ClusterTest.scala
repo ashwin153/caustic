@@ -1,7 +1,6 @@
 package caustic.runtime.service
 
 import caustic.runtime.Server
-import caustic.runtime.service._
 import caustic.runtime.thrift
 
 import org.apache.curator.framework.{CuratorFramework, CuratorFrameworkFactory}
@@ -11,6 +10,7 @@ import org.junit.runner.RunWith
 import org.scalatest.concurrent.Eventually
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.{BeforeAndAfterAll, FunSuite, Matchers}
+
 import scala.util.Success
 
 @RunWith(classOf[JUnitRunner])

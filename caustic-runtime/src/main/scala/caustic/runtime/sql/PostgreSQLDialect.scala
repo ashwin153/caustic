@@ -1,5 +1,5 @@
 package caustic.runtime
-package jdbc
+package sql
 
 import java.sql.Connection
 import scala.collection.mutable
@@ -7,28 +7,29 @@ import scala.collection.mutable
 /**
  *
  */
-object MySQLDialect extends Dialect {
+object PostgreSQLDialect extends Dialect {
 
-  override val driver: String = "com.mysql.cj.jdbc.Driver"
+  override val driver: String = "org.postgresql.Driver"
 
   override def create(connection: Connection): Unit =
     connection.createStatement().execute(
-      s""" CREATE TABLE IF NOT EXISTS `caustic`(
-         |   `key` varchar (200) NOT NULL,
-         |   `version` BIGINT DEFAULT 0,
-         |   `type` INT,
-         |   `value` TEXT,
-         |   PRIMARY KEY(`key`)
-         |  )
+      s""" CREATE TABLE IF NOT EXISTS caustic (
+         |   key varchar (1000) NOT NULL,
+         |   version BIGINT DEFAULT 0,
+         |   type INT,
+         |   value TEXT,
+         |   PRIMARY KEY(key)
+         | )
      """.stripMargin)
 
   override def select(connection: Connection, keys: Set[Key]): Map[Key, Revision] = {
     // Load all the rows that match the keys.
     val statement = connection.prepareStatement(
-      s""" SELECT `key`, `version`, `type`, `value`
-         | FROM `caustic`
-         | WHERE `key` IN (${List.fill(keys.size)("?").mkString(",")})
-       """.stripMargin)
+      s""" SELECT key, version, type, value
+         | FROM caustic
+         | WHERE key IN (${List.fill(keys.size)("?").mkString(",")})
+       """.stripMargin
+    )
 
     keys.zipWithIndex.foreach { case (k, i) => statement.setString(i + 1, k) }
     val results = statement.executeQuery()
@@ -55,16 +56,15 @@ object MySQLDialect extends Dialect {
   }
 
   override def upsert(connection: Connection, changes: Map[Key, Revision]): Unit = {
-    // Construct a bulk upsert query.
+    // Prepare the SQL statement.
     val statement = connection.prepareStatement(
-      s""" INSERT INTO `caustic` (`key`, `version`, `type`, `value`)
+      s""" INSERT INTO caustic (key, version, type, value)
          | VALUES ${Seq.fill(changes.size)("(?, ?, ?, ?)").mkString(",")}
-         | ON DUPLICATE KEY UPDATE
-         | `version` = VALUES(`version`),
-         | `type` = VALUES(`type`),
-         | `value` = VALUES(`value`)
-         """.stripMargin
-    )
+         | ON CONFLICT (key) DO UPDATE SET
+         | version = excluded.version,
+         | type = excluded.type,
+         | value = excluded.value
+     """.stripMargin)
 
     changes.zipWithIndex foreach { case ((k, r), i) =>
       statement.setString(i*4 + 1, k)

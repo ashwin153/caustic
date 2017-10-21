@@ -1,4 +1,4 @@
-package caustic.runtime.jdbc
+package caustic.runtime.sql
 
 import caustic.runtime.{Key, Revision}
 import java.sql.Connection

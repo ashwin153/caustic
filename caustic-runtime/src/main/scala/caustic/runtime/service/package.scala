@@ -1,6 +1,5 @@
 package caustic.runtime
 
-import caustic.runtime.thrift
 import scala.language.implicitConversions
 
 package object service {

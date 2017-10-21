@@ -2,7 +2,7 @@ package caustic.runtime
 
 import caustic.runtime.service.{Address, Registry}
 import caustic.runtime.service._
-import caustic.runtime.jdbc.JdbcDatabase
+import caustic.runtime.sql.SQLDatabase
 import caustic.runtime.local.{LocalCache, LocalDatabase}
 import caustic.runtime.redis.RedisCache
 import org.apache.thrift.server.TNonblockingServer
@@ -34,12 +34,6 @@ case class Server(
 
   // Announce the server in the registry.
   this.registry.foreach(_.register(Address.local(this.port)))
-
-  /**
-   *
-   * @return
-   */
-  def address: Address = Address.local(this.port)
 
   override def close(): Unit = {
     // Remove the server from the registry.
@@ -85,7 +79,7 @@ object Server {
     val underlying = config.caches.foldRight {
       config.database match {
         case "local" => LocalDatabase()
-        case "jdbc" => JdbcDatabase()
+        case "sql" => SQLDatabase()
       }
     } { case (cache, db) =>
       cache match {

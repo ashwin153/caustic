@@ -1,8 +1,6 @@
 package caustic.runtime.service
 
 import caustic.runtime.Server
-import caustic.runtime.service._
-import caustic.runtime.thrift
 
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
@@ -17,8 +15,8 @@ class ConnectionTest extends FunSuite with Matchers {
     val server = Server()
 
     // Connect and execute transactions.
-    val client = Connection("localhost", 9000)
-    client.execute(write("x", 3)) shouldBe Success(thrift.Literal.real(3))
+    val client = Connection("localhost", 9090)
+    client.execute(write("x", 3)) shouldBe Success(real(3))
 
     // Cleanup client and server.
     client.close()

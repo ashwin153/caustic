@@ -1,7 +1,7 @@
 package caustic.benchmarks
 
 import caustic.runtime._
-import caustic.runtime.jdbc.JdbcDatabase
+import caustic.runtime.sql.SQLDatabase
 
 import com.typesafe.config.ConfigFactory
 import scala.concurrent.Await
@@ -12,7 +12,7 @@ import scala.language.postfixOps
 object ProfileBenchmark extends App {
 
   // Profile the MySQL database.
-  val database: Database = JdbcDatabase()
+  val database: Database = SQLDatabase()
   val transaction: Transaction = Seq.fill(1 << 10)(write(text("x"), text(""))).reduce(cons)
   Await.ready(this.database.execute(this.transaction), 5 seconds)
   this.database.close()

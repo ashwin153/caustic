@@ -22,9 +22,8 @@ information about the implementation.
 ## Overview
 - ```caustic-assets```: Pictures, documentation, and musings.
 - ```caustic-benchmarks```: Performance tests.
-- ```caustic-compiler```: Programming language.
-- ```caustic-runtime```: Transaction executor.
-- ```caustic-service```: Runtime interface.  
+- ```caustic-runtime```: Transaction interpreter.
+- ```caustic-syntax```: Programming language.
 
 ## Requirements
 - Java 1.8

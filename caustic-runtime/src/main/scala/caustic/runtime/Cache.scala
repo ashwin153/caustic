@@ -87,3 +87,19 @@ trait Cache extends Database {
   }
 
 }
+
+object Cache {
+
+  /**
+   * Constructs a Cache that corresponds to the specified name.
+   *
+   * @param name Cache name.
+   * @param database Underlying database.
+   * @return Cache instance.
+   */
+  def forName(name: String, database: Database): Cache = name match {
+    case "local" => local.LocalCache(database)
+    case "redis" => redis.RedisCache(database)
+  }
+
+}

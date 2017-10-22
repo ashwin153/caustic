@@ -44,9 +44,10 @@ case class LocalCache(
 object LocalCache {
 
   /**
+   * A LocalCache configuration.
    *
-   * @param capacity
-   * @param expiration
+   * @param capacity Maximum size in bytes.
+   * @param expiration Duration after which stale entries are evicted.
    */
   case class Config(
     capacity: Long,
@@ -54,32 +55,26 @@ object LocalCache {
   )
 
   /**
+   * Constructs a LocalCache by loading the configuration from the classpath.
    *
+   * @param database Underlying database.
+   * @return Classpath-configured LocalCache.
    */
   def apply(database: Database): LocalCache =
     LocalCache(database, loadConfigOrThrow[Config]("caustic.cache.local"))
 
   /**
+   * Constructs a LocalCache from the provided configuration.
    *
-   * @param database
-   * @param config
-   * @return
+   * @param database Underlying database.
+   * @param config Configuration.
+   * @return Dynamically-configured LocalCache.
    */
   def apply(database: Database, config: Config): LocalCache =
-    LocalCache(database, config.capacity, config.expiration)
-
-  /**
-   *
-   * @param database
-   * @param capacity
-   * @param expiration
-   * @return
-   */
-  def apply(database: Database, capacity: Long, expiration: Duration): LocalCache =
     LocalCache(database, caffeine.Caffeine.newBuilder()
       .weigher((k: Key, r: Revision) => sizeof(k) + sizeof(r))
-      .maximumWeight(capacity)
-      .expireAfterAccess(expiration.toMillis, TimeUnit.MILLISECONDS)
+      .maximumWeight(config.capacity)
+      .expireAfterAccess(config.expiration.toMillis, TimeUnit.MILLISECONDS)
       .build[Key, Revision]())
 
   /**

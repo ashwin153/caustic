@@ -12,7 +12,7 @@ import java.io.{ByteArrayInputStream, ByteArrayOutputStream, ObjectInputStream, 
 import scala.concurrent.{ExecutionContext, Future}
 
 /**
- * A Redis-backed, cache.
+ * A Redis-backed, cache. Thread-safe.
  *
  * @param database Underlying database.
  * @param client Redis client.
@@ -72,10 +72,11 @@ object RedisCache {
   implicit val system: ActorSystem = ActorSystem.create()
 
   /**
+   * A RedisCache configuration.
    *
-   * @param host
-   * @param port
-   * @param password
+   * @param host Redis hostname.
+   * @param port Redis port number.
+   * @param password Optional password.
    */
   case class Config(
     host: String,
@@ -84,34 +85,23 @@ object RedisCache {
   )
 
   /**
+   * Constructs a RedisCache by loading the configuration from the classpath.
    *
-   * @param database
-   * @return
+   * @param database Underlying database.
+   * @return Classpath-configured RedisCache.
    */
   def apply(database: Database): RedisCache =
     RedisCache(database, loadConfigOrThrow[Config]("caustic.cache.redis"))
 
   /**
+   * Constructs a RedisCache from the provided configuration.
    *
-   * @param database
-   * @param config
-   * @return
+   * @param database Underlying database.
+   * @param config Configuration.
+   * @param akka Implicit actor system.
+   * @return Dynamically-configured RedisCache.
    */
-  def apply(database: Database, config: Config): RedisCache =
-    RedisCache(database, config.host, config.port, config.password)
-
-  /**
-   *
-   * @param database
-   * @param host
-   * @param port
-   * @param password
-   * @param system
-   * @return
-   */
-  def apply(database: Database, host: String, port: Int, password: Option[String])(
-    implicit system: ActorSystem
-  ): RedisCache =
-    RedisCache(database, RedisClient(host, port, password))
+  def apply(database: Database, config: Config)(implicit akka: ActorSystem): RedisCache =
+    RedisCache(database, RedisClient(config.host, config.port, config.password))
 
 }

@@ -1,20 +1,20 @@
 package caustic.runtime
 
 import caustic.runtime.service.{Address, Registry}
-import caustic.runtime.service._
-import caustic.runtime.sql.SQLDatabase
-import caustic.runtime.local.{LocalCache, LocalDatabase}
-import caustic.runtime.redis.RedisCache
+
 import org.apache.thrift.server.TNonblockingServer
 import org.apache.thrift.transport.TNonblockingServerSocket
 import pureconfig._
-import java.io.Closeable
+
+import java.io.{Closeable, File}
+import java.net.{URL, URLClassLoader}
 
 /**
+ * An executable, runtime instance.
  *
- * @param database
- * @param port
- * @param registry
+ * @param database Underlying database.
+ * @param port Port number.
+ * @param registry Optional service registry.
  */
 case class Server(
   database: Database,
@@ -49,11 +49,12 @@ case class Server(
 object Server {
 
   /**
+   * A Server configuration.
    *
-   * @param port
-   * @param caches
-   * @param database
-   * @param discoverable
+   * @param port Port number.
+   * @param caches List of cache names.
+   * @param database Database name.
+   * @param discoverable Service discovery trigger.
    */
   case class Config(
     port: Int,
@@ -63,34 +64,52 @@ object Server {
   )
 
   /**
+   * Constructs a Server by loading the configuration from the classpath.
    *
-   * @return
+   * @return Classpath-configured Server.
    */
   def apply(): Server =
     Server(loadConfigOrThrow[Config]("caustic.server"))
 
   /**
+   * Constructs a Server from the provided configuration.
    *
-   * @param config
-   * @return
+   * @param config Configuration.
+   * @return Dynamically-configured Server.
    */
   def apply(config: Config): Server = {
-    // Setup the underlying database and caches.
-    val underlying = config.caches.foldRight {
-      config.database match {
-        case "local" => LocalDatabase()
-        case "sql" => SQLDatabase()
-      }
-    } { case (cache, db) =>
-      cache match {
-        case "local" => LocalCache(db)
-        case "redis" => RedisCache(db)
-      }
-    }
-
-    // Setup a server and optionally bootstrap a registry.
+    val underlying = config.caches.foldRight(Database.forName(config.database))(Cache.forName)
     val registry = Option(config.discoverable) collect { case true => Registry() }
     Server(underlying, config.port, registry)
+  }
+
+  /**
+   * An entry-point that bootstraps and serves a Server. Server configurations are loaded from the
+   * classpath, but may be overridden by providing a path to a configuration file path or by
+   * explicitly setting the value of system properties.
+   */
+  object Main extends App {
+
+    if (args.length > 1) {
+      println("Usage: ./pants run caustic-runtime/src/main/scala:server [config] -- -Dprop=value")
+      System.exit(1)
+    }
+
+    // Add configuration file to classpath. https://stackoverflow.com/a/7884406/1447029
+    if (args.nonEmpty) {
+      val uri = new File(args(0)).toURI
+      val classLoader = ClassLoader.getSystemClassLoader.asInstanceOf[URLClassLoader]
+      val method = classOf[URLClassLoader].getDeclaredMethod("addURL", classOf[URL])
+      method.setAccessible(true)
+      method.invoke(classLoader, Array(uri.toURL))
+    }
+
+    // Asynchronously bootstrap server, and tear it down on shutdown.
+    val server = Server()
+    sys.addShutdownHook {
+      this.server.close()
+    }
+
   }
 
 }

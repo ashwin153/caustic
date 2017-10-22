@@ -7,7 +7,7 @@ import scala.util.control.NonFatal
 
 object Retry {
 
-  // Retry scheduling thread.
+  // Retry Scheduler.
   lazy val scheduler: Timer = new Timer(true)
 
   /**

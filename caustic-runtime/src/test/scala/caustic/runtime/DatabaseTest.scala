@@ -14,7 +14,7 @@ import java.util.concurrent.{CountDownLatch, TimeUnit}
 import scala.concurrent.ExecutionContext.Implicits.global
 
 @RunWith(classOf[JUnitRunner])
-abstract class DatabaseTest extends fixture.FunSuite
+trait DatabaseTest extends fixture.FunSuite
   with ScalaFutures
   with MockitoSugar
   with Matchers {
@@ -49,6 +49,7 @@ abstract class DatabaseTest extends fixture.FunSuite
 
     doAnswer(new CallsRealMethods {
       override def answer(invocation: InvocationOnMock): Object = {
+        println("Hi")
         ready.countDown()
         assert(block.await(10, TimeUnit.SECONDS))
         super.answer(invocation)

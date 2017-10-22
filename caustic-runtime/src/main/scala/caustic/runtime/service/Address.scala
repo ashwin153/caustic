@@ -12,33 +12,34 @@ import java.nio.charset.Charset
 case class Address(host: String, port: Int) {
 
   /**
-   * Serializes the address to a sequence of bytes.
+   * Returns the serialized representation.
    *
-   * @return Serialized representation.
+   * @return Serialized bytes.
    */
   def toBytes: Array[Byte] =
-    s"${this.host}:${this.port}".getBytes(Address.Repr)
+    s"$host:$port".getBytes(Address.Repr)
 
 }
 
 object Address {
 
-  // Default byte representation.
+  // Default Charset Representation.
   val Repr: Charset = Charset.forName("UTF-8")
 
   /**
+   * Constructs an Address for the specified port on the local machine.
    *
-   * @param port
-   * @return
+   * @param port Port number.
+   * @return Localhost Address.
    */
   def local(port: Int): Address =
     Address(InetAddress.getLocalHost.getHostAddress, port)
 
   /**
-   * Constructs an address from the serialized bytes.
+   * Constructs an Address from the serialized bytes.
    *
    * @param bytes Serialized representation.
-   * @return Deserialized instance.
+   * @return Deserialized Address.
    */
   def apply(bytes: Array[Byte]): Address = {
     val tokens = new String(bytes, Address.Repr).split(":")

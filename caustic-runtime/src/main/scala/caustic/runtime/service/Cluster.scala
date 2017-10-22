@@ -1,6 +1,5 @@
-package caustic.runtime.service
-
-import caustic.runtime.thrift
+package caustic.runtime
+package service
 
 import org.apache.curator.framework.CuratorFramework
 import org.apache.curator.framework.recipes.cache._
@@ -12,7 +11,7 @@ import scala.concurrent.duration.FiniteDuration
 import scala.util.{Failure, Random, Try}
 
 /**
- * A connection to all instances in a registry. Thread-safe.
+ * A connection to all instances in a Registry. Thread-safe.
  *
  * @param instances ZooKeeper cache.
  * @param clients Established clients.
@@ -45,10 +44,7 @@ case class Cluster(
   override def close(): Unit = {
     // Avoid race by closing the cache first.
     this.instances.close()
-    this.clients.values foreach {
-      case x: Closeable => x.close()
-      case _ =>
-    }
+    this.clients.values.foreach(_.close)
   }
 
   override def childEvent(
@@ -67,13 +63,23 @@ case class Cluster(
 object Cluster {
 
   /**
-   * Constructs a cluster backed by the underlying registry.
+   * Constructs a Cluster backed by the specified Registry.
    *
-   * @param registry Underlying registry.
-   * @return Cluster.
+   * @param registry Underlying Registry.
+   * @return Registry-backed Cluster.
    */
-  def apply(registry: Registry): Cluster = {
-    val instances = new PathChildrenCache(registry.curator, "/" + registry.curator.getNamespace, true)
+  def apply(registry: Registry): Cluster =
+    Cluster(registry.curator)
+
+  /**
+   * Constructs a Cluster backed by the specified Curator client.
+   *
+   * @param curator Zookeeper client.
+   * @return Curator-backed Cluster.
+   */
+  def apply(curator: CuratorFramework): Cluster = {
+    val namespace = "/" + curator.getNamespace
+    val instances = new PathChildrenCache(curator, namespace, true)
     Cluster(instances, TrieMap.empty[String, Client])
   }
 

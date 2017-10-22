@@ -1,7 +1,5 @@
-package caustic.runtime.service
-
-import caustic.runtime.Server
-import caustic.runtime.thrift
+package caustic.runtime
+package service
 
 import org.apache.curator.framework.{CuratorFramework, CuratorFrameworkFactory}
 import org.apache.curator.retry.ExponentialBackoffRetry

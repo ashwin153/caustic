@@ -26,7 +26,7 @@ case class Registry(
   override def close(): Unit = Unit
 
   /**
-   * A ZooKeeper listener that re-registers an instance address after disruptions in connectivity.
+   * A ZooKeeper listener that re-registers an instance Address after disruptions in connectivity.
    *
    * @param address Instance location.
    */
@@ -91,11 +91,12 @@ case class Registry(
 object Registry {
 
   /**
+   * A Registry configuration.
    *
-   * @param zookeeper
-   * @param namespace
-   * @param connectionTimeout
-   * @param sessionTimeout
+   * @param zookeeper Zookeeper connect string. (eg. "localhost:3192,localhost:2811")
+   * @param namespace Zookeeper namespace.
+   * @param connectionTimeout ZooKeeper connection timeout.
+   * @param sessionTimeout ZooKeeper session timeout.
    */
   case class Config(
     zookeeper: String,
@@ -105,16 +106,18 @@ object Registry {
   )
 
   /**
+   * Constructs a Registry by loading the configuration from the classpath.
    *
-   * @return
+   * @return Classpath-configured Registry.
    */
   def apply(): Registry =
     Registry(loadConfigOrThrow[Config]("caustic.registry"))
 
   /**
+   * Constructs a Registry from the provided configuration.
    *
-   * @param config
-   * @return
+   * @param config Configuration.
+   * @return Dynamically-configured Registry.
    */
   def apply(config: Config): Registry = {
     val curator = CuratorFrameworkFactory.builder()

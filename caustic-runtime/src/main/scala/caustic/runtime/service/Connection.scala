@@ -1,6 +1,5 @@
-package caustic.runtime.service
-
-import caustic.runtime.thrift
+package caustic.runtime
+package service
 
 import org.apache.thrift.protocol.TBinaryProtocol
 import org.apache.thrift.transport.{TFramedTransport, TSocket}
@@ -35,13 +34,12 @@ case class Connection(address: Address) extends Client {
 object Connection {
 
   /**
-   * Constructs a connection to the server at the provided network location.
+   * Constructs a Connection to the specified port on the local machine.
    *
-   * @param host Hostname.
    * @param port Port number.
-   * @return Connection.
+   * @return Local Connection.
    */
-  def apply(host: String, port: Int): Connection =
-    Connection(Address(host, port))
+  def apply(port: Int): Connection =
+    Connection(Address.local(port))
 
 }

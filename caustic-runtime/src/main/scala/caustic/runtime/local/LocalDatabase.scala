@@ -7,8 +7,9 @@ import scala.collection.JavaConverters._
 import scala.concurrent.{ExecutionContext, Future}
 
 /**
+ * An in-memory database. Thread-safe.
  *
- * @param underlying
+ * @param underlying Caffeine Map.
  */
 case class LocalDatabase(
   underlying: caffeine.Cache[Key, Revision]
@@ -45,24 +46,27 @@ case class LocalDatabase(
 object LocalDatabase {
 
   /**
+   * Constructs an empty LocalDatabase.
    *
-   * @return
+   * @return Empty LocalDatabase.
    */
   def apply(): LocalDatabase =
     LocalDatabase(caffeine.Caffeine.newBuilder().build[Key, Revision]())
 
   /**
+   * Constructs a LocalDatabase containing the specified items.
    *
-   * @param items
-   * @return
+   * @param items Initial contents.
+   * @return Initialized LocalDatabase.
    */
   def apply(items: (Key, Revision)*): LocalDatabase =
     LocalDatabase(items.toMap)
 
   /**
+   * Constructs a LocalDatabase containing the specified mapping.
    *
-   * @param initial
-   * @return
+   * @param initial Initial contents.
+   * @return Initialized LocalDatabase.
    */
   def apply(initial: Map[Key, Revision]): LocalDatabase = {
     val database = LocalDatabase()

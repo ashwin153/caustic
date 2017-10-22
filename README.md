@@ -22,7 +22,7 @@ information about the implementation.
 ## Overview
 - ```caustic-assets```: Pictures, documentation, and musings.
 - ```caustic-benchmarks```: Performance tests.
-- ```caustic-runtime```: Transaction interpreter.
+- ```caustic-runtime```: Interpreter.
 - ```caustic-syntax```: Programming language.
 
 ## Requirements

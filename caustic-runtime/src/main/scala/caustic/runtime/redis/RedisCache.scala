@@ -70,6 +70,7 @@ object RedisCache {
 
   // Implicit Actor System.
   implicit val system: ActorSystem = ActorSystem.create()
+  sys.addShutdownHook(this.system.terminate())
 
   /**
    * A RedisCache configuration.
@@ -98,10 +99,9 @@ object RedisCache {
    *
    * @param database Underlying database.
    * @param config Configuration.
-   * @param akka Implicit actor system.
    * @return Dynamically-configured RedisCache.
    */
-  def apply(database: Database, config: Config)(implicit akka: ActorSystem): RedisCache =
+  def apply(database: Database, config: Config): RedisCache =
     RedisCache(database, RedisClient(config.host, config.port, config.password))
 
 }

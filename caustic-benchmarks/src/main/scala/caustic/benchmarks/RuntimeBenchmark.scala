@@ -15,24 +15,24 @@ object RuntimeBenchmark extends Bench.OfflineReport {
   val database: runtime.Database = LocalDatabase()
 
   // Benchmark runtime transactions containing sequential reads.
-  val RTransactions: Gen[runtime.Transaction] = Gen
+  val runtimeTransactions: Gen[runtime.Transaction] = Gen
     .exponential("size")(2, 1 << 10, 2)
     .map(size => Seq.fill(size)(runtime.read(runtime.text("x"))).reduce(runtime.cons))
 
   // Benchmark thrift transactions containing sequential reads.
-  val TTransactions: Gen[thrift.Transaction] = Gen
+  val thriftTransactions: Gen[thrift.Transaction] = Gen
     .exponential("size")(2, 1 << 10, 2)
     .map(size => Seq.fill(size)(service.read(service.text("x"))).reduce(service.cons))
 
   performance of "Runtime" in {
     measure method "Database.execute" in {
-      using(this.RTransactions) curve "Execute Latency" in { txn =>
+      using(this.runtimeTransactions) curve "Execute Latency" in { txn =>
         Await.result(this.database.execute(txn), Duration.Inf)
       }
     }
 
     measure method "Transaction.parse" in {
-      using(this.TTransactions) curve "Parse Latency" in { runtime.Transaction.parse }
+      using(this.thriftTransactions) curve "Parse Latency" in { runtime.Transaction.parse }
     }
   }
 

@@ -9,9 +9,6 @@ import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Await, Future}
 
-/**
- *
- */
 object ContentionBenchmark {
 
   /**
@@ -21,56 +18,65 @@ object ContentionBenchmark {
    * find the complement of the probability that A and B are disjoint which is the likelihood that B
    * is drawn from K - A.
    *
-   * @param n
-   * @param l
-   * @return
+   * @param n Size of key space.
+   * @param l Transaction size.
+   * @return Contention probability.
    */
   def contention(n: BigInt, l: BigInt): BigDecimal =
     1 - BigDecimal(Probability.combinations(n - l, l)) / BigDecimal(Probability.combinations(n, l))
 
   /**
-   * Returns the average number of attempts required for a transaction to complete. We may model
-   * the number of attempts A as the negative binomial distribution A ~ 1 + NB(p, 1) where p is the
-   * contention probability. Therefore, the average number of attempts is 1 + p / (1 - p).
+   * Returns the average number of attempts required for a transaction to successfully complete. We
+   * may model the number of attempts A as the negative binomial distribution A ~ 1 + NB(p, 1) where
+   * p is the contention probability. Therefore, the average number of attempts is 1 + p / (1 - p).
    *
-   * @param p
-   * @return
+   * @param p Contention probability.
+   * @return Average number of attempts.
    */
   def attempts(p: BigDecimal): BigDecimal =
     1 + p / (1 - p)
 
   /**
+   * Returns a sequence of l integers drawn uniformly at random from [0, n).
    *
-   * @param n
-   * @param l
-   * @return
+   * @param n Population size.
+   * @param l Sample size.
+   * @return Uniformly random integers.
    */
-  def random(n: Int, l: Int): Transaction =
+  def random(n: Int, l: Int): Seq[Int] =
     Random.shuffle(Seq.range(0, n)).take(l)
-      .map(i => text(i.toString))
-      .map(k => write(k, branch(equal(read(k), None), real(1), add(real(1), read(k)))))
-      .reduce(cons)
 
   /**
+   * Returns the sequence of integers [i, i + l). Used to construct disjoint transactions.
    *
-   * @param i
-   * @param l
-   * @return
+   * @param i Initial number.
+   * @param l Sample size.
+   * @return Sequential integers.
    */
-  def disjoint(i: Int, l: Int): Transaction =
+  def disjoint(i: Int, l: Int): Seq[Int] =
     Seq.range(i * l, i * l + l)
-      .map(i => text(i.toString))
+
+  /**
+   * Returns a transaction that increments the values of the specified keys.
+   *
+   * @param keys Keys to increment.
+   * @return Counter transaction.
+   */
+  def counter(keys: Seq[Int]): Transaction =
+    keys.map(i => text(i.toString))
       .map(k => write(k, branch(equal(read(k), None), real(1), add(real(1), read(k)))))
       .reduce(cons)
 
   /**
+   * Returns the number of failures that occurred while executing the generated transaction on the
+   * database the specified number of times.
    *
-   * @param database
-   * @param gen
-   * @param times
-   * @return
+   * @param database Underlying database.
+   * @param gen Transaction generator.
+   * @param times Iterations.
+   * @return Total number of failures.
    */
-  def execute(
+  def failures(
     database: Database,
     gen: => Transaction,
     times: Int
@@ -99,13 +105,13 @@ object ContentionBenchmark {
 
     // Measure throughput under contention.
     val conflict = Measure.throughput {
-      val tasks = Future.sequence(Seq.fill(2)(Future(execute(database, random(n, l), times))))
+      val tasks = Future.sequence(Seq.fill(2)(Future(failures(database, counter(random(n, l)), times))))
       total - Await.result(tasks, Duration.Inf).sum
     }
 
     // Measure throughput in isolation.
     val isolation = Measure.throughput {
-      val tasks = Future.sequence(Seq.tabulate(2)(i => Future(execute(database, disjoint(i, l), times))))
+      val tasks = Future.sequence(Seq.tabulate(2)(i => Future(failures(database, counter(disjoint(i, l)), times))))
       total - Await.result(tasks, Duration.Inf).sum
     }
 

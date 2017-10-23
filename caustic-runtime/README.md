@@ -47,7 +47,7 @@ A ```Server``` may also be run as a member of a dynamically discoverable ```Clus
 by setting the ```caustic.server.discoverable``` configuration parameter. Service discovery is
 managed by a ```Registry``` that notifies clients whenever a ```Server``` comes online or goes 
 offline. A ```Registry``` stores its state within a configurable [ZooKeeper][4] ensemble. Clients 
-may then connect to this ```Registry``` and use it to execute transactions on registered 
+may connect to this ```Registry``` and use it to execute transactions on registered 
 ```Server``` instances.
 
 ```scala

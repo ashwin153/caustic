@@ -18,7 +18,7 @@ A ```Server``` may also be run programmatically.
 ```scala
 import caustic.runtime.Server
 
-// Serves an in-memory database on port 9090.
+// Serves an in-memory database over port 9090.
 val server = Server()
 
 // Terminates the server.

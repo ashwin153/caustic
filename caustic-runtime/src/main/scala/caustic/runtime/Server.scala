@@ -82,4 +82,16 @@ object Server {
     Server(underlying, config.port, registry)
   }
 
+  /**
+   * Asynchronously serves a Server, and automatically tears it down on shutdown. Servers are
+   * bootstrapped from the configuration available on the classpath, but this configuration can be
+   * explicitly overridden by modifying system properties from the command line.
+   *
+   * @param args Arguments.
+   */
+  def main(args: Array[String]): Unit = {
+    val server = Server()
+    sys.addShutdownHook(server.close())
+  }
+
 }

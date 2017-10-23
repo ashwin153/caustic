@@ -8,9 +8,12 @@ information about the various configuration parameters and their default values.
 may be optionally overriden by providing a configuration file or setting properties at runtime.
 
 ```
-docker run -d -p 9090:9090 ashwin153/caustic \             # Serve as daemon on part 9090.
-  ./pants run caustic-runtime/src/main/scala:server \      # Run the server binary.
-  /path/to/application.conf -- -Dcaustic.server.port=9090  # Optionally override configuration.
+docker run -d \
+  -p <host port>:9090 \
+  -v </path/to/application.conf>:/caustic/caustic-runtime/src/main/resources/application.conf \
+  ashwin153/caustic \
+  ./pants run caustic-runtime/src/main/scala:server \
+  -- -Dcaustic.server.port=9090
 ```
 
 A ```Server``` may also be run programmatically.

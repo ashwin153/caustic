@@ -38,7 +38,7 @@ Artifacts are published to the [Sonatype OSS Repository Hosting Service][1] and 
 [Maven Central][2]. Snapshots of the ```master``` branch are built using [Travis CI][4] and images
 are available on [Docker][5]. The Maven coordinates of core build artifacts are as follows.
 
-```
+```xml
 <!-- Client Library -->
 <dependency>
   <groupId>com.madavan</groupId>

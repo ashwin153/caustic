@@ -31,7 +31,7 @@ A ```Connection``` to this ```Server``` may then be established and used to exec
 import caustic.runtime.service._
 
 // Establishes a connection to localhost:9090.
-val client = Connection()
+val client = Connection(9090)
 
 // Executes a transaction on the remote server.
 client.execute(write("x", 3))

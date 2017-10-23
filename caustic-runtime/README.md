@@ -1,41 +1,55 @@
 # Runtime
-The ```caustic-runtime``` is responsible for executing transactions on arbitrary key-value stores.
+The ```caustic-runtime``` executes transactions on arbitrary key-value stores.
 
-## Server
-A ```Server``` may be run using Docker. Configuration overrides may be optionally specified by
-passing the path to a configuration file to the binary or by manually providing command line
-overrides.
+## Getting Started
+A ```Server``` may be started and run using [Docker][1]. By default, the ```Server``` will serve an 
+in-memory ```LocalDatabase``` over port ```9090```. Refer to the [reference configuration][2] for
+information about the various configuration parameters and their default values. This configuration
+may be optionally overriden by providing a configuration file or setting properties at runtime.
 
 ```
-docker run -d  -p 9090:9090 ashwin153/caustic \            # Serve as a daemon on port 9090.
-  ./pants run caustic-service/src/main/scala:server \      # Run the server binary.
+docker run -d -p 9090:9090 ashwin153/caustic \             # Serve as daemon on part 9090.
+  ./pants run caustic-runtime/src/main/scala:server \      # Run the server binary.
   /path/to/application.conf -- -Dcaustic.server.port=9090  # Optionally override configuration.
 ```
 
-## Client
-A ```Client``` may either be a ```Connection``` or a ```Client```. A ```Connection``` is a direct
-connection to a server instance, and is the only way to connect to a ```standalone``` instance. A
- ```Cluster``` is a connection to all the instances in a ```Registry```, and is the recommended way
-to connect to a discoverable instance.
+A ```Server``` may also be run programmatically.
+
+```scala
+import caustic.runtime.Server
+val server = Server()
+server.close()
+```
+
+A ```Connection``` to this ```Server``` may then be established and used to execute transactions.
 
 ```scala
 import caustic.runtime.service._
-val client = Connection("localhost", 9090)
-val registry = Registry("/path/to/application.conf")
-val client = Cluster(registry)
+val client = Connection(9090)
+client.execute(write("x", 3))
+client.close()
 ```
 
-Once a ```Client``` is constructed, it can be used to execute transactions.
-  
+An exhaustive list of the various supported transactional operations can be found [here][3].
+
+## Service Discovery
+A ```Server``` may also be run as a member of a dynamically discoverable ```Cluster``` of instances,
+by setting the ```caustic.server.discoverable``` configuration parameter. Service discovery is
+managed by a ```Registry``` that notifies clients whenever a ```Server``` comes online or goes 
+offline. A ```Registry``` stores its state within a configurable [ZooKeeper][4] ensemble. Clients 
+may then connect to this ```Registry``` and use it to execute transactions on registered 
+```Server``` instances.
+
 ```scala
+import caustic.runtime.service._
+val registry = Registry()
+val client = Cluster(registry)
 client.execute(write("x", 3))
-```
-  
-Be sure to clean up when you're done!
-  
-```scala
 client.close()
 registry.close()
 ```
-  
-[1]: https://github.com/ashwin153/caustic/blob/master/caustic-runtime/src/main/resources/reference.conf
+
+[1]: https://hub.docker.com/r/ashwin153/caustic/
+[2]: https://github.com/ashwin153/caustic/blob/master/caustic-runtime/src/main/resources/reference.conf
+[3]: https://github.com/ashwin153/caustic/wiki/Runtime#transaction
+[4]: https://zookeeper.apache.org/

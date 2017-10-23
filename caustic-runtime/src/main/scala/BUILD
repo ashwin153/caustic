@@ -40,8 +40,8 @@ scala_library(
 jvm_binary(
     name='server',
     basename='caustic-server',
-    source='caustic/runtime/Server.scala',
-    main='caustic.runtime.service.Server.Main',
+    source='caustic/runtime/Main.scala',
+    main='caustic.runtime.Main',
     dependencies=[
         'caustic-runtime/src/main/scala',
     ],

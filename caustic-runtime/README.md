@@ -53,7 +53,7 @@ may then connect to this ```Registry``` and use it to execute transactions on re
 ```scala
 import caustic.runtime.service._
 
-// Establishes a connection to ZooKeeper.
+// Establishes a connection to ZooKeeper at localhost:2181.
 val registry = Registry()
 
 // Establishes connections to all registered servers.

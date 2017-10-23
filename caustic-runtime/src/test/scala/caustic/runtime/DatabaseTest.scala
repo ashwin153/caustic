@@ -1,5 +1,7 @@
 package caustic.runtime
 
+import caustic.runtime
+
 import org.junit.runner.RunWith
 import org.mockito.Mockito._
 import org.mockito.internal.stubbing.answers.CallsRealMethods
@@ -12,6 +14,9 @@ import org.scalatest.time.{Millis, Seconds, Span}
 
 import java.util.concurrent.{CountDownLatch, TimeUnit}
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.{Await, Future}
+import scala.concurrent.duration._
+import scala.language.postfixOps
 
 @RunWith(classOf[JUnitRunner])
 trait DatabaseTest extends fixture.FunSuite
@@ -49,7 +54,6 @@ trait DatabaseTest extends fixture.FunSuite
 
     doAnswer(new CallsRealMethods {
       override def answer(invocation: InvocationOnMock): Object = {
-        println("Hi")
         ready.countDown()
         assert(block.await(10, TimeUnit.SECONDS))
         super.answer(invocation)
@@ -65,6 +69,19 @@ trait DatabaseTest extends fixture.FunSuite
     fake.execute(write(text("x"), text("foo"))).onComplete(_ => block.countDown())
     whenReady(exec.failed)(_ shouldBe an [Exception])
     whenReady(db.get(Set("x")))(_ should contain theSameElementsAs Seq("x" -> Revision(1L, text("foo"))))
+  }
+
+  test("Execute is thread-safe.") { db =>
+    // Construct a transaction that increments a counter.
+    val key = text("x")
+    val inc = write(key, add(real(1), branch(runtime.equal(read(key), None), real(0), read(key))))
+
+    // Concurrently execute the transaction and count the total successes.
+    val tasks = Future.sequence(Seq.fill(250)(db.execute(inc).map(_ => 1).fallbackTo(Future(0))))
+    val total = Await.result(tasks, 30 seconds).sum
+
+    // Verify that the number of increments matches the number of successful transactions.
+    whenReady(db.get(Set("x")))(_ should contain theSameElementsAs Seq("x" -> Revision(total, real(total))))
   }
 
   test("Execute maintains mutable state.") { db =>

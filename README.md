@@ -34,7 +34,7 @@ information about the implementation.
 - ZooKeeper 3.4.10
 
 ## Artifacts
-Artifacts are published to the [Sonatype OSS Repository Hosting Service][1] and synced to 
+Artifacts are published to the [Sonatype Nexus][1] and synced to 
 [Maven Central][2]. Snapshots of the ```master``` branch are built using [Travis CI][4] and images
 are available on [Docker][5]. The Maven coordinates of core build artifacts are as follows.
 

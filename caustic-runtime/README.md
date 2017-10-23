@@ -3,7 +3,7 @@ The ```caustic-runtime``` executes transactions on arbitrary key-value stores.
 
 ## Getting Started
 A ```Server``` may be started and run using [Docker][1]. By default, the ```Server``` will serve an 
-in-memory ```LocalDatabase``` over port ```9090```. Refer to the [reference configuration][2] for
+in-memory database over port ```9090```. Refer to the [reference configuration][2] for
 information about the various configuration parameters and their default values. This configuration
 may be optionally overriden by providing a configuration file or setting properties at runtime.
 
@@ -17,7 +17,11 @@ A ```Server``` may also be run programmatically.
 
 ```scala
 import caustic.runtime.Server
+
+// Serves an in-memory database over port 9090.
 val server = Server()
+
+// Terminates the server.
 server.close()
 ```
 
@@ -25,8 +29,14 @@ A ```Connection``` to this ```Server``` may then be established and used to exec
 
 ```scala
 import caustic.runtime.service._
+
+// Establishes a connection to localhost:9090.
 val client = Connection(9090)
+
+// Executes a transaction on the remote server.
 client.execute(write("x", 3))
+
+// Terminates the connection.
 client.close()
 ```
 
@@ -42,9 +52,17 @@ may then connect to this ```Registry``` and use it to execute transactions on re
 
 ```scala
 import caustic.runtime.service._
+
+// Establishes a connection to ZooKeeper.
 val registry = Registry()
+
+// Establishes connections to all registered servers.
 val client = Cluster(registry)
+
+// Executes a transaction on a random, registered server.
 client.execute(write("x", 3))
+
+// Terminates the connections.
 client.close()
 registry.close()
 ```

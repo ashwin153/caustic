@@ -1,7 +1,7 @@
 # Caustic
-[![Build Status](https://travis-ci.org/ashwin153/caustic.svg?branch=master)][4]
+[![Build Status](https://travis-ci.org/ashwin153/caustic.svg?branch=master)][3]
 [![Maven Central](https://img.shields.io/maven-central/v/com.madavan/caustic-runtime_2.12.svg)][2]
-[![Docker](https://img.shields.io/docker/build/ashwin153/caustic.svg)][5]
+[![Docker](https://img.shields.io/docker/build/ashwin153/caustic.svg)][4]
 
 Databases are either easy to use or easy to scale. For example, relational databases were 
 popularized in large part because of the programmability of SQL. However, this programmability comes 
@@ -16,8 +16,7 @@ functionality. The lack of a truly uniform interface tightly couples databases a
 that are executed against them.
 
 Caustic is a language for expressing and executing transactions on arbitrary key-value stores that 
-is both straightforward to use and simple to integrate. Please refer to the [Wiki][3] for more 
-information about the implementation.
+is both straightforward to use and simple to integrate.
 
 ## Overview
 - ```caustic-assets```: Pictures, documentation, and musings.
@@ -34,11 +33,11 @@ information about the implementation.
 - ZooKeeper 3.4.10
 
 ## Artifacts
-Artifacts are published to the [Sonatype OSS Repository Hosting Service][1] and synced to 
-[Maven Central][2]. Snapshots of the ```master``` branch are built using [Travis CI][4] and images
-are available on [Docker][5]. The Maven coordinates of core build artifacts are as follows.
+Artifacts are published to the [Sonatype Nexus][1] and synced to 
+[Maven Central][2]. Snapshots of the ```master``` branch are built using [Travis CI][3] and images
+are available on [Docker][4]. The Maven coordinates of core build artifacts are as follows.
 
-```
+```xml
 <!-- Client Library -->
 <dependency>
   <groupId>com.madavan</groupId>
@@ -56,6 +55,5 @@ are available on [Docker][5]. The Maven coordinates of core build artifacts are 
 
 [1]: https://oss.sonatype.org/index.html#nexus-search;quick~com.madavan
 [2]: https://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.madavan%22
-[3]: https://github.com/ashwin153/caustic/wiki/Home
-[4]: https://travis-ci.org/ashwin153/caustic
-[5]: https://hub.docker.com/r/ashwin153/caustic/
+[3]: https://travis-ci.org/ashwin153/caustic
+[4]: https://hub.docker.com/r/ashwin153/caustic/

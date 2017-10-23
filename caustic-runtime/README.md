@@ -3,7 +3,7 @@ The ```caustic-runtime``` executes transactions on arbitrary key-value stores.
 
 ## Getting Started
 A ```Server``` may be started and run using [Docker][1]. By default, the ```Server``` will serve an 
-in-memory ```LocalDatabase``` over port ```9090```. Refer to the [reference configuration][2] for
+in-memory database over port ```9090```. Refer to the [reference configuration][2] for
 information about the various configuration parameters and their default values. This configuration
 may be optionally overriden by providing a configuration file or setting properties at runtime.
 

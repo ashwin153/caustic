@@ -1,8 +1,8 @@
 #!/bin/bash
-################################################################################
-#                     Declare Build Targets and Artifacts                      #
-#              https://github.com/ashwin153/caustic/wiki/Release               #
-################################################################################
+####################################################################################################
+#                               Declare Build Targets and Artifacts                                #
+#                        https://github.com/ashwin153/caustic/wiki/Release                         #
+####################################################################################################
 targets=(
   "caustic-runtime/src/main/scala"
   "caustic-runtime/src/main/thrift"
@@ -17,10 +17,10 @@ artifacts=(
   "caustic-thrift"
 )
 
-################################################################################
-#                      Publish Artifacts to Maven Central                      #
-#                                DO NOT MODIFY                                 #
-################################################################################
+####################################################################################################
+#                                Publish Artifacts to Maven Central                                #
+#                                          DO NOT MODIFY                                           #
+####################################################################################################
 branch=$(git symbolic-ref --short HEAD)
 if [ -n "$(git status --porcelain)" ]; then 
   echo -e "Current branch \033[0;33m$branch\033[0m has uncommitted changes."

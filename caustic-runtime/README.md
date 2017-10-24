@@ -5,12 +5,14 @@ The ```caustic-runtime``` executes transactions on arbitrary key-value stores.
 A ```Server``` may be started and run using [Docker][1]. By default, the ```Server``` will serve an 
 in-memory database over port ```9090```. Refer to the [reference configuration][2] for
 information about the various configuration parameters and their default values. This configuration
-may be optionally overriden by providing a configuration file or setting properties at runtime.
+may be optionally overriden by providing a configuration file.
 
 ```
-docker run -d -p 9090:9090 ashwin153/caustic \             # Serve as daemon on part 9090.
-  ./pants run caustic-runtime/src/main/scala:server \      # Run the server binary.
-  /path/to/application.conf -- -Dcaustic.server.port=9090  # Optionally override configuration.
+docker run -d \
+  -p 9090:9090 \
+  -v </path/to/application.conf>:/caustic/caustic-runtime/src/main/resources/application.conf \
+  ashwin153/caustic \
+  ./pants run caustic-runtime/src/main/scala:server \
 ```
 
 A ```Server``` may also be run programmatically.

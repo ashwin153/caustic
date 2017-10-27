@@ -3,11 +3,11 @@ scala_library(
     sources=rglobs('*.scala'),
     dependencies=[
         'caustic-runtime/src/main/scala:client',
-        'caustic-syntax/src/main/antlr:java',
+        'caustic-compiler/src/main/antlr:java',
     ],
     provides=artifact(
         org='com.madavan',
-        name='caustic-syntax_2.12',
+        name='caustic-compiler_2.12',
         repo=public,
         publication_metadata=describe,
     ),

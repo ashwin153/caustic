@@ -10,7 +10,7 @@ constant
     | String  // "Hello"
     ;
 
-variable
+name
     : Identifier ('.' Identifier)* // x, x.foo
     ;
 
@@ -20,11 +20,11 @@ funcall
 
 /**
  * An expression corresponds to a sequence of logical, relational, arithmetic operations performed
- * on some variables, function calls,=- or constants. Expressions are ordered in descending order of
+ * on some names, function calls, or constants. Expressions are ordered in descending order of
  * precedence.
  */
 primaryExpression
-    : variable
+    : name
     | funcall
     | constant
     | '(' expression ')' // (2 + 5) * 3
@@ -80,12 +80,6 @@ expression
  * operations that mutate state (read, store, etc.), alter control flow (branch, repeat, etc.), or
  * cause side-effects (funcall).
  */
-value
-    : variable
-    | funcall
-    | expression
-    ;
-
 conditional
     : If '(' expression ')' block (Elif '(' expression ')' block)* (Else block)? // if (x) { foo() }
     ;
@@ -95,21 +89,20 @@ loop
     ;
 
 deletion
-    : Del variable // del x.foo
+    : Del name // del x.foo
     ;
 
 definition
-    : Var Identifier Assign value // var x = 3
-    | Val Identifier Assign value // val x = "foo"
+    : Var Identifier Assign expression // val x = "foo"
     ;
 
 assignment
-    : variable Assign value // x.foo = y.foo
-    | variable MulAssign value // x *= 2.4
-    | variable DivAssign value // x /= x.bar
-    | variable ModAssign value // x %= 3
-    | variable AddAssign value // x += "bar"
-    | variable SubAssign value // x -= 8.4
+    : name Assign expression // x.foo = y.foo
+    | name MulAssign expression // x *= 2.4
+    | name DivAssign expression // x /= x.bar
+    | name ModAssign expression // x %= 3
+    | name AddAssign expression // x += "bar"
+    | name SubAssign expression // x -= 8.4
     ;
 
 rollback
@@ -124,6 +117,7 @@ statement
     | assignment
     | rollback
     | funcall
+    | expression
     ;
 
 block
@@ -169,7 +163,7 @@ module
     ;
 
 program
-    : Module module (Import module)* declaration*
+    : (Module module)? (Import module)* declaration*
     ;
 
 Def          : 'def';
@@ -181,13 +175,12 @@ False        : 'false';
 If           : 'if';
 Import       : 'import';
 Module       : 'module';
-Record       : 'rec';
+Record       : 'record';
 Return       : 'return';
 Rollback     : 'rollback';
 Service      : 'service';
 While        : 'while';
 True         : 'true';
-Val          : 'val';
 Var          : 'var';
 
 Add          : '+';

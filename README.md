@@ -21,8 +21,8 @@ is both straightforward to use and simple to integrate.
 ## Overview
 - ```caustic-assets```: Pictures, documentation, and musings.
 - ```caustic-benchmarks```: Performance tests.
-- ```caustic-runtime```: Interpreter.
-- ```caustic-syntax```: Programming language.
+- ```caustic-compiler```: Programming language.
+- ```caustic-runtime```: Virtual machine.
 
 ## Requirements
 - Java 1.8

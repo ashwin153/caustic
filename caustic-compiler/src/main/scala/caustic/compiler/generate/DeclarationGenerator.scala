@@ -13,6 +13,17 @@ case class DeclarationGenerator(
   universe: Universe
 ) extends CausticBaseVisitor[Unit] {
 
+  override def visitProgram(ctx: CausticParser.ProgramContext): Unit = {
+    if (ctx.Module() != null) {
+      // Scope the universe if a module is specified.
+      val module = ctx.module(0).Identifier().asScala.map(_.getText)
+      DeclarationGenerator(this.universe.child(module)).visitChildren(ctx)
+    } else {
+      // Otherwise, use the current universe by default.
+      visitChildren(ctx)
+    }
+  }
+
   override def visitDeclaration(ctx: CausticParser.DeclarationContext): Unit = {
     super.visitDeclaration(ctx)
   }

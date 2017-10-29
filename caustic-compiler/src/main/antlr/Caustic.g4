@@ -15,7 +15,7 @@ name
     ;
 
 funcall
-    : Identifier '(' (expression ',')* expression? ')' // foo(1.3, false)
+    : Identifier '&'? '(' (expression ',')* expression? ')' // foo(1.3, false)
     ;
 
 /**
@@ -121,8 +121,8 @@ statement
     ;
 
 block
-    : statement // if (x = 3) x += 2
-    | '{' statement* '}' // if (x = 3) { x += 2 }
+    : statement ';'? // if (x = 3) x += 2
+    | '{' (statement ';'?)* '}' // if (x = 3) { x += 2 }
     ;
 
 /**
@@ -213,6 +213,7 @@ Question     : '?';
 RightBlock   : ']';
 RightBracket : '}';
 RightParen   : ')';
+Semicolon    : ';';
 Sub          : '-';
 SubAssign    : '-=';
 Underscore   : '_';

@@ -1,4 +1,4 @@
-package caustic.compiler.typing
+package caustic.compiler.types
 
 /**
  * A typed expression.

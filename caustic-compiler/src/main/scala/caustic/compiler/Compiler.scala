@@ -1,8 +1,8 @@
 package caustic.compiler
 
 import caustic.grammar.{CausticLexer, CausticParser}
-import caustic.compiler.generate.{BlockGenerator, DeclarationGenerator}
-import caustic.compiler.typing._
+import caustic.compiler.core.{BlockGenerator, DeclarationGenerator}
+import caustic.compiler.types._
 
 import org.antlr.v4.runtime.{CharStream, CharStreams, CommonTokenStream}
 
@@ -18,26 +18,21 @@ object Compiler {
    * @param args
    */
   def main(args: Array[String]): Unit = {
-    println(compile(
-      """ {
-        |   something.foo = 3
+    compile(
+      """
+        | record Total {
+        |   count: Int
+        | }
+        |
+        | service Counter {
+        |
+        |   def inc(x: Total&): Int = {
+        |     x.count += 1
+        |   }
+        |
         | }
       """.stripMargin
-    ))
-//    println(compile(
-//      """ {
-//        |   var x = 3
-//        |   var y = "hello"
-//        |
-//        |   if (x < y) {
-//        |     var z = 5
-//        |     x = 4
-//        |   } else {
-//        |     y = 2
-//        |   }
-//        | }
-//      """.stripMargin
-//    ))
+    )
   }
 
   /**
@@ -49,7 +44,12 @@ object Compiler {
     val lexer = new CausticLexer(stream)
     val tokens = new CommonTokenStream(lexer)
     val parser = new CausticParser(tokens)
-    BlockGenerator(Universe.root).visitBlock(parser.block())
+
+    val universe = Universe.root
+    DeclarationGenerator(universe).visitProgram(parser.program())
+    println(universe)
+
+    "x"
   }
 
   /**

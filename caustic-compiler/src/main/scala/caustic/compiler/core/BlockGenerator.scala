@@ -1,7 +1,7 @@
-package caustic.compiler.generate
+package caustic.compiler.core
 
 import caustic.grammar._
-import caustic.compiler.typing.{Universe, _}
+import caustic.compiler.types._
 import scala.collection.JavaConverters._
 
 /**
@@ -41,15 +41,15 @@ case class BlockGenerator(
     val cur = ExpressionGenerator(this.universe).visitName(ctx.name())
 
     if (ctx.AddAssign() != null)
-      rhs = Result(Primitive, s"""add(${ cur.value }, ${ rhs.value })""")
+      rhs = Result(lub(cur.tag, rhs.tag), s"""add(${ cur.value }, ${ rhs.value })""")
     else if (ctx.SubAssign() != null)
-      rhs = Result(Primitive, s"""sub(${ cur.value }, ${ rhs.value })""")
+      rhs = Result(lub(cur.tag, rhs.tag), s"""sub(${ cur.value }, ${ rhs.value })""")
     else if (ctx.MulAssign() != null)
-      rhs = Result(Primitive, s"""mul(${ cur.value }, ${ rhs.value })""")
+      rhs = Result(lub(cur.tag, rhs.tag), s"""mul(${ cur.value }, ${ rhs.value })""")
     else if (ctx.DivAssign() != null)
-      rhs = Result(Primitive, s"""div(${ cur.value }, ${ rhs.value })""")
+      rhs = Result(lub(cur.tag, rhs.tag), s"""div(${ cur.value }, ${ rhs.value })""")
     else if (ctx.ModAssign() != null)
-      rhs = Result(Primitive, s"""mod(${ cur.value }, ${ rhs.value })""")
+      rhs = Result(lub(cur.tag, rhs.tag), s"""mod(${ cur.value }, ${ rhs.value })""")
 
     // Copy the value into the variable.
     val lhs = NameGenerator(this.universe).visitName(ctx.name())
@@ -90,13 +90,13 @@ object BlockGenerator {
    * @return
    */
   def fields(base: Result): Iterable[Result] = base.tag match {
-    case Object(fields) =>
+    case Record(fields) =>
       val names = fields.keys.map(f => s"""add(${ base.value }, "@$f")""")
-      val types = fields.values.map(t => if (t.isInstanceOf[Pointer]) Primitive else t)
+      val types = fields.values.map(t => if (t.isInstanceOf[Pointer]) Textual else t)
       types.zip(names).map { case (a, b) => Result(a, b) }
-    case Pointer(Object(fields)) =>
+    case Pointer(Record(fields)) =>
       val names = fields.keys.map(f => s"""add(${ base.value }, "@$f")""")
-      val types = fields.values.map(t => if (t.isInstanceOf[Pointer]) Pointer(Primitive) else t)
+      val types = fields.values.map(t => if (t.isInstanceOf[Pointer]) Pointer(Textual) else t)
       types.zip(names).map { case (a, b) => Result(a, b) }
   }
 
@@ -107,28 +107,28 @@ object BlockGenerator {
    * @return
    */
   def copy(lhs: Result, rhs: Result): String = (lhs.tag, rhs.tag) match {
-    case (Primitive, Primitive) =>
+    case (_: Primitive, _: Primitive) =>
       // Copy primitive values.
       s"""store(${ lhs.value }, ${ rhs.value })"""
-    case (Primitive, Pointer(Primitive)) =>
+    case (_: Primitive, Pointer(_: Primitive)) =>
       // Dereference primitive pointers.
       s"""store(${ lhs.value }, read(${ rhs.value }))"""
-    case (Pointer(Primitive), Primitive) =>
+    case (Pointer(_: Primitive), _: Primitive) =>
       // Copy primitive values.
       s"""write(${ lhs.value }, ${ rhs.value })"""
-    case (Pointer(Primitive), Pointer(Primitive)) =>
+    case (Pointer(_: Primitive), Pointer(_: Primitive)) =>
       // Copy primitive pointers.
       s"""write(${ lhs.value }, ${ rhs.value })"""
     case _ =>
-      // Verify the values correspond to the same object.
+      // Verify the values correspond to the same record.
       (lhs.tag, rhs.tag) match {
-        case (u: Object, v: Object) if u == v =>
-        case (u: Object, Pointer(v: Object)) if u == v =>
-        case (Pointer(u: Object), v: Object) if u == v =>
-        case (Pointer(u: Object), Pointer(v: Object)) if u == v =>
+        case (u: Record, v: Record) if u == v =>
+        case (u: Record, Pointer(v: Record)) if u == v =>
+        case (Pointer(u: Record), v: Record) if u == v =>
+        case (Pointer(u: Record), Pointer(v: Record)) if u == v =>
       }
 
-      // Recursively copy the fields of the object.
+      // Recursively copy the fields of the record.
       fields(lhs).zip(fields(rhs))
         .map { case (a, b) => copy(a, b) }
         .foldLeft("None") { case (a: String, b: String) => s"cons($a, $b)" }
@@ -140,12 +140,12 @@ object BlockGenerator {
    * @return
    */
   def delete(lhs: Result): String = lhs.tag match {
-    case Primitive =>
+    case _: Primitive =>
       s"""store(${ lhs.value }, None)"""
-    case Pointer(Primitive) =>
+    case Pointer(_: Primitive) =>
       s"""write(${ lhs.value }, None)"""
     case _ =>
-      // Recursively delete the fields of the object.
+      // Recursively delete the fields of the record.
       fields(lhs).map(delete).foldLeft("None") { case (a: String, b: String) => s"cons($a, $b)" }
   }
 

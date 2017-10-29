@@ -12,3 +12,13 @@ scala_library(
         publication_metadata=describe,
     ),
 )
+
+jvm_binary(
+    name='compiler',
+    basename='caustic-compiler',
+    source='caustic/compiler/Compiler.scala',
+    main='caustic.compiler.Compiler',
+    dependencies=[
+        'caustic-compiler/src/main/scala',
+    ],
+)

@@ -1,7 +1,7 @@
-package caustic.compiler.generate
+package caustic.compiler.core
 
 import caustic.grammar._
-import caustic.compiler.typing._
+import caustic.compiler.types._
 
 import scala.collection.JavaConverters._
 
@@ -17,7 +17,7 @@ case class DeclarationGenerator(
     if (ctx.Module() != null) {
       // Scope the universe if a module is specified.
       val module = ctx.module(0).Identifier().asScala.map(_.getText)
-      DeclarationGenerator(this.universe.child(module)).visitChildren(ctx)
+      DeclarationGenerator(this.universe.child(module: _*)).visitChildren(ctx)
     } else {
       // Otherwise, use the current universe by default.
       visitChildren(ctx)
@@ -29,37 +29,35 @@ case class DeclarationGenerator(
   }
 
   override def visitRecord(ctx: CausticParser.RecordContext): Unit = {
-    // Extract the fields of the record.
+    // Extract the fields of the object.
     var fields = ctx.parameters().parameter().asScala
       .map(p => (p.Identifier().getText, this.universe.getType(p.`type`().getText)))
       .toMap
 
     // Import fields of superclass.
     if (ctx.Extends() != null) {
-      val parent = this.universe.getObject(ctx.Identifier(1).getText)
+      val parent = this.universe.getRecord(ctx.Identifier(1).getText)
       fields = parent.fields ++ fields
     }
 
-    // Add the record to the universe.
-    // TODO: Implement constructors and json stringify.
-    this.universe.putObject(ctx.Identifier(0).getText, fields)
+    // Add the object to the universe.
+    this.universe.putRecord(ctx.Identifier(0).getText, fields)
   }
 
   override def visitService(ctx: CausticParser.ServiceContext): Unit = {
-    DeclarationGenerator(universe.child(Seq(ctx.Identifier(0).getText))).visitChildren(ctx)
+    DeclarationGenerator(universe.child(ctx.Identifier(0).getText)).visitChildren(ctx)
   }
 
   override def visitFunction(ctx: CausticParser.FunctionContext): Unit = {
-    // Scope the arguments within the function body.
-    val child = this.universe.child()
+    // Extract the function arguments.
     val args = ctx.parameters().parameter().asScala
-      .map(p => (child.scope(p.Identifier().getText), this.universe.getType(p.`type`().getText)))
+      .map(p => (p.Identifier().getText, this.universe.getType(p.`type`().getText)))
       .toMap
 
-    // Evaluate the body of the function and put the function into context.
+    // Add the function to the universe.
+    val name = ctx.Identifier().getText
     val tag = this.universe.getType(ctx.`type`().getText)
-    val value = BlockGenerator(child).visitBlock(ctx.block())
-    this.universe.putFunction(ctx.Identifier().getText, args, Result(tag, value))
+    this.universe.putFunction(name, args, f => Result(tag, BlockGenerator(f).visitBlock(ctx.block())))
   }
 
 }

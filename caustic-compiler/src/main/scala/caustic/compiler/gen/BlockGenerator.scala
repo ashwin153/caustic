@@ -1,7 +1,7 @@
-package caustic.compiler.core
+package caustic.compiler.gen
 
 import caustic.grammar._
-import caustic.compiler.types._
+import caustic.compiler.typing._
 import scala.collection.JavaConverters._
 
 /**

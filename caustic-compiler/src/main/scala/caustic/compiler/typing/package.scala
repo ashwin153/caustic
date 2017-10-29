@@ -1,6 +1,6 @@
 package caustic.compiler
 
-package object types {
+package object typing {
 
   /**
    * Returns the least upper bound of the specified types.

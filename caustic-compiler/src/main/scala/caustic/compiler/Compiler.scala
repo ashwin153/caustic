@@ -1,8 +1,8 @@
 package caustic.compiler
 
 import caustic.grammar.{CausticLexer, CausticParser}
-import caustic.compiler.core.{BlockGenerator, DeclarationGenerator}
-import caustic.compiler.types._
+import caustic.compiler.gen.{BlockGenerator, DeclarationGenerator}
+import caustic.compiler.typing._
 
 import org.antlr.v4.runtime.{CharStream, CharStreams, CommonTokenStream}
 

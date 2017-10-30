@@ -18,7 +18,7 @@ object CC extends App {
   if (args.length < 2)
     println
       """
-        |Usage: cc <query> <file> [args]
+        |Usage: cc <query> <file>
         |
         |Queries:
         |  - check: Runs the type checker.

@@ -6,7 +6,7 @@ import caustic.grammar.CausticParser
 import scala.collection.JavaConverters._
 
 /**
- *
+ * A type checker.
  */
 object Check extends Query[Universe] {
 

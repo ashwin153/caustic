@@ -1,15 +1,14 @@
-package caustic.compiler.gen
+package caustic.compiler.check.visitor
 
+import caustic.compiler.check.{Pointer, Primitive, Record, Result, Universe, Variable}
 import caustic.grammar._
-import caustic.compiler.typing._
-
 import scala.collection.JavaConverters._
 
 /**
  *
  * @param universe
  */
-case class NameGenerator(
+case class NameVisitor(
   universe: Universe
 ) extends CausticBaseVisitor[Result] {
 

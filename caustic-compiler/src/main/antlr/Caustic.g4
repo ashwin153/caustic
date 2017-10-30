@@ -81,11 +81,11 @@ expression
  * cause side-effects (funcall).
  */
 conditional
-    : If '(' expression ')' block (Elif '(' expression ')' block)* (Else block)? // if (x) { foo() }
+    : If expression block (Elif expression block)* (Else block)? // if (x) { foo() }
     ;
 
 loop
-    : While '(' expression ')' block // while (true) { foo() }
+    : While expression block // while true { foo() }
     ;
 
 deletion

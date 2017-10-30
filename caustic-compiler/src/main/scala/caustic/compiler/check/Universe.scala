@@ -1,4 +1,4 @@
-package caustic.compiler.typing
+package caustic.compiler.check
 
 import scala.collection.mutable
 

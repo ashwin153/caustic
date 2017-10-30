@@ -1,15 +1,14 @@
-package caustic.compiler.gen
+package caustic.compiler.check.visitor
 
+import caustic.compiler.check.{Boolean, Decimal, Integer, Pointer, Primitive, Result, Textual, Universe, lub}
 import caustic.grammar._
-import caustic.compiler.typing._
-
 import scala.collection.JavaConverters._
 
 /**
  *
  * @param universe
  */
-case class ExpressionGenerator(
+case class ExpressionVisitor(
   universe: Universe
 ) extends CausticBaseVisitor[Result] {
 
@@ -146,7 +145,7 @@ case class ExpressionGenerator(
       visitChildren(ctx)
 
   override def visitName(ctx: CausticParser.NameContext): Result =
-    NameGenerator(this.universe).visitName(ctx) match {
+    NameVisitor(this.universe).visitName(ctx) match {
       case Result(x: Primitive, v) =>
         // Automatically load primitives.
         Result(x, s"""load($v)""")

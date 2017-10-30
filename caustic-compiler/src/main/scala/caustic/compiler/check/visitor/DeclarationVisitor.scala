@@ -1,15 +1,14 @@
-package caustic.compiler.gen
+package caustic.compiler.check.visitor
 
+import caustic.compiler.check.{Result, Universe}
 import caustic.grammar._
-import caustic.compiler.typing._
-
 import scala.collection.JavaConverters._
 
 /**
  *
  * @param universe
  */
-case class DeclarationGenerator(
+case class DeclarationVisitor(
   universe: Universe
 ) extends CausticBaseVisitor[Unit] {
 
@@ -17,7 +16,7 @@ case class DeclarationGenerator(
     if (ctx.Module() != null) {
       // Scope the universe if a module is specified.
       val module = ctx.module(0).Identifier().asScala.map(_.getText)
-      DeclarationGenerator(this.universe.child(module: _*)).visitChildren(ctx)
+      DeclarationVisitor(this.universe.child(module: _*)).visitChildren(ctx)
     } else {
       // Otherwise, use the current universe by default.
       visitChildren(ctx)
@@ -45,7 +44,7 @@ case class DeclarationGenerator(
   }
 
   override def visitService(ctx: CausticParser.ServiceContext): Unit = {
-    DeclarationGenerator(universe.child(ctx.Identifier(0).getText)).visitChildren(ctx)
+    DeclarationVisitor(universe.child(ctx.Identifier(0).getText)).visitChildren(ctx)
   }
 
   override def visitFunction(ctx: CausticParser.FunctionContext): Unit = {
@@ -57,7 +56,7 @@ case class DeclarationGenerator(
     // Add the function to the universe.
     val name = ctx.Identifier().getText
     val tag = this.universe.getType(ctx.`type`().getText)
-    this.universe.putFunction(name, args, f => Result(tag, BlockGenerator(f).visitBlock(ctx.block())))
+    this.universe.putFunction(name, args, f => Result(tag, BlockVisitor(f).visitBlock(ctx.block())))
   }
 
 }

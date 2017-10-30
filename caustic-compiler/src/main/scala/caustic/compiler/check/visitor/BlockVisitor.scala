@@ -1,14 +1,14 @@
-package caustic.compiler.gen
+package caustic.compiler.check.visitor
 
+import caustic.compiler.check._
 import caustic.grammar._
-import caustic.compiler.typing._
 import scala.collection.JavaConverters._
 
 /**
  *
  * @param universe
  */
-case class BlockGenerator(
+case class BlockVisitor(
   universe: Universe
 ) extends CausticBaseVisitor[String] {
 
@@ -21,13 +21,13 @@ case class BlockGenerator(
   }
 
   override def visitRollback(ctx: CausticParser.RollbackContext): String = {
-    val message = ExpressionGenerator(this.universe).visitExpression(ctx.expression())
+    val message = ExpressionVisitor(this.universe).visitExpression(ctx.expression())
     s"""rollback(${ message.value })"""
   }
 
   override def visitDefinition(ctx: CausticParser.DefinitionContext): String = {
     // Determine the value of the variable.
-    val rhs = ExpressionGenerator(this.universe).visitExpression(ctx.expression())
+    val rhs = ExpressionVisitor(this.universe).visitExpression(ctx.expression())
     this.universe.putVariable(ctx.Identifier().getText, rhs.tag)
 
     // Add the variable to the t table and update its value.
@@ -37,8 +37,8 @@ case class BlockGenerator(
 
   override def visitAssignment(ctx: CausticParser.AssignmentContext): String = {
     // Determine the value of the variable.
-    var rhs = ExpressionGenerator(this.universe).visitExpression(ctx.expression())
-    val cur = ExpressionGenerator(this.universe).visitName(ctx.name())
+    var rhs = ExpressionVisitor(this.universe).visitExpression(ctx.expression())
+    val cur = ExpressionVisitor(this.universe).visitName(ctx.name())
 
     if (ctx.AddAssign() != null)
       rhs = Result(lub(cur.tag, rhs.tag), s"""add(${ cur.value }, ${ rhs.value })""")
@@ -52,18 +52,18 @@ case class BlockGenerator(
       rhs = Result(lub(cur.tag, rhs.tag), s"""mod(${ cur.value }, ${ rhs.value })""")
 
     // Copy the value into the variable.
-    val lhs = NameGenerator(this.universe).visitName(ctx.name())
-    BlockGenerator.copy(lhs, rhs)
+    val lhs = NameVisitor(this.universe).visitName(ctx.name())
+    BlockVisitor.copy(lhs, rhs)
   }
 
   override def visitDeletion(ctx: CausticParser.DeletionContext): String = {
-    BlockGenerator.delete(NameGenerator(this.universe).visitName(ctx.name()))
+    BlockVisitor.delete(NameVisitor(this.universe).visitName(ctx.name()))
   }
 
   override def visitLoop(ctx: CausticParser.LoopContext): String = {
     // Load the loop condition and body.
-    val condition = ExpressionGenerator(this.universe).visitExpression(ctx.expression())
-    val block = BlockGenerator(this.universe.child()).visitBlock(ctx.block())
+    val condition = ExpressionVisitor(this.universe).visitExpression(ctx.expression())
+    val block = BlockVisitor(this.universe.child()).visitBlock(ctx.block())
 
     // Serialize the loop as a repeat expression.
     s"""repeat(${ condition.value }, $block)"""
@@ -71,8 +71,8 @@ case class BlockGenerator(
 
   override def visitConditional(ctx: CausticParser.ConditionalContext): String = {
     // Construct the if/elif/else branches.
-    val blocks = ctx.block().asScala.map(BlockGenerator(this.universe.child()).visitBlock)
-    val compares = ctx.expression().asScala.map(ExpressionGenerator(this.universe).visitExpression)
+    val blocks = ctx.block().asScala.map(BlockVisitor(this.universe.child()).visitBlock)
+    val compares = ctx.expression().asScala.map(ExpressionVisitor(this.universe).visitExpression)
     val branches = compares.zip(blocks).map { case (c, b) => s"""branch(${ c.value }, $b, """ }
 
     // Append the else block and closing parenthesis.
@@ -82,7 +82,7 @@ case class BlockGenerator(
 
 }
 
-object BlockGenerator {
+object BlockVisitor {
 
   /**
    *

@@ -1,8 +1,8 @@
 package caustic.compiler
 
 import caustic.grammar._
-import java.nio.file.Path
-import org.antlr.v4.runtime.{CharStream, CharStreams, CommonTokenStream}
+import org.antlr.v4.runtime.{CharStreams, CommonTokenStream}
+import scala.collection.mutable
 
 /**
  *
@@ -18,29 +18,14 @@ trait Query[T] {
 
   /**
    *
-   * @param stream
    * @return
    */
-  def execute(stream: CharStream): T = {
-    val lexer = new CausticLexer(stream)
-    val tokens = new CommonTokenStream(lexer)
-    execute(new CausticParser(tokens))
+  def execute: String => T = new mutable.HashMap[String, T]() {
+    override def apply(source: String): T = getOrElseUpdate(source, {
+      val lexer = new CausticLexer(CharStreams.fromString(source))
+      val tokens = new CommonTokenStream(lexer)
+      execute(new CausticParser(tokens))
+    })
   }
-
-  /**
-   *
-   * @param source
-   * @return
-   */
-  def execute(source: String): T =
-    execute(CharStreams.fromString(source))
-
-  /**
-   *
-   * @param path
-   * @return
-   */
-  def execute(path: Path): T =
-    execute(CharStreams.fromPath(path))
 
 }

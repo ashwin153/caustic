@@ -6,6 +6,11 @@ package caustic.compiler.types
 sealed trait Type
 
 /**
+ * An undefined compiler [[Type]].
+ */
+case object Undefined extends Type
+
+/**
  * A pointer to another [[Type]]. Pointers correspond to a remote key-value pair within a
  * [[caustic.runtime.thrift.Transaction]] and are the targets of [[caustic.runtime.thrift.Read]] and
  * [[caustic.runtime.thrift.Write]] expressions. Because each pointer dereference requires an
@@ -33,7 +38,7 @@ case class Record(fields: Map[String, Alias]) extends Simple
  * A value [[Type]]. Primitives are ordered in descending order of precedence.
  */
 sealed trait Primitive extends Simple
-case object Null extends Simple
+case object Null extends Primitive
 case object String extends Primitive
 case object Double extends Primitive
 case object Int extends Primitive

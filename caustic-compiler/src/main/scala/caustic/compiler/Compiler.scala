@@ -8,31 +8,30 @@ import java.nio.file.Paths
  */
 object Compiler extends App {
 
+  // Print usage information.
   if (args.length < 2) {
-    // Print usage information.
     println(
-      """
-        |Usage: cc <query> <file>
+      """Usage: cc <goal> <file>
         |
-        |Queries:
-        |  - check: Runs the type checker.
-        |  - compile: Compiles a program.
-        |  - repl: Opens a REPL session.
-        |  - run: Executes a program.
+        |Goals:
+        |  - declare: Evaluates declarations.
+        |  - gen-thrift: Generates a Thrift IDL.
+        |  - gen-scala: Generates a Scala implementation.
+        |  - simplify: Simplifies expressions.
       """.stripMargin
     )
 
-    // Fail fast.
     System.exit(1)
   }
 
   // Load and execute query.
-  val query = args(0) match {
-    case "simplify" => goals.Simplify(Universe.root)
+  val goal = args(0) match {
     case "declare" => goals.Declare(Universe.root)
-    case "gen" => goals.Gen(Universe.root)
+    case "gen-thrift" => goals.GenThrift
+    case "gen-scala" => goals.GenScala
+    case "simplify" => goals.Simplify(Universe.root)
   }
 
-  println(this.query.execute(Paths.get(args(1))))
+  println(this.goal.execute(Paths.get(args(1))))
 
 }

@@ -1,15 +1,17 @@
 package caustic.compiler.goals
 
 import caustic.compiler.Goal
-import caustic.compiler.types.{Record, Universe}
-import caustic.compiler.types.{Record, Result}
+import caustic.compiler.types._
 import caustic.grammar.{CausticBaseVisitor, CausticParser}
 import scala.collection.JavaConverters._
 import scala.util.Try
 
 /**
+ * A declaration generator. Visits each [[Record]] and [[Service]] declaration in a program and
+ * adds a corresponding entry to the [[Universe]]. Requires the [[Simplify]] goal to evaluate the
+ * body of [[Function]] declarations.
  *
- * @param universe
+ * @param universe Known universe.
  */
 case class Declare(
   universe: Universe
@@ -41,25 +43,29 @@ case class Declare(
       fields = parent.datatype.asInstanceOf[Record].fields ++ fields
     }
 
-    // Add the object to the universe.
+    // Add a record alias to the universe.
     this.universe.putAlias(ctx.Identifier(0).getText, Record(fields))
     this.universe
   }
 
   override def visitService(ctx: CausticParser.ServiceContext): Universe = {
-    this.universe.putService(ctx.Identifier(0).getText, ctx.function().asScala map { f =>
-      // Extract the function arguments.
+    // Extract the various functions in the service.
+    val functions = ctx.function().asScala map { f =>
       val args = f.parameters().parameter().asScala
         .map(p => (p.Identifier().getText, this.universe.getAlias(p.`type`().getText)))
         .toMap
 
-      // Add the function to the universe.
+      // Add the function to the current universe.
       val name = f.Identifier().getText
       val tag = this.universe.getAlias(f.`type`().getText)
       this.universe.putFunction(name, args, tag)(func => Simplify(func).visitBlock(f.block()))
-      this.universe.getFunction(name)
-    })
 
+      // Return the function.
+      this.universe.getFunction(name)
+    }
+
+    // Add the functions to the universe.
+    this.universe.putService(ctx.Identifier(0).getText, functions)
     this.universe
   }
 

@@ -1,8 +1,6 @@
 package caustic.compiler
 package goals
 
-import caustic.compiler.types
-import caustic.compiler.types._
 import caustic.compiler.types._
 import caustic.grammar.{CausticBaseVisitor, CausticParser}
 import scala.collection.JavaConverters._
@@ -13,7 +11,7 @@ import scala.util.Try
  * value corresponds to a [[caustic.runtime.thrift.Transaction]] and whose tag corresponds to a
  * compiler generated [[Type]].
  *
- * @param universe Defined symbols.
+ * @param universe Known universe.
  */
 case class Simplify(
   universe: Universe
@@ -32,7 +30,7 @@ case class Simplify(
 
   override def visitRollback(ctx: CausticParser.RollbackContext): Result = {
     val message = visitExpression(ctx.expression())
-    Result(Null, s"""rollback(${ message.value })""")
+    Result(Undefined, s"""rollback(${ message.value })""")
   }
 
   override def visitDefinition(ctx: CausticParser.DefinitionContext): Result = {
@@ -42,7 +40,7 @@ case class Simplify(
 
     // Add the variable to the t table and update its value.
     val lhs = this.universe.getVariable(ctx.Identifier().getText)
-    Result(Null, s"""store("${ lhs.name }", ${ rhs.value })""")
+    Result(Undefined, s"""store("${ lhs.name }", ${ rhs.value })""")
   }
 
   override def visitAssignment(ctx: CausticParser.AssignmentContext): Result = {
@@ -63,11 +61,11 @@ case class Simplify(
 
     // Copy the value into the variable.
     val lhs = visitName(ctx.name())
-    Result(Null, Simplify.copy(lhs, rhs))
+    Result(Undefined, Simplify.copy(lhs, rhs))
   }
 
   override def visitDeletion(ctx: CausticParser.DeletionContext): Result = {
-    Result(Null, Simplify.delete(visitName(ctx.name())))
+    Result(Undefined, Simplify.delete(visitName(ctx.name())))
   }
 
   override def visitLoop(ctx: CausticParser.LoopContext): Result = {
@@ -76,7 +74,7 @@ case class Simplify(
     val block = Simplify(this.universe.child()).visitBlock(ctx.block())
 
     // Serialize the loop as a repeat expression.
-    Result(Null, s"""repeat(${ condition.value }, $block)""")
+    Result(Undefined, s"""repeat(${ condition.value }, $block)""")
   }
 
   override def visitConditional(ctx: CausticParser.ConditionalContext): Result = {
@@ -283,17 +281,17 @@ case class Simplify(
 
   override def visitConstant(ctx: CausticParser.ConstantContext): Result = {
     if (ctx.True() != null)
-      Result(types.Boolean, s"""flag(true)""")
+      Result(Boolean, s"""flag(true)""")
     else if (ctx.False() != null)
-      Result(types.Boolean, s"""flag(false)""")
+      Result(Boolean, s"""flag(false)""")
     else if (ctx.Number() != null && ctx.Number().getText.contains('.'))
-      Result(types.Double, s"""real(${ ctx.Number().getText.toDouble })""")
+      Result(Double, s"""real(${ ctx.Number().getText.toDouble })""")
     else if (ctx.Number() != null)
-      Result(types.Int, s"""real(${ ctx.Number().getText.toDouble })""")
+      Result(Int, s"""real(${ ctx.Number().getText.toDouble })""")
     else if (ctx.String() != null)
-      Result(types.String, s"""text(${ ctx.String().getText })""")
+      Result(String, s"""text(${ ctx.String().getText })""")
     else if (ctx.Null() != null)
-      Result(types.Null, s"""None""")
+      Result(Null, s"""None""")
     else
       visitChildren(ctx)
   }
@@ -328,9 +326,6 @@ object Simplify {
    * @return Copy transaction.
    */
   def copy(lhs: Result, rhs: Result): String = (lhs.tag, rhs.tag) match {
-    case (_, Null) =>
-      // Delete null values.
-      delete(lhs)
     case (_: Primitive, _: Primitive) =>
       // Copy primitive values.
       s"""store(${ lhs.value }, ${ rhs.value })"""

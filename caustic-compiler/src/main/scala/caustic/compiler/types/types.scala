@@ -12,15 +12,16 @@ package object types {
    * @param y Second type.
    * @return Least upper bound.
    */
-  def lub(x: types.Type, y: types.Type): types.Type = (x, y) match {
-    case (types.Pointer(u), types.Pointer(v))    => types.Pointer(lub(u, v).asInstanceOf[Simple])
-    case (types.Record(u), types.Record(v))      => types.Record(u.toSet.intersect(v.toSet).toMap)
-    case (types.Null, _)    | (_, types.Null)    => types.Null
-    case (types.String, _)  | (_, types.String)  => types.String
-    case (types.Double, _)  | (_, types.Double)  => types.Double
-    case (types.Int, _)     | (_, types.Int)     => types.Int
-    case (types.Boolean, _) | (_, types.Boolean) => types.Boolean
-    case _                                       => types.Null
+  def lub(x: Type, y: Type): Type = (x, y) match {
+    case (Undefined, _) | (_, Undefined) => Undefined
+    case (Pointer(u), Pointer(v))        => Pointer(lub(u, v).asInstanceOf[Simple])
+    case (Record(u), Record(v))          => Record(u.toSet.intersect(v.toSet).toMap)
+    case (Null, _)      | (_, Null)      => Null
+    case (String, _)    | (_, String)    => String
+    case (Double, _)    | (_, Double)    => Double
+    case (Int, _)       | (_, Int)       => Int
+    case (Boolean, _)   | (_, Boolean)   => Boolean
+    case _                               => Undefined
   }
 
 }

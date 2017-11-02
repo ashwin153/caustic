@@ -133,8 +133,8 @@ case class Universe private(
    */
   def putAlias(name: String, simple: Simple): Unit = {
     // Add type aliases to the universe.
-    this.aliases += mangle(name) -> Alias(name, Pointer(simple))
     this.aliases += mangle(name) -> Alias(name, simple)
+    this.aliases += mangle(name + "&") -> Alias(name, Pointer(simple))
 
     // Add a constructor for pointers to the alias.
     putFunction(name + "&",  Map("key" -> getAlias("String")), getAlias(name + "&")) { func =>
@@ -147,11 +147,7 @@ case class Universe private(
         putFunction(name, r.fields, getAlias(name)) { func =>
           Result(r, s"""text("${ func.labels.mkString("@") }")""")
         }
-      case p: Primitive =>
-        // Add a constructor for primitive aliases.
-        putFunction(name, Map("value" -> getAlias(p.toString)), getAlias(name)) { func =>
-          Result(p, s"""load("${ func.mangle("value") }")""")
-        }
+      case x => x
     }
   }
 

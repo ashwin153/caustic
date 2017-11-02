@@ -14,8 +14,8 @@ object Compiler extends App {
       """Usage: cc <goal> <file>
         |
         |Goals:
+        |  - compile: Generates a Scala implementation.
         |  - declare: Evaluates declarations.
-        |  - gen: Generates a Scala implementation.
         |  - simplify: Simplifies expressions.
       """.stripMargin
     )
@@ -25,8 +25,8 @@ object Compiler extends App {
 
   // Load and execute query.
   val goal = args(0) match {
+    case "compile" => goals.Compile
     case "declare" => goals.Declare(Universe.root)
-    case "gen" => goals.Gen
     case "simplify" => goals.Simplify(Universe.root)
   }
 

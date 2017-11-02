@@ -8,6 +8,7 @@ constant
     | False // false
     | Number // 5.0, -1
     | String  // "Hello"
+    | Null // null
     ;
 
 name
@@ -175,6 +176,7 @@ False        : 'false';
 If           : 'if';
 Import       : 'import';
 Module       : 'module';
+Null         : 'null';
 Record       : 'record';
 Return       : 'return';
 Rollback     : 'rollback';

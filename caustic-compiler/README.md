@@ -9,8 +9,7 @@ queries are supported by the compiler, and are executed by running ```cc <query>
 command line.
 
 - ```check```: Runs the type checker.
-- ```compile```: Compiles a programs. Requires ```check```, ```format```, and ```gen```.
-- ```format```: Runs the style linter. Requires ```check```.
+- ```compile```: Compiles a programs. Requires ```check``` and ```gen```.
 - ```gen```: Code generation. Requires ```check```.
 - ```repl```: Opens a REPL session. Requires ```run```.
 - ```run```: Executes a program. Requires ```compile```.

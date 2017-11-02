@@ -14,7 +14,7 @@ scala_library(
 )
 
 jvm_binary(
-    name='compiler',
+    name='bin',
     basename='caustic-compiler',
     source='caustic/compiler/Compiler.scala',
     main='caustic.compiler.Compiler',

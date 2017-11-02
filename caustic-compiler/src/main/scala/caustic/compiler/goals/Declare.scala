@@ -3,6 +3,7 @@ package caustic.compiler.goals
 import caustic.compiler.Goal
 import caustic.compiler.types._
 import caustic.grammar.{CausticBaseVisitor, CausticParser}
+
 import scala.collection.JavaConverters._
 import scala.util.Try
 
@@ -13,9 +14,7 @@ import scala.util.Try
  *
  * @param universe Known universe.
  */
-case class Declare(
-  universe: Universe
-) extends CausticBaseVisitor[Universe] with Goal[Universe] {
+case class Declare(universe: Universe) extends CausticBaseVisitor[Universe] with Goal[Universe] {
 
   override def execute(parser: CausticParser): Try[Universe] =
     Try(visitProgram(parser.program()))

@@ -96,6 +96,11 @@ jar_library(name='slf4j-simple', jars=[
     jar(org='org.slf4j', name='slf4j-simple', rev='1.7.25'),
 ])
 
+# Spray JSON
+jar_library(name='spray-json', jars=[
+    jar(org='io.spray', name='spray-json_2.12', rev='1.3.3'),
+])
+
 # Thrift
 jar_library(name='thrift', jars=[
     jar(org='org.apache.thrift', name='libthrift', rev='0.10.0'),

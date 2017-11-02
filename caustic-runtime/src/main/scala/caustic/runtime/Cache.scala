@@ -10,25 +10,25 @@ import scala.util.{Failure, Success}
 trait Cache extends Database {
 
   /**
-   * Returns the underlying database.
+   * Returns the underlying [[Database]].
    *
-   * @return Underlying database.
+   * @return Underlying [[Database]].
    */
   def database: Database
 
   /**
-   * Asynchronously returns the cached revisions of the specified keys.
+   * Asynchronously returns the cached [[Revision]] of the specified keys.
    *
    * @param keys Keys to fetch.
    * @param ec Implicit execution context.
-   * @return Cached revisions of the specified keys.
+   * @return Cached [[Revision]] of the specified keys.
    */
   def fetch(keys: Set[Key])(
     implicit ec: ExecutionContext
   ): Future[Map[Key, Revision]]
 
   /**
-   * Asynchronously applies the specified changes to the cache.
+   * Asynchronously applies the specified changes to the [[Cache]].
    *
    * @param changes Updates to make.
    * @param ec Implicit execution context.
@@ -39,7 +39,7 @@ trait Cache extends Database {
   ): Future[Unit]
 
   /**
-   * Asynchronously removes the specified keys from the cache.
+   * Asynchronously removes the specified keys from the [[Cache]].
    *
    * @param keys Keys to purge.
    * @param ec Implicit execution context.
@@ -91,10 +91,10 @@ trait Cache extends Database {
 object Cache {
 
   /**
-   * Constructs a Cache that corresponds to the specified name.
+   * Constructs a [[Cache]] that corresponds to the specified name.
    *
    * @param name Cache name.
-   * @param database Underlying database.
+   * @param database Underlying [[Database]].
    * @return Cache instance.
    */
   def forName(name: String, database: Database): Cache = name match {

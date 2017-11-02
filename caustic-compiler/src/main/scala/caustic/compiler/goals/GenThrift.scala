@@ -78,7 +78,7 @@ object GenThrift extends Goal[String] {
    */
   def serialize(function: Function): String =
     s"""${ serialize(function.returns) } ${function.name}(
-       |  ${ serialize(function.args.map(a => (a.name, a.datatype))).replaceAll("\n", "\n|  ") }
+       |  ${ serialize(function.args.map(a => (a.name, a.alias))).replaceAll("\n", "\n|  ") }
        |);
      """.stripMargin
 

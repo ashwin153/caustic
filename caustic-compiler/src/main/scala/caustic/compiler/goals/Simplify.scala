@@ -46,7 +46,7 @@ case class Simplify(
   override def visitAssignment(ctx: CausticParser.AssignmentContext): Result = {
     // Determine the value of the variable.
     var rhs = visitExpression(ctx.expression())
-    val cur = visitName(ctx.name())
+    val cur = Simplify.get(visitName(ctx.name()))
 
     if (ctx.AddAssign() != null)
       rhs = Result(lub(cur.tag, rhs.tag), s"""add(${ cur.value }, ${ rhs.value })""")
@@ -126,7 +126,7 @@ case class Simplify(
         if (ctx.Equal() != null)
           Result(lub(lhs.tag, rhs.tag), s"""equal(${ lhs.value }, ${ rhs.value })""")
         else if (ctx.NotEqual() != null)
-          Result(lub(lhs.tag, rhs.tag), s"""notEqual(${ lhs.value }, ${ rhs.value }) })""")
+          Result(lub(lhs.tag, rhs.tag), s"""notEqual(${ lhs.value }, ${ rhs.value })""")
         else
           visitChildren(ctx)
       case None =>
@@ -210,17 +210,7 @@ case class Simplify(
 
   override def visitPrimaryExpression(ctx: CausticParser.PrimaryExpressionContext): Result =
     if (ctx.name() != null)
-      visitName(ctx.name()) match {
-        case Result(x: Primitive, v) =>
-          // Automatically load primitives.
-          Result(x, s"""load($v)""")
-        case Result(Pointer(x: Primitive), v) =>
-          // Automatically read primitive pointers.
-          Result(x, s"""read($v)""")
-        case x =>
-          // Otherwise, pass through names normally.
-          x
-      }
+      Simplify.get(visitName(ctx.name()))
     else if (ctx.funcall() != null)
       visitFuncall(ctx.funcall())
     else if (ctx.constant() != null)
@@ -272,7 +262,7 @@ case class Simplify(
     // Set the value of each of the arguments before executing the function body.
     val func = this.universe.getFunction(ctx.Identifier().getText)
     val body = func.args.zip(ctx.expression().asScala.map(visitExpression))
-      .map { case (Argument(_, k, x), Result(y, v)) if x == y => s"""store($k, $v)""" }
+      .map { case (Argument(_, k, Alias(_, x)), Result(y, v)) if x == y => s"""store($k, $v)""" }
       .foldRight(func.body.value)((a, b) => s"""cons($a, $b)""")
 
     // Return the result of evaluating the function.
@@ -299,6 +289,25 @@ case class Simplify(
 }
 
 object Simplify {
+
+  /**
+   * Gets the value of a [[Result]] by loading [[Primitive]] types and dereferencing [[Pointer]]
+   * types. All other types are passed through normally.
+   *
+   * @param result [[Result]] to fetch.
+   * @return Value of [[Result]].
+   */
+  def get(result: Result): Result = result.tag match {
+    case x: Primitive =>
+      // Automatically load primitives.
+      Result(x, s"""load(${ result.value })""")
+    case Pointer(x: Primitive) =>
+      // Automatically read primitive pointers.
+      Result(x, s"""read(${ result.value })""")
+    case _ =>
+      // Otherwise, pass through results normally.
+      result
+  }
 
   /**
    * Returns the fields of the [[Record]] contained in the [[Result]].

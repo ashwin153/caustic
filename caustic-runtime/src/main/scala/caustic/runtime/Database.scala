@@ -137,6 +137,8 @@ trait Database extends thrift.Database.AsyncIface with Closeable {
       case (Cons :: rest, f :: s :: rem) => reduce(rest, cons(f, s) :: rem)
       case (Branch :: rest, Flag(true) :: pass :: _ :: rem) => reduce(pass :: rest, rem)
       case (Branch :: rest, Flag(false) :: _ :: fail :: rem) => reduce(fail :: rest, rem)
+      case (Branch :: rest, None :: _ :: fail :: rem) => reduce(fail :: rest, rem)
+      case (Branch :: rest, (_: Literal) :: pass :: _ :: rem) => reduce(pass :: rest, rem)
       case (Branch :: rest, c :: p :: f :: rem) => reduce(rest, branch(c, p, f) :: rem)
       case (Prefetch :: rest, k :: rem) => reduce(rest, prefetch(k) :: rem)
 

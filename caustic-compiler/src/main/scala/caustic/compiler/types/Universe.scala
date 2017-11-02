@@ -110,7 +110,7 @@ case class Universe private(
     args.toSeq foreach { case (n, t) => context.putVariable(n, t.datatype) }
 
     // Evaluate the body of the function and add it to the universe.
-    val params = args.toSeq map { case (n, t) => Argument(n, context.mangle(n), t) }
+    val params = args.toSeq map { case (n, t) => Argument(n, s"""text("${ context.mangle(n) }")""", t) }
     this.functions += mangle(name) -> Function(name, params, returns, body(context))
   }
 
@@ -145,7 +145,7 @@ case class Universe private(
       case r: Record =>
         // Add a constructor for record aliases.
         putFunction(name, r.fields, getAlias(name)) { func =>
-          Result(r, s"""text("${ func.labels.mkString("@") }")""")
+          Result(r, s"""text("${ func.scope }")""")
         }
       case x => x
     }

@@ -39,12 +39,12 @@ case class Alias(
  *
  * @param name Local name.
  * @param key Runtime identifier.
- * @param datatype Underlying type [[Alias]].
+ * @param alias Underlying type [[Alias]].
  */
 case class Argument(
   name: String,
   key: String,
-  datatype: Alias
+  alias: Alias
 ) extends Symbol
 
 /**

@@ -15,8 +15,7 @@ object Compiler extends App {
         |
         |Goals:
         |  - declare: Evaluates declarations.
-        |  - gen-thrift: Generates a Thrift IDL.
-        |  - gen-scala: Generates a Scala implementation.
+        |  - gen: Generates a Scala implementation.
         |  - simplify: Simplifies expressions.
       """.stripMargin
     )
@@ -27,8 +26,7 @@ object Compiler extends App {
   // Load and execute query.
   val goal = args(0) match {
     case "declare" => goals.Declare(Universe.root)
-    case "gen-thrift" => goals.GenThrift
-    case "gen-scala" => goals.GenScala
+    case "gen" => goals.Gen
     case "simplify" => goals.Simplify(Universe.root)
   }
 

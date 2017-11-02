@@ -63,9 +63,6 @@ package object runtime {
   }
 
   def branch(c: Transaction, p: Transaction, f: Transaction): Transaction = (c, p, f) match {
-    case (None, _, _) => throw ExecutionException(s"Branch undefined for condition None")
-    case (Real(a), _, _) => throw ExecutionException(s"Branch undefined for condition $a")
-    case (Text(a), _, _) => throw ExecutionException(s"Branch undefined for condition $a")
     case _ => Expression(Branch, c :: p :: f :: Nil)
   }
 
@@ -81,6 +78,8 @@ package object runtime {
   }
 
   def add(x: Transaction, y: Transaction): Transaction = (x, y) match {
+    case (None, _) => y
+    case (_, None) => x
     case (Real(a), Real(b)) => real(a + b)
     case (Real(a), Flag(b)) => text(a.toString + b.toString)
     case (Real(a), Text(b)) => text(a.toString + b)

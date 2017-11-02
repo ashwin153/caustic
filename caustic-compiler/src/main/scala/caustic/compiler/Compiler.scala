@@ -22,7 +22,7 @@ object Compiler {
         """Usage: cc <goal> <file>
           |
           |Goals:
-          |  - compile: Generates a Scala implementation.
+          |  - generate: Generates a Scala implementation.
           |  - declare: Evaluates declarations.
           |  - simplify: Simplifies expressions.
         """.stripMargin
@@ -33,7 +33,7 @@ object Compiler {
 
     // Run the compiler on the specified goal and path.
     args(0) match {
-      case "compile"  => compile(Paths.get(args(1)), goals.Generate)
+      case "generate" => compile(Paths.get(args(1)), goals.Generate)
       case "declare"  => compile(Paths.get(args(1)), goals.Declare(Universe.root))
       case "simplify" => compile(Paths.get(args(1)), goals.Simplify(Universe.root))
     }

@@ -3,20 +3,48 @@
 [![Maven Central](https://img.shields.io/maven-central/v/com.madavan/caustic-runtime_2.12.svg)][2]
 [![Docker](https://img.shields.io/docker/build/ashwin153/caustic.svg)][4]
 
-Databases are either easy to use or easy to scale. For example, relational databases were 
-popularized in large part because of the programmability of SQL. However, this programmability comes 
-at an incredible expense. Relational databases are notoriously difficult to support at scale, and so 
-developers have increasingly turned toward more specialized NoSQL systems that scale well be 
-shedding functionality.
+Concurrency is hard. Why waste time worrying about it? Caustic is a transactional programming
+language for arbitrary key-value stores. Caustic programs may be distributed arbitrary and
+executed concurrently without *any* explicit synchronization mechanism, and they may be run
+without modification on *any* transactional key-value store.
 
-Developers are not only forced to choose between productivity and performance, but also stark 
-differences between query languages makes their choice of database effectively permanent. Even 
-databases that claim to support the same SQL standard only implement incompatible subsets of its 
-functionality. The lack of a truly uniform interface tightly couples databases and the procedures 
-that are executed against them.
+Consider the following example of a distributed counter written in Caustic. It may be short,
+simple, and terse, but it is also thread-safe, performant, and interoperable with any 
+transactional key-value store (including MySQL, PostgreSQL, and main memory).
 
-Caustic is a language for expressing and executing transactions on arbitrary key-value stores that 
-is both straightforward to use and simple to integrate.
+```
+module counter
+
+/**
+ * A counter.
+ *
+ * @param value Current value.
+ */
+record Total {
+  value: Int
+}
+
+/**
+ * A distributed counting service.
+ */
+service Counter {
+
+  /**
+   * Increments the total and returns its current value.
+   *
+   * @param x Total pointer.
+   * @return Current value.
+   */
+  def increment(x: Total&): Int = {
+    if x.value {
+      x.value += 1
+    } else {
+      x.value = 1
+    }
+  }
+
+}
+```
 
 ## Overview
 - ```caustic-assets```: Pictures, documentation, and musings.

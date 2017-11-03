@@ -21,7 +21,6 @@ import Total$JsonProtocol._
          
 // TODO: Copy block comment from *.acid file.
 case class Counter(client: Client) {
-
   
   // Pre-compute function body to reduce allocations and improve performance.
   private val inc$Body = cons(store(text("root/caustic/example/inc@x"), text(x)), load(branch(notEqual(read(add(load("root/caustic/example/inc@x"), text("@value"))), None), write(add(load("root/caustic/example/inc@x"), text("@value")), add(read(add(load("root/caustic/example/inc@x"), text("@value"))), real(1.0))), write(add(load("root/caustic/example/inc@x"), text("@value")), real(1.0)))))
@@ -46,7 +45,6 @@ case class Counter(client: Client) {
     }
   }
        
-
 }
          
      

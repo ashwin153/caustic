@@ -47,9 +47,7 @@ case class Generate(output: Path) extends CausticBaseVisitor[Unit] with Goal[Uni
       case Service(name, functions) =>
         s"""// TODO: Copy block comment from *.acid file.
            |case class $name(client: Client) {
-           |
            |  ${ functions.map(toFunction).mkString("\n").replaceAll("\n", "\n|  ") }
-           |
            |}
          """.stripMargin
     }

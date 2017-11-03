@@ -5,7 +5,7 @@
 cd ..
 ./pants binary -q caustic-compiler/src/main/scala:bin
 mv dist/caustic-compiler.jar caustic-example/
-cd caustic-example/
+cd caustic-example
 
 ####################################################################################################
 #                                           Run Compiler                                           #

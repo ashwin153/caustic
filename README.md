@@ -1,4 +1,4 @@
-![Logo](https://github.com/ashwin153/caustic/blob/master/caustic-assets/images/logo.png)
+![Logo](https://github.com/ashwin153/caustic/blob/master/caustic-assets/images/banner.png)
 ---
 [![Build Status](https://travis-ci.org/ashwin153/caustic.svg?branch=master)][3]
 [![Maven Central](https://img.shields.io/maven-central/v/com.madavan/caustic-runtime_2.12.svg)][2]
@@ -86,4 +86,3 @@ are available on [Docker][4]. The Maven coordinates of core build artifacts are 
 [2]: https://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.madavan%22
 [3]: https://travis-ci.org/ashwin153/caustic
 [4]: https://hub.docker.com/r/ashwin153/caustic/
-[5]: https://github.com/ashwin153/caustic/blob/master/caustic-assets/images/logo.png

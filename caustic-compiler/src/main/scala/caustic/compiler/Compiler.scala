@@ -33,7 +33,7 @@ object Compiler {
 
     // Run the compiler on the specified goal and path.
     args(0) match {
-      case "generate" => compile(Paths.get(args(1)), goals.Generate)
+      case "generate" => compile(Paths.get(args(1)), goals.Generate(Paths.get("./src/main/scala")))
       case "declare"  => compile(Paths.get(args(1)), goals.Declare(Universe.root))
       case "simplify" => compile(Paths.get(args(1)), goals.Simplify(Universe.root))
     }

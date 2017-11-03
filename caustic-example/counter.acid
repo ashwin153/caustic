@@ -1,4 +1,4 @@
-module caustic.example
+module counter
 
 /**
  * A counter.

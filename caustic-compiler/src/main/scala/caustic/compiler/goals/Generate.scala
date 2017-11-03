@@ -34,11 +34,12 @@ case class Generate(output: Path) extends CausticBaseVisitor[Unit] with Goal[Uni
            |/**
            | * A Spray Json serialization protocol for instances of [[$name]].
            | */
-           |object $name$$JsonProtocol extends DefaultJsonProtocol {
-           |  implicit val ${ name }Format = jsonFormat${ record.fields.size }($name)
+           |object $name extends DefaultJsonProtocol {
+           |  type Pointer[$name] = String
+           |  implicit val ${ name }Format = jsonFormat${ record.fields.size }($name.apply)
            |}
            |
-           |import $name$$JsonProtocol._
+           |import $name._
          """.stripMargin
     }
 
@@ -86,7 +87,7 @@ case class Generate(output: Path) extends CausticBaseVisitor[Unit] with Goal[Uni
     case Alias(_, Double)     => "Double"
     case Alias(_, Int)        => "Int"
     case Alias(_, Boolean)    => "Boolean"
-    case Alias(_, Pointer(_)) => "String"
+    case Alias(n, Pointer(_)) => s"Pointer[$n]"
     case Alias(n, Record(_))  => n
   }
 
@@ -103,15 +104,11 @@ case class Generate(output: Path) extends CausticBaseVisitor[Unit] with Goal[Uni
       .foldRight(toJson(function.body))((a, b) => s"cons($a, $b)")
 
     // Construct a Scala function.
-    s"""
-       |// Pre-compute function body to reduce allocations and improve performance.
-       |private val ${ function.name }$$Body = $body
-       |
-       |// TODO: Copy block comment from *.acid file.
+    s"""// TODO: Copy block comment from *.acid file.
        |def ${ function.name }(
        |  ${ function.args.map(x => s"""${ x.name }: ${ toScala(x.alias) }""").mkString(",\n|  ") }
        |): Try[${ toScala(function.returns) }] = {
-       |  this.client.execute(${ function.name }$$Body) map { result =>
+       |  this.client.execute($body) map { result =>
        |    // Extract a Json string from the result.
        |    if (result.isSetText)
        |      result.getText
@@ -168,15 +165,15 @@ case class Generate(output: Path) extends CausticBaseVisitor[Unit] with Goal[Uni
 
       // Serialize records as json objects.
       s"""add(add(text("{ "), $json), text(" }"))"""
-    case String =>
-      // Serialize string and pointer fields as quoted values.
-      s"""add(add(text("\\""), load(${ result.value })), text("\\""))"""
     case Pointer(_) =>
       // Serialize string and pointer fields as quoted values.
       s"""add(add(text("\\""), ${ result.value }), text("\\""))"""
+    case String =>
+      // Serialize string and pointer fields as quoted values.
+      s"""add(add(text("\\""), load(${ result.value })), text("\\""))"""
     case _ =>
       // Serialize all other types normally.
-      s"""load(${ result.value })"""
+      result.value
   }
 
 }

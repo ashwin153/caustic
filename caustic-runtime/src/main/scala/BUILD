@@ -22,7 +22,7 @@ scala_library(
 )
 
 scala_library(
-    name='client',
+    name='service',
     sources=rglobs('caustic/runtime/service/*.scala'),
     dependencies=[
         'caustic-runtime/src/main/thrift',
@@ -31,7 +31,7 @@ scala_library(
     ],
     provides=artifact(
         org='com.madavan',
-        name='caustic-client_2.12',
+        name='caustic-service_2.12',
         repo=public,
         publication_metadata=describe,
     ),

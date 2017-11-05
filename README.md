@@ -4,69 +4,86 @@
 [![Maven Central](https://img.shields.io/maven-central/v/com.madavan/caustic-runtime_2.12.svg)][2]
 [![Docker](https://img.shields.io/docker/build/ashwin153/caustic.svg)][4]
 
-Concurrency is hard. Why waste time worrying about it? Languages like [Rust][5] are capable of 
-eliminating race conditions between multiple threads operating on shared data in a single machine, 
-but they do little to guarantee safety between multiple *machines* in a cluter. Therefore, 
-programmers are forced to rely on explicit synchronization to coordinate operations in a distributed 
-system. __Caustic is a transactional programming language for distributed systems.__ Caustic 
-programs may be distributed arbitrarily and executed concurrently without *any* explicit 
-synchronization against *any* transactional key-value store.
+Concurrency is hard. Some languages like [Rust][5] are capable of statically detecting concurrency 
+errors, or race conditions, that occur when multiple threads on a single machine simultaneously 
+operate on shared data. But most languages, including Rust, do little to guarantee correctness when 
+confronted with simultaneous operations on data shared across multiple machines, so architects of 
+distributed systems are forced to rely *explicitly* on unintuitive, error-prone synchronization 
+mechanisms like [distributed locks][8] to safely coordinate concurrent actions across a cluster.
 
-## Background
-A transaction is a sequence of operations that are atomic, consistent, isolated, and durable.
+Caustic is a robust, transactional programming language for architecting distributed systems. 
+Programs written in Caustic may be distributed arbitrarily, but they will *always* operate safely on 
+data stored within *any* transactional key-value store without *any* explicit synchronization.
 
-- __Atomic__: Transactions are all-or-nothing. In other words, a transaction is an atom of 
-  computation - it cannot be split apart. Either all the operations in a transaction are performed 
-  successfully, or none of them are.
-- __Consistent__: Once a transaction has completed successfully, all future transactions must see 
-  its result.
-- __Isolated__: Transactions do not reveal intermediate results.
-- __Durable__: Once a transaction has completed successfully, its result will remain permanently 
-  recorded *even in the event of power loss, crashes, or errors*.
+# Background
+A __race condition__ is a situation in which the order in which operations are performed impacts the 
+result. As a motivating example, suppose there exist two machines ```A``` and ```B``` that each 
+would like to increment a shared counter ```x```. Formally, each machine reads ```x```, sets 
+```x' = x + 1```, and writes ```x'```. If ```B``` reads *after* ```A``` finishes writing, then 
+```B``` reads ```x'``` and writes ```x' + 1```. However, if ```B``` reads *before* ```A``` finishes 
+writing, then ```B``` reads ```x``` and also writes ```x'```. Clearly, this is a race condition 
+because the value of the counter (```x' + 1``` or ```x'```) depends on the order in which ```A``` 
+and ```B``` perform reads and writes. This particular race condition may seem relatively benign. Who 
+cares if two increments were successfully performed, but the effect of only one was recorded? 
+Imagine if the value of ```x``` corresponded to your bank balance, and the increments corresponded 
+to deposits. What if your bank only recorded every second deposit? Still don't care? While race 
+conditions manifest themselves in subtle ways in distributed systems, they can often have 
+catastrophic consequences.
 
-A race condition is a situation in which the order of operations affects the result. As a motivating 
-example, suppose there exist two machines ```A``` and ```B``` that each would like to increment a 
-shared counter ```x```. Each machine (1) reads the value of ```x```, (2) adds ```1``` to it, and 
-(3) writes ```x + 1```. If ```B``` reads *after* ```A``` finishes writing, then ```B``` reads 
-```x + 1``` and writes ```x + 2```. If ```B``` reads *before* ```A``` finishes writing, then ```B``` 
-also reads ```x``` and also writes ```x + 1```. Clearly, this is a race condition because the value
-of ```x``` depends on the *order* in which the increments are applied. This particular race 
-condition may seem relatively benign. Who cares if two increments were performed, but only one was 
-recorded? Imagine if the value of ```x``` corresponded to your bank balance, and the increments 
-corresponded to deposits. What if your bank only recorded every second deposit? Race conditions 
-manifest themselves in subtle ways in distributed systems, and are difficult to discover and 
-eliminate. 
-
+A __transaction__ is a sequence of operations that are atomic, consistent, isolated, and durable. 
 These [ACID][6] properties (from which Caustic derives its name!) make transactions a formidible 
-tool for eliminating race conditions in distributed systems. If the machines in the previous example
-had *transactionally* written the new value of ```x``` *if and only if the value of ```x``` remained 
-unchanged*, then whenever ```B``` read *before* ```A``` finished writing ```B``` would detect
-the modification made to ```x``` by ```A``` when it attempted to write ```x + 1``` and would fail to 
-complete successfully. Because the value of ```x``` depends only on the *number* of successful 
-increments and not on the *order* in which they were applied, the race condition has been 
-eliminated.
+tool for eliminating race conditions. 
 
-A key-value store is the simplest kind of data structure - it asssociates a unique value to any key.
-For example, a dictionary is a key-value store that associates a unique definition to any word. 
-Key-value stores are the essence of every storage system; memory is a key-value store that 
-associates a unique sequence of bytes to any address, and databases are key-value stores that 
-associate blobs of data to any primary key.
+- __Atomic__: Transactions are all-or-nothing. Either all of their operations complete successfuly, 
+  or none of them do.
+- __Consistent__: Transactions must see the effect of all successfully completed transactions.
+- __Isolated__: Transactions cannot see the effect of in-progress transactions.
+- __Durable__: Transaction effects are permanent.
 
-A transactional key-value store is simply a key-value store that supports transactions. While the
-ACID properties of transactions are extremely challenging to guarantee, there are an enourmous 
-number of system that do. Examples range from [software transaction memory][7] solutions for single
-machines to powerful databases like [Cassandra][8] and [MySQL][9] for distributed clusters.
+If the machines in the previous example had instead *transactionally* incremented ```x``` *if and 
+only if the value of ```x``` remained unchanged*, then whenever ```B``` read before ```A``` finished 
+writing, ```B``` would detect the modification to ```x``` by ```A``` when writing ```x'``` and 
+would fail to complete successfully. Because the value of ```x``` now depends only on the
+*number* of successful increments and not on the *order* in which they are applied, the race
+condition no longer exists.
 
-Clearly, transactions are a useful primitive for architecting correct distributed systems and there 
-are a plethora of storage systems capable of handling them. However, these storage systems each have
-their own language for specifying transactions that are often lacking in functionality and 
-performance. Caustic provides a powerful and performant language for expressing and executing 
-transactions against *any* transactional key-value store. 
+A __key-value store__ is a data structure that asssociates a unique value to any key. For example, a 
+dictionary is a key-value store that associates a unique definition to any word. Key-value stores 
+are the essence of every storage system; memory is a key-value store that associates a unique 
+sequence of bytes to any address, and databases are key-value stores that associate blobs of data to 
+any primary key. A __transactional key-value store__ is simply a key-value store that supports 
+transactions. While transactions are challenging to correctly implement, there are an enourmous 
+number of storage systems that are capable of handling them. Examples range from 
+[software transaction memory][7] solutions for single machines to powerful databases like 
+[Cassandra][8] and [MySQL][9] for larger clusters.
 
-## Example
-Consider the following example of a distributed counter written in Caustic. It is statically typed,
-distributable, and interoperable with any transactional key-value store. It compiles into a Scala
-library and so it is compatible with existing frameworks, tooling, and infrastructure for the JVM.
+Clearly, transactions are a useful primitive for building correct distributed systems and there 
+are a plethora of storage systems capable of handling them. However, these transactional storage 
+systems each have their own unique language for specifying transactions that are often lacking in 
+functionality and performance. Recent years have marked an explosion in NoSQL databases, that scale
+well by shedding functionality. These databases were not popularized because of their query
+languages, they were *in spite of them*. Some like [CQL][11] and [AQL][12] attempt to mimic SQL, 
+but, while similar in name and intent, most fall short of implementing the entire SQL specification.
+Others like [MongoDB][13] and [DynamoDB][14] have their own bespoke interfaces that are often so 
+complicated that they require [classes][15]. But even SQL is not beyond reproach. In his article 
+["Some Principles of Good Language Design"][10], CJ Date, one of the fathers of relational 
+databases, outlined a number of inherent flaws in the SQL language including its lack of a canonical 
+implementation and its ambiguous syntax. While these storage systems provide the necessary
+transactional guarantees that are required to build safe distributed systems, their lack of a robust
+interface makes it impossible to design nontrivial applications.
+
+Caustic is a powerful and performant programming language for expressing and executing transactions
+against *any* transactional key-value store. Caustic couples the robust functionality of a modern 
+programming language with the ACID guarantees of a transactional key-value store, both of which are 
+necessary to architect correct distributed systems.
+
+# Example
+Consider the following example of a distributed counter written in Caustic. It is statically typed
+and distributable. It interoperates with any transactional key-value store (currently supports
+MySQL, PostgreSQL, and memory), and compiles into a Scala Library that is compatible with all
+existing frameworks, tooling, and infrastructure for the JVM. Please refer [here][16] for 
+information about how to bootstrap the runtime and [here][17] for information about how to compile
+and run Caustic programs.
 
 ```
 module counter
@@ -102,30 +119,40 @@ service Counter {
 }
 ```
 
-## Overview
-- ```caustic-assets```: Pictures, documentation, and musings.
-- ```caustic-benchmarks```: Performance tests.
-- ```caustic-compiler```: Programming language.
-- ```caustic-runtime```: Virtual machine.
+# Organization
+```
+# Programming Language
+caustic/                            https://github.com/ashwin153/caustic
++---caustic-assets/                 Documentation, results, and graphics.
++---caustic-benchmarks/             Performance tests.
++---caustic-compiler/               Programming language and compiler.
++---caustic-runtime/                Virutal machine.
 
-## Requirements
+# Syntax Highlighting
+caustic.tmbundle/                   https://github.com/ashwin153/caustic.tmbundle
++---Preferences/                    TextMate preferences.
++---Snippets/                       TextMate code snippets.
++---Syntaxes/                       TextMate grammar.
+
+# YCSB Benchmarks
+ycsb/                               https://github.com/ashwin153/YCSB
++---caustic                         Caustic integration.
+```
+
+# Requirements
 - Java 1.8
-- MySQL 5.0+
-- PostgreSQL 9.5+
 - Python 2.7
 - Scala 2.12
-- ZooKeeper 3.4.10
 
-## Artifacts
-Artifacts are published to the [Sonatype Nexus][1] and synced to 
-[Maven Central][2]. Snapshots of the ```master``` branch are built using [Travis CI][3] and images
-are available on [Docker][4]. The Maven coordinates of core build artifacts are as follows.
+# Artifacts
+Artifacts are published to the [Sonatype Nexus][1] and synced to [Maven Central][2]. Snapshots of 
+the ```master``` branch are built using [Travis CI][3] and images are available on [Docker][4]. 
 
 ```xml
 <!-- Client Library -->
 <dependency>
   <groupId>com.madavan</groupId>
-  <artifactId>caustic-client_2.12</artifactId>
+  <artifactId>caustic-service_2.12</artifactId>
   <version>1.3.1</version>
 </dependency>
 
@@ -141,6 +168,17 @@ are available on [Docker][4]. The Maven coordinates of core build artifacts are 
 [2]: https://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.madavan%22
 [3]: https://travis-ci.org/ashwin153/caustic
 [4]: https://hub.docker.com/r/ashwin153/caustic/
-[5]: https://www.rust-lang.org/en-US/
+[5]: https://blog.rust-lang.org/2015/04/10/Fearless-Concurrency.html
 [6]: https://en.wikipedia.org/wiki/ACID
 [7]: https://en.wikipedia.org/wiki/Software_transactional_memory
+[8]: https://en.wikipedia.org/wiki/Distributed_lock_manager
+[9]: https://en.wikipedia.org/wiki/Database_transaction
+[10]: https://tinyurl.com/yc7hjvvz
+[11]: https://docs.datastax.com/en/cql/3.1/cql/cql_intro_c.html
+[12]: https://docs.arangodb.com/3.1/AQL/
+[13]: https://www.mongodb.com
+[14]: https://aws.amazon.com/dynamodb/
+[15]: https://university.mongodb.com/
+[16]: https://github.com/ashwin153/caustic/blob/master/caustic-runtime/README.md
+[17]: https://github.com/ashwin153/caustic/tree/master/caustic-compiler
+

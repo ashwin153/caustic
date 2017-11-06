@@ -31,10 +31,10 @@ conditions manifest themselves in subtle ways in distributed systems, they can o
 catastrophic consequences.
 
 A __transaction__ is a sequence of operations that are atomic, consistent, isolated, and durable. 
-These [ACID][6] properties (from which Caustic derives its name!) make transactions a formidible 
+These [ACID][6] properties (from which Caustic derives its name!) make transactions a formidable 
 tool for eliminating race conditions. 
 
-- __Atomic__: Transactions are all-or-nothing. Either all of their operations complete successfuly, 
+- __Atomic__: Transactions are all-or-nothing. Either all of their operations complete successfully, 
   or none of them do.
 - __Consistent__: Transactions must see the effect of all successfully completed transactions.
 - __Isolated__: Transactions cannot see the effect of in-progress transactions.
@@ -47,12 +47,12 @@ would fail to complete successfully. Because the value of ```x``` now depends on
 *number* of successful increments and not on the *order* in which they are applied, the race
 condition no longer exists.
 
-A __key-value store__ is a data structure that asssociates a unique value to any key. For example, a 
+A __key-value store__ is a data structure that associates a unique value to any key. For example, a 
 dictionary is a key-value store that associates a unique definition to any word. Key-value stores 
 are the essence of every storage system; memory is a key-value store that associates a unique 
 sequence of bytes to any address, and databases are key-value stores that associate blobs of data to 
 any primary key. A __transactional key-value store__ is simply a key-value store that supports 
-transactions. While transactions are challenging to correctly implement, there are an enourmous 
+transactions. While transactions are challenging to correctly implement, there are an enormous 
 number of storage systems that are capable of handling them. Examples range from 
 [software transaction memory][7] solutions for single machines to powerful databases like 
 [Cassandra][8] and [MySQL][9] for larger clusters.

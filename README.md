@@ -11,7 +11,7 @@ confronted with simultaneous operations on data shared across multiple machines,
 distributed systems are forced to rely *explicitly* on unintuitive, error-prone synchronization 
 mechanisms like [distributed locks][8] to safely coordinate concurrent actions across a cluster.
 
-Caustic is a robust, transactional programming language for architecting distributed systems. 
+Caustic is a robust, transactional programming language for building safe distributed systems. 
 Programs written in Caustic may be distributed arbitrarily, but they will *always* operate safely on 
 data stored within *any* transactional key-value store without *any* explicit synchronization.
 
@@ -140,9 +140,9 @@ ycsb/                               https://github.com/ashwin153/YCSB
 ```
 
 # Requirements
-- Java 1.8
-- Python 2.7
-- Scala 2.12
+- Java 1.8 
+- Python 2.7 (build-only) 
+- Scala 2.12 
 
 # Artifacts
 Artifacts are published to the [Sonatype Nexus][1] and synced to [Maven Central][2]. Snapshots of 

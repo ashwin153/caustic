@@ -16,7 +16,7 @@ concurrently increment a shared counter ```x```. Formally, each program reads ``
 ```x' = x + 1```, and writes ```x'```. If ```B``` reads *after* ```A``` finishes writing, then 
 ```B``` reads ```x'``` and writes ```x' + 1```. However, if ```B``` reads *before* ```A``` finishes 
 writing, then ```B``` reads ```x``` and also writes ```x'```. Clearly, this is a race condition 
-because the value of the counter (```x' + 1``` or ```x'```) depends on the order in which ```A``` 
+because the value of the counter, ```x' + 1``` or ```x'```, depends on the order in which ```A``` 
 and ```B``` perform reads and writes. This particular race condition may seem relatively benign. Who 
 cares if two increments were successfully performed, but the effect of only one was recorded? 
 Imagine if the value of ```x``` corresponded to your bank balance, and the increments corresponded 

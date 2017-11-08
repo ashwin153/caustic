@@ -32,7 +32,7 @@ of nearly every major technology from social networks to video streaming, but th
 complexity coupled with the inability to detect race conditions makes designing them extremely 
 error-prone.
   
-__Caustic__ is a programming language for building correct distributed systems. Programs written in
+Caustic is a programming language for building correct distributed systems. Programs written in
 Caustic may be distributed arbitrarily, but they will *never* exhibit race conditions.
 
 # Background

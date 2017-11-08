@@ -4,21 +4,14 @@
 [![Maven Central](https://img.shields.io/maven-central/v/com.madavan/caustic-runtime_2.12.svg)][2]
 [![Docker](https://img.shields.io/docker/build/ashwin153/caustic.svg)][4]
 
-Concurrency is hard. Some languages like [Rust][5] are capable of statically detecting concurrency 
-errors, or race conditions, that occur when multiple threads on a single machine simultaneously 
-operate on shared data. But most languages, including Rust, do little to guarantee correctness when 
-confronted with simultaneous operations on data shared across multiple machines, so architects of 
-distributed systems are forced to rely *explicitly* on unintuitive, error-prone synchronization 
-mechanisms like [distributed locks][8] to safely coordinate concurrent actions across a cluster.
+Concurrency refers to situations in which multiple programs *concurrently* modify shared data.
+Concurrency is challenging because it introduces ambiguity in program execution order. Concurrent 
+programs may be distributed across threads, processes, or sometimes networks. 
 
-Caustic is a robust, transactional programming language for building safe distributed systems. 
-Programs written in Caustic may be distributed arbitrarily, but they will *always* operate safely on 
-data stored within *any* transactional key-value store without *any* explicit synchronization.
-
-# Background
-A __race condition__ is a situation in which the order in which operations are performed impacts the 
-result. As a motivating example, suppose there exist two machines ```A``` and ```B``` that each 
-would like to increment a shared counter ```x```. Formally, each machine reads ```x```, sets 
+It is precisely this ambituity that causes a particular nasty class of erros known as race 
+conditions. A __race condition__ is a situation in which execution order affects the outcome. As a 
+motivating example, suppose there exist two programs ```A``` and ```B``` that would like to 
+concurrently increment a shared counter ```x```. Formally, each program reads ```x```, sets 
 ```x' = x + 1```, and writes ```x'```. If ```B``` reads *after* ```A``` finishes writing, then 
 ```B``` reads ```x'``` and writes ```x' + 1```. However, if ```B``` reads *before* ```A``` finishes 
 writing, then ```B``` reads ```x``` and also writes ```x'```. Clearly, this is a race condition 
@@ -27,9 +20,21 @@ and ```B``` perform reads and writes. This particular race condition may seem re
 cares if two increments were successfully performed, but the effect of only one was recorded? 
 Imagine if the value of ```x``` corresponded to your bank balance, and the increments corresponded 
 to deposits. What if your bank only recorded every second deposit? Still don't care? While race 
-conditions manifest themselves in subtle ways in distributed systems, they can often have 
+conditions manifest themselves in subtle ways in concurrent systems, they can often have 
 catastrophic consequences.
 
+Most programming languages provide the fundamental tools like locks, semaphores, and monitors to
+explicitly deal with race conditions. Some, like Rust, go a step further and are able to detect them
+at compile time. But none are able to *guarantee* correctness in distributed systems. A 
+__distributed system__ is one in which multiple computers operate concurrently and competitively.
+Distributed systems form the computing backbone of nearly every major technology from social 
+networks to video streaming, but their intricate complexity coupled with the impossibility of
+verifying correctness makes them a ripe target for race conditions.
+  
+Caustic is a programming language for building correct distributed systems. Programs written in
+Caustic may be distributed arbitrarily, but they will *never* exhibit race conditions.
+
+# Background
 A __transaction__ is a sequence of operations that are atomic, consistent, isolated, and durable. 
 These [ACID][6] properties (from which Caustic derives its name!) make transactions a formidable 
 tool for eliminating race conditions. 

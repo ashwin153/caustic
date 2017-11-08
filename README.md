@@ -25,8 +25,8 @@ conditions manifest themselves in subtle ways in concurrent systems, they can of
 catastrophic consequences.
 
 Most programming languages provide the fundamental tools like locks, semaphores, and monitors to
-explicitly deal with race conditions . Some, like Rust, go a step further and are able to detect 
-race conditions between concurrent threads at compile time. But none, however, are able to 
+explicitly deal with race conditions. Some, like Rust, go a step further and are able to detect 
+race conditions between concurrent threads during compilation. But none, however, are able to 
 *guarantee* correctness in distributed systems. Distributed systems form the computing backbone
 of nearly every major technology from social networks to video streaming, but their intricate 
 complexity coupled with the inability to detect race conditions makes designing them extremely 
@@ -37,21 +37,14 @@ Caustic may be distributed arbitrarily, but they will *never* exhibit race condi
 
 # Background
 A __transaction__ is a sequence of operations that are atomic, consistent, isolated, and durable. 
-These [ACID][6] properties (from which Caustic derives its name!) make transactions a formidable 
-tool for eliminating race conditions. 
+Together, these [ACID][6] properties (from which Caustic derives its name!) allow transactions, 
+when used correctly, to completely eliminate race conditions.
 
 - __Atomic__: Transactions are all-or-nothing. Either all of their operations complete successfully, 
   or none of them do.
-- __Consistent__: Transactions must see the effect of all successfully completed transactions.
-- __Isolated__: Transactions cannot see the effect of in-progress transactions.
-- __Durable__: Transaction effects are permanent.
-
-If the machines in the previous example had instead *transactionally* incremented ```x``` *if and 
-only if the value of ```x``` remained unchanged*, then whenever ```B``` read before ```A``` finished 
-writing, ```B``` would detect the modification to ```x``` by ```A``` when writing ```x'``` and 
-would fail to complete successfully. Because the value of ```x``` now depends only on the
-*number* of successful increments and not on the *order* in which they are applied, the race
-condition no longer exists.
+- __Consistent__: Transactions must see the result of all successfully completed transactions.
+- __Isolated__: Transactions cannot see the result of an in-progress transaction.
+- __Durable__: Transactions are permanent.
 
 A __key-value store__ is a data structure that associates a unique value to any key. For example, a 
 dictionary is a key-value store that associates a unique definition to any word. Key-value stores 
@@ -75,8 +68,8 @@ complicated that they require [classes][15]. But even SQL is not beyond reproach
 ["Some Principles of Good Language Design"][10], CJ Date, one of the fathers of relational 
 databases, outlined a number of inherent flaws in the SQL language including its lack of a canonical 
 implementation and its ambiguous syntax. While these storage systems provide the necessary
-transactional guarantees that are required to build safe distributed systems, their lack of a robust
-interface makes it impossible to design nontrivial applications.
+transactional guarantees that are required to build correct distributed systems, their lack of a 
+robust interface makes it impossible to design nontrivial applications.
 
 Caustic is a powerful and performant programming language for expressing and executing transactions
 against *any* transactional key-value store. Caustic couples the robust functionality of a modern 

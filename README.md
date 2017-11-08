@@ -5,8 +5,9 @@
 [![Docker](https://img.shields.io/docker/build/ashwin153/caustic.svg)][4]
 
 Concurrency refers to situations in which multiple programs *concurrently* modify shared data.
-Concurrency is challenging because it introduces ambiguity in program execution order. Concurrent 
-programs may be distributed across threads, processes, or sometimes networks. 
+Concurrency is challenging because it introduces ambiguity in program execution order - 
+programs may be distributed across threads, processes, or even sometimes, in the case of 
+__distributed systems__, networks. 
 
 It is precisely this ambituity that causes a particular nasty class of erros known as race 
 conditions. A __race condition__ is a situation in which execution order affects the outcome. As a 
@@ -24,12 +25,12 @@ conditions manifest themselves in subtle ways in concurrent systems, they can of
 catastrophic consequences.
 
 Most programming languages provide the fundamental tools like locks, semaphores, and monitors to
-explicitly deal with race conditions. Some, like Rust, go a step further and are able to detect them
-at compile time. But none are able to *guarantee* correctness in distributed systems. A 
-__distributed system__ is one in which multiple computers operate concurrently and competitively.
-Distributed systems form the computing backbone of nearly every major technology from social 
-networks to video streaming, but their intricate complexity coupled with the impossibility of
-verifying correctness makes them a ripe target for race conditions.
+explicitly deal with race conditions . Some, like Rust, go a step further and are able to detect 
+race conditions between concurrent threads at compile time. But none, however, are able to 
+*guarantee* correctness in distributed systems. Distributed systems form the computing backbone
+of nearly every major technology from social networks to video streaming, but their intricate 
+complexity coupled with the inability to detect race conditions makes designing them extremely 
+error-prone.
   
 Caustic is a programming language for building correct distributed systems. Programs written in
 Caustic may be distributed arbitrarily, but they will *never* exhibit race conditions.

@@ -65,7 +65,7 @@ languages, they were *in spite of them*. Some like [CQL][11] and [AQL][12] attem
 but, while similar in name and intent, most fall short of implementing the entire SQL specification.
 Others like [MongoDB][13] and [DynamoDB][14] have their own bespoke interfaces that are often so 
 complicated that they require [classes][15]. But even SQL is not beyond reproach. In his article 
-["Some Principles of Good Language Design"][10], CJ Date, one of the fathers of relational 
+"Some Principles of Good Language Design", CJ Date, one of the fathers of relational 
 databases, outlined a number of inherent flaws in the SQL language including its lack of a canonical 
 implementation and its ambiguous syntax. While these storage systems provide the necessary
 transactional guarantees that are required to build correct distributed systems, their lack of a 
@@ -172,7 +172,6 @@ the ```master``` branch are built using [Travis CI][3] and images are available 
 [7]: https://en.wikipedia.org/wiki/Software_transactional_memory
 [8]: https://en.wikipedia.org/wiki/Distributed_lock_manager
 [9]: https://en.wikipedia.org/wiki/Database_transaction
-[10]: https://tinyurl.com/yc7hjvvz
 [11]: https://docs.datastax.com/en/cql/3.1/cql/cql_intro_c.html
 [12]: https://docs.arangodb.com/3.1/AQL/
 [13]: https://www.mongodb.com

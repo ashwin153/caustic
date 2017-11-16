@@ -33,11 +33,10 @@ class CausticGen(SimpleCodegenTask):
             ])
 
     def execute_codegen(self, target, target_workdir):
-        # Build the runtime service package.
+        # Execute the compiler on each source file.
         for src in target.sources_relative_to_buildroot():
             cmd = './pants run caustic-compiler/src/main/scala:bin --no-lock -- generate {}'.format(src)
             with self.context.new_workunit(name=src, labels=[WorkUnitLabel.TOOL], cmd=cmd) as work:
-                # Execute the compiler on each source file.
                 result = subprocess.call(
                     cmd,
                     stdout=work.output('stdout'),
@@ -45,7 +44,6 @@ class CausticGen(SimpleCodegenTask):
                     shell=True,
                 )
 
-                # Fail compilation if any source file errors.
                 if result != 0:
                     raise TaskError('Caustic Compiler ... exited non-zero ({})'.format(result))
 

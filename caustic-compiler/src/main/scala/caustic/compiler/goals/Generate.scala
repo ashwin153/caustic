@@ -68,6 +68,7 @@ case class Generate(output: Path) extends CausticBaseVisitor[Unit] with Goal[Uni
 
     // Write source code to file.
     val file = output.resolve(namespace.replaceAll("\\.", "/") + ".scala").toFile
+    file.getParentFile.mkdirs()
     file.createNewFile()
 
     val writer = new FileOutputStream(file)

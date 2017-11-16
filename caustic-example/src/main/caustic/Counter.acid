@@ -20,8 +20,8 @@ service Counter {
    * @param x Total pointer.
    * @return Current value.
    */
-  def inc(x: Total&): Int = {
-    if (x.value != null) {
+  def increment(x: Total&): Int = {
+    if x.value {
       x.value += 1
     } else {
       x.value = 1

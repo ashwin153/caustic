@@ -5,9 +5,9 @@
 ####################################################################################################
 targets=(
   "caustic-runtime/src/main/scala"
+  "caustic-runtime/src/main/scala:service"
   "caustic-runtime/src/main/thrift"
-  "caustic-service/src/main/scala:client"
-  "caustic-service/src/main/scala:discovery"
+  "caustic-compiler/src/main/scala"
 )
 
 artifacts=(

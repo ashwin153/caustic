@@ -7,14 +7,16 @@ targets=(
   "caustic-runtime/src/main/scala"
   "caustic-runtime/src/main/scala:service"
   "caustic-runtime/src/main/thrift"
+  "caustic-compiler/src/main/antlr"
   "caustic-compiler/src/main/scala"
 )
 
 artifacts=(
-  "caustic-client_2.12"
-  "caustic-discovery_2.12"
   "caustic-runtime_2.12"
+  "caustic-service_2.12"
   "caustic-thrift"
+  "caustic-grammar"
+  "caustic-compiler_2.12"
 )
 
 ####################################################################################################

@@ -1,6 +1,12 @@
 java_antlr_library(
-    name='java',
+    name='antlr',
     sources=['Caustic.g4'],
     compiler='antlr4',
     package='caustic.grammar',
+    provides=artifact(
+        org='com.madavan',
+        name='caustic-grammar',
+        repo=public,
+        publication_metadata=describe,
+    ),
 )

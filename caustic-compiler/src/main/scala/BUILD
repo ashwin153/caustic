@@ -2,7 +2,7 @@ scala_library(
     name='scala',
     sources=rglobs('*.scala'),
     dependencies=[
-        'caustic-compiler/src/main/antlr:java',
+        'caustic-compiler/src/main/antlr',
     ],
     provides=artifact(
         org='com.madavan',

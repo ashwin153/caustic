@@ -1,8 +1,9 @@
 scala_library(
     name='scala',
-    sources=rglobs('*.scala'),
+    sources=rglobs('*.scala', exclude=[rglobs('caustic/runtime/service/*.scala')]),
     dependencies=[
         'caustic-runtime/src/main/resources',
+        'caustic-runtime/src/main/scala:service',
         'caustic-runtime/src/main/thrift',
         '3rdparty/jvm:c3p0',
         '3rdparty/jvm:caffeine',

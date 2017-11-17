@@ -3,6 +3,7 @@ package caustic.benchmarks
 import caustic.benchmarks.util.{Measure, Probability, Statistic}
 import caustic.runtime._
 import caustic.runtime.sql.SQLDatabase
+
 import java.io.PrintWriter
 import scala.util.Random
 import scala.concurrent.duration._
@@ -88,9 +89,9 @@ object ContentionBenchmark {
 
   /**
    *
-   * @param n
-   * @param l
-   * @param times
+   * @param n Population size.
+   * @param l Sample size.
+   * @param times Number of attempts.
    * @return
    */
   def simulation(n: Int, l: Int, times: Int): Double = {

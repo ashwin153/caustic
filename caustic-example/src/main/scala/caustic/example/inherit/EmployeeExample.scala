@@ -12,7 +12,7 @@ object EmployeeExample extends App {
   // Create a counter service, and perform increments.
   val service = Payroll(this.client)
   print(this.service.salary(Employee(100)))
-  print(this.service.salary(Manager(1, 10)))
+  print(this.service.salary(Manager(1000, 100)))
 
   // Shut down the server.
   this.client.close()

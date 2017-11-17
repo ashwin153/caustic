@@ -83,7 +83,7 @@ case class Generate(
     // Construct the superclass declaration.
     val inherits = Option(ctx.Extends()) match {
       case Some(_) =>
-        s"extends ${ ctx.Identifier(1).getText }(${parent.keys mkString "," }) with Product"
+        s"extends ${ ctx.Identifier(1).getText }(${ parent.keys mkString "," }) with Product"
       case None =>
         "extends Product"
     }
@@ -218,7 +218,7 @@ case class Generate(
     // Pass Scala arguments to the underlying Caustic function.
     val body = function.args
       .map(x => toCaustic(x.name, Result(x.alias.datatype, x.key)))
-      .foldRight(toJson(function.body))((a, b) => s"cons($a, $b)")
+      .foldRight(toJsonObject(function.body))((a, b) => s"cons($a, $b)")
 
     // Construct a Scala function.
     s"""// TODO: Copy block comment from *.acid file.
@@ -270,16 +270,16 @@ case class Generate(
   }
 
   /**
-   * Serializes a Caustic [[Result]] to JSON.
+   * Serializes a Caustic [[Result]] to a JSON Object.
    *
    * @param result Caustic [[Result]].
    * @return Serialized representation.
    */
-  def toJson(result: Result): String = result.tag match {
+  def toJsonObject(result: Result): String = result.tag match {
     case Record(fields) =>
       // Serialize the fields of the record.
       val json = fields.keys.zip(Simplify.fields(result)) map {
-        case (n, f) => s"""add(text("\\"$n\\":"), ${ toJson(f) })"""
+        case (n, f) => s"""add(text("\\"$n\\":"), ${ toJsonField(f) })"""
       } reduce((a, b) => s"""add(add($a, text(",")), $b)""")
 
       // Serialize records as json objects.
@@ -289,10 +289,36 @@ case class Generate(
       s"""add(add(text("\\""), ${ result.value }), text("\\""))"""
     case String =>
       // Serialize string and pointer fields as quoted values.
-      s"""add(add(text("\\""), load(${ result.value })), text("\\""))"""
+      s"""add(add(text("\\""), ${ result.value }), text("\\""))"""
     case _ =>
       // Serialize all other types normally.
       result.value
+  }
+
+  /**
+   * Serializes a Caustic [[Result]] to a JSON Field.
+   *
+   * @param result Caustic [[Result]].
+   * @return Serialized representation.
+   */
+  def toJsonField(result: Result): String = result.tag match {
+    case Record(fields) =>
+      // Serialize the fields of the record.
+      val json = fields.keys.zip(Simplify.fields(result)) map {
+        case (n, f) => s"""add(text("\\"$n\\":"), ${ toJsonField(f) })"""
+      } reduce((a, b) => s"""add(add($a, text(",")), $b)""")
+
+      // Serialize records as json objects.
+      s"""add(add(text("{ "), $json), text(" }"))"""
+    case Pointer(_) =>
+      // Serialize string and pointer fields as quoted values.
+      s"""add(add(text("\\""), load(${ result.value })), text("\\""))"""
+    case String =>
+      // Serialize string and pointer fields as quoted values.
+      s"""add(add(text("\\""), load(${ result.value })), text("\\""))"""
+    case _ =>
+      // Serialize all other types normally.
+      s"""load(${ result.value })"""
   }
 
 }

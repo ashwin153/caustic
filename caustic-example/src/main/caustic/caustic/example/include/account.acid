@@ -1,0 +1,11 @@
+module caustic.example.include
+
+/**
+ *
+ *
+ *
+ */
+record Account {
+  name: String,
+  balance: Double
+}

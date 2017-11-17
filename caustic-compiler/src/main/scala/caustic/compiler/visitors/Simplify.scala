@@ -1,23 +1,24 @@
-package caustic.compiler
-package goals
+package caustic.compiler.visitors
 
 import caustic.compiler.types._
+import caustic.compiler.{Handler, TypeError, types}
 import caustic.grammar.{CausticBaseVisitor, CausticParser}
 
+import org.antlr.v4.runtime.misc.ParseCancellationException
+
 import scala.collection.JavaConverters._
-import scala.util.Try
 
 /**
  * A basic block evaluator. Reduces a statement or collection of statements into a [[Result]], whose
- * value corresponds to a [[caustic.runtime.thrift.Transaction]] and whose tag corresponds to a
- * compiler generated [[Type]].
+ * value corresponds to a transaction and whose tag corresponds to a compiler generated [[Type]].
  *
- * @param universe Known universe.
+ * @param handler Exception [[Handler]].
+ * @param universe Known [[Universe]].
  */
-case class Simplify(universe: Universe) extends CausticBaseVisitor[Result] with Goal[Result] {
-
-  override def execute(parser: CausticParser): Try[Result] =
-    Try(visitBlock(parser.block()))
+case class Simplify(
+  handler: Handler,
+  universe: Universe
+) extends CausticBaseVisitor[Result] {
 
   override def visitBlock(ctx: CausticParser.BlockContext): Result =
     ctx.statement().asScala
@@ -29,17 +30,20 @@ case class Simplify(universe: Universe) extends CausticBaseVisitor[Result] with 
 
   override def visitRollback(ctx: CausticParser.RollbackContext): Result = {
     val message = visitExpression(ctx.expression())
-    Result(Undefined, s"""rollback(${ message.value })""")
+    Result(Null, s"""rollback(${ message.value })""")
   }
 
   override def visitDefinition(ctx: CausticParser.DefinitionContext): Result = {
-    // Determine the value of the variable.
-    val rhs = visitExpression(ctx.expression())
-    this.universe.putVariable(ctx.Identifier().getText, rhs.tag)
+    // Extract the name of the variable.
+    val variable = ctx.Identifier().getText
 
-    // Add the variable to the t table and update its value.
-    val lhs = this.universe.getVariable(ctx.Identifier().getText)
-    Result(Undefined, s"""store("${ lhs.name }", ${ rhs.value })""")
+    // Determine the type of the variable, and add it to the universe.
+    val rhs = visitExpression(ctx.expression())
+    this.universe.putVariable(variable, rhs.tag)
+
+    // Initialize the value of the variable.
+    val lhs = this.universe.getVariable(variable).get
+    Result(Null, s"""store("${ lhs.key }", ${ rhs.value })""")
   }
 
   override def visitAssignment(ctx: CausticParser.AssignmentContext): Result = {
@@ -60,25 +64,30 @@ case class Simplify(universe: Universe) extends CausticBaseVisitor[Result] with 
 
     // Copy the value into the variable.
     val lhs = visitName(ctx.name())
-    Result(Undefined, Simplify.copy(lhs, rhs))
+    if (lhs.tag == lub(lhs.tag, rhs.tag)) {
+      Result(Null, Simplify.copy(lhs, rhs))
+    } else {
+      this.handler.report(TypeError, s"Expected ${ lhs.tag } for ${ ctx.name() }, but was ${ rhs.tag }.", ctx.name())
+      throw new ParseCancellationException()
+    }
   }
 
   override def visitDeletion(ctx: CausticParser.DeletionContext): Result = {
-    Result(Undefined, Simplify.delete(visitName(ctx.name())))
+    Result(Null, Simplify.delete(visitName(ctx.name())))
   }
 
   override def visitLoop(ctx: CausticParser.LoopContext): Result = {
     // Load the loop condition and body.
     val condition = visitExpression(ctx.expression())
-    val block = Simplify(this.universe.child()).visitBlock(ctx.block())
+    val block = Simplify(this.handler, this.universe.child()).visitBlock(ctx.block())
 
     // Serialize the loop as a repeat expression.
-    Result(Undefined, s"""repeat(${ condition.value }, $block)""")
+    Result(Null, s"""repeat(${ condition.value }, $block)""")
   }
 
   override def visitConditional(ctx: CausticParser.ConditionalContext): Result = {
     // Construct the if/elif/else branches.
-    val blocks = ctx.block().asScala.map(Simplify(this.universe.child()).visitBlock)
+    val blocks = ctx.block().asScala.map(Simplify(this.handler, this.universe.child()).visitBlock)
     val compares = ctx.expression().asScala.map(visitExpression)
     val branches = compares.zip(blocks).map { case (c, b) => s"""branch(${ c.value }, ${ b.value }, """ }
 
@@ -220,18 +229,30 @@ case class Simplify(universe: Universe) extends CausticBaseVisitor[Result] with 
       visitChildren(ctx)
 
   override def visitName(ctx: CausticParser.NameContext): Result = {
-    // Return a value that corresponds to the variable name or the key that contain the identifier.
     ctx.Identifier().asScala.drop(1).map(_.getText).foldLeft {
-      this.universe.getVariable(ctx.Identifier(0).getText) match {
-        case Variable(_, k, x: Primitive) => Result(x, s"""text("$k")""")
-        case Variable(_, k, x: Pointer) => Result(x, s"""load("$k")""")
-        case Variable(_, k, x: Record) => Result(x, s"""text("$k")""")
+      // Extract the name of the variable.
+      val variable = ctx.Identifier(0).getText
+
+      // Determine the key referenced by the variable.
+      this.universe.getVariable(variable) match {
+        case Some(Variable(_, k, x: Pointer)) =>
+          Result(x, s"""load("$k")""")
+        case Some(Variable(_, k, x)) =>
+          Result(x, s"""text("$k")""")
+        case None =>
+          this.handler.report(TypeError, s"Undefined variable $variable.", ctx.Identifier(0))
+          throw new ParseCancellationException()
       }
     } { (key, field) =>
       // Determine the type of the field.
       val symbol = key.tag match {
-        case Pointer(x: Record) => x.fields(field)
-        case Record(f) => f(field)
+        case Pointer(x: Record) =>
+          x.fields(field)
+        case Record(f) =>
+          f(field)
+        case _ =>
+          this.handler.report(TypeError, s"Field $field does not exist for ${ key.tag }.", ctx)
+          throw new ParseCancellationException()
       }
 
       (key.tag, symbol.datatype) match {
@@ -258,14 +279,30 @@ case class Simplify(universe: Universe) extends CausticBaseVisitor[Result] with 
   }
 
   override def visitFuncall(ctx: CausticParser.FuncallContext): Result = {
-    // Set the value of each of the arguments before executing the function body.
-    val func = this.universe.getFunction(ctx.Identifier().getText)
-    val body = func.args.zip(ctx.expression().asScala.map(visitExpression))
-      .map { case (Argument(_, k, Alias(_, x)), Result(y, v)) if x == y => s"""store($k, $v)""" }
-      .foldRight(func.body.value)((a, b) => s"""cons($a, $b)""")
+    // Extract the function name and context.
+    val function = ctx.Identifier().asScala.last
+    val context = ctx.Identifier().asScala
+      .dropRight(1)
+      .map(_.getText)
+      .foldLeft(this.universe)((u, s) => u.child(s))
 
-    // Return the result of evaluating the function.
-    Result(func.returns.datatype, body)
+    context.getFunction(function.getText) match {
+      case Some(Function(_, args, returns, body)) =>
+        // Initialize the arguments of the function.
+        val initialize = args.zip(ctx.expression().asScala.map(visitExpression)) map {
+          case (Argument(_, k, Alias(_, x)), Result(y, v)) if x == lub(x, y) =>
+            s"""store($k, $v)"""
+          case (Argument(n, _, Alias(_, x)), Result(y, _)) =>
+            this.handler.report(TypeError, s"Expected $n to be $x, but received $y.", function)
+            throw new ParseCancellationException()
+        }
+
+        // Copy the function body after argument initialization.
+        Result(returns.datatype, initialize.foldRight(body.value)((a, b) => s"""cons($a, $b)"""))
+      case None =>
+        this.handler.report(TypeError, s"Function ${ function.getText } does not exist.", function)
+        throw new ParseCancellationException()
+    }
   }
 
   override def visitConstant(ctx: CausticParser.ConstantContext): Result = {
@@ -326,24 +363,23 @@ object Simplify {
   }
 
   /**
-   * Returns a [[caustic.runtime.thrift.Transaction]] that copies the value of the right-hand side
-   * [[Result]] to the left-hand side [[Result]]. Recursively copies the fields of a [[Record]].
+   * Returns a transaction that copies the value of the right-hand side [[Result]] to the left-hand
+   * side [[Result]]. Recursively copies the fields of a [[Record]].
    *
    * @param lhs Destination.
    * @param rhs Source.
    * @return Copy transaction.
    */
   def copy(lhs: Result, rhs: Result): String = (lhs.tag, rhs.tag) match {
-    case (_: Primitive, _: Primitive) =>
-      // Copy primitive values.
+    case (x: Primitive, y: Primitive) =>
       s"""store(${ lhs.value }, ${ rhs.value })"""
-    case (_: Primitive, Pointer(_: Primitive)) =>
+    case (x: Primitive, Pointer(y: Primitive)) =>
       // Dereference primitive pointers.
       s"""store(${ lhs.value }, read(${ rhs.value }))"""
-    case (Pointer(_: Primitive), _: Primitive) =>
+    case (Pointer(x: Primitive), y: Primitive) =>
       // Copy primitive values.
       s"""write(${ lhs.value }, ${ rhs.value })"""
-    case (Pointer(_: Primitive), Pointer(_: Primitive)) =>
+    case (Pointer(x: Primitive), Pointer(y: Primitive)) =>
       // Copy primitive pointers.
       s"""write(${ lhs.value }, ${ rhs.value })"""
     case _ =>
@@ -362,8 +398,8 @@ object Simplify {
   }
 
   /**
-   * Returns a [[caustic.runtime.thrift.Transaction]] that deletes the contents of the specified
-   * result. Recursively deletes the fields of a [[Record]].
+   * Returns a transaction that deletes the contents of the specified result. Recursively deletes
+   * the fields of a [[Record]].
    *
    * @param lhs Value.
    * @return Delete transaction.

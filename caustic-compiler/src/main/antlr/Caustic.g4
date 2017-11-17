@@ -16,7 +16,7 @@ name
     ;
 
 funcall
-    : Identifier '&'? '(' (expression ',')* expression? ')' // foo(1.3, false)
+    : (Identifier '.')? Identifier '&'? '(' (expression ',')* expression? ')' // foo(1.3, false)
     ;
 
 /**
@@ -163,8 +163,12 @@ module
     : Identifier ('.' Identifier)* // caustic.example
     ;
 
+include
+    : Import String
+    ;
+
 program
-    : (Module module)? (Import module)* declaration*
+    : Module module include* declaration*
     ;
 
 Def          : 'def';

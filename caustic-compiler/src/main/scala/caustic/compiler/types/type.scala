@@ -6,15 +6,9 @@ package caustic.compiler.types
 sealed trait Type
 
 /**
- * An undefined compiler [[Type]].
- */
-case object Undefined extends Type
-
-/**
  * A pointer to another [[Type]]. Pointers correspond to a remote key-value pair within a
- * [[caustic.runtime.thrift.Transaction]] and are the targets of [[caustic.runtime.thrift.Read]] and
- * [[caustic.runtime.thrift.Write]] expressions. Because each pointer dereference requires an
- * additional database read, nested pointers are explicitly forbidden.
+ * transaction and are the targets of read and write expressions. Because each pointer dereference
+ * requires an additional database read, nested pointers are explicitly forbidden.
  *
  * @param datatype Underlying [[Type]].
  */

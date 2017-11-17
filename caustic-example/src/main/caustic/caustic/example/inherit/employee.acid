@@ -1,0 +1,30 @@
+module caustic.example.inherit
+
+/**
+ *
+ */
+record Employee {
+  salary: Double
+}
+
+/**
+ *
+ *
+ */
+record Manager extends Employee {
+  bonus: Double
+}
+
+/**
+ *
+ */
+service Payroll {
+
+  /**
+   *
+   */
+  def salary(employee: Employee): Employee = {
+    Employee(employee.salary + 10)
+  }
+
+}

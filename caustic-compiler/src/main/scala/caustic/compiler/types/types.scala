@@ -13,15 +13,16 @@ package object types {
    * @return Least upper bound.
    */
   def lub(x: Type, y: Type): Type = (x, y) match {
-    case (Undefined, _) | (_, Undefined) => Undefined
     case (Pointer(u), Pointer(v))        => Pointer(lub(u, v).asInstanceOf[Simple])
+    case (Pointer(u), v)                 => Pointer(lub(u, v).asInstanceOf[Simple])
+    case (u, Pointer(v))                 => Pointer(lub(u, v).asInstanceOf[Simple])
     case (Record(u), Record(v))          => Record(u.toSet.intersect(v.toSet).toMap)
     case (Null, _)      | (_, Null)      => Null
     case (String, _)    | (_, String)    => String
     case (Double, _)    | (_, Double)    => Double
     case (Int, _)       | (_, Int)       => Int
     case (Boolean, _)   | (_, Boolean)   => Boolean
-    case _                               => Undefined
+    case _                               => Null
   }
 
 }

@@ -1,0 +1,24 @@
+module caustic.example.include
+
+import "./account.acid"
+
+/*/
+ *
+ */
+service Bank {
+
+  /**
+   *
+   *
+   *
+   *
+   */
+  def deposit(account: Account&, amount: Double): Double = {
+    if account.balance {
+      account.balance += amount
+    } else {
+      account.balance = amount
+    }
+  }
+
+}

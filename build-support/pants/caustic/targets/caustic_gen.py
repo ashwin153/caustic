@@ -1,4 +1,3 @@
-import os
 import shutil
 import subprocess
 
@@ -33,21 +32,22 @@ class CausticGen(SimpleCodegenTask):
             ])
 
     def execute_codegen(self, target, target_workdir):
-        # Execute the compiler on each source file.
+        sources = target.target_base
+        cmd = './pants run caustic-compiler/src/main/scala:bin --no-lock -- {}'.format(sources)
+
+        # Execute the compiler on all the source files in the target.
+        with self.context.new_workunit(name='caustic', labels=[WorkUnitLabel.TOOL], cmd=cmd) as work:
+            result = subprocess.call(
+                cmd,
+                stdout=work.output('stdout'),
+                stderr=work.output('stderr'),
+                shell=True,
+            )
+
+            if result != 0:
+                raise TaskError('Caustic Compiler ... exited non-zero ({})'.format(result))
+
+        # Move all the generated sources to the target_workdir.
         for src in target.sources_relative_to_buildroot():
-            cmd = './pants run caustic-compiler/src/main/scala:bin --no-lock -- generate {}'.format(src)
-            with self.context.new_workunit(name=src, labels=[WorkUnitLabel.TOOL], cmd=cmd) as work:
-                result = subprocess.call(
-                    cmd,
-                    stdout=work.output('stdout'),
-                    stderr=work.output('stderr'),
-                    shell=True,
-                )
-
-                if result != 0:
-                    raise TaskError('Caustic Compiler ... exited non-zero ({})'.format(result))
-
-        # Move the generated sources from gen/ to the proper location.
-        for path in os.listdir('gen'):
-            shutil.move(os.path.join('gen', path), target_workdir)
-        os.rmdir('gen')
+            gen = src.replace('.acid', '.scala')
+            shutil.move(gen, target_workdir)

@@ -75,8 +75,8 @@ case class Universe private(
    * @param name Name.
    * @return Corresponding [[Variable]].
    */
-  def getVariable(name: String): Variable =
-    this.variables.getOrElse(mangle(name), this.parent.get.getVariable(name))
+  def getVariable(name: String): Option[Variable] =
+    this.variables.get(mangle(name)).orElse(this.parent.flatMap(_.getVariable(name)))
 
   /**
    * Constructs a [[Variable]] and adds it to the Universe.
@@ -93,8 +93,8 @@ case class Universe private(
    * @param name Name.
    * @return Corresponding [[Function]].
    */
-  def getFunction(name: String): Function =
-    this.functions.getOrElse(mangle(name), this.parent.get.getFunction(name))
+  def getFunction(name: String): Option[Function] =
+    this.functions.get(mangle(name)).orElse(this.parent.flatMap(_.getFunction(name)))
 
   /**
    * Constructs a [[Function]] and adds it to the Universe.
@@ -120,8 +120,8 @@ case class Universe private(
    * @param name Name.
    * @return Corresponding [[Alias]].
    */
-  def getAlias(name: String): Alias =
-    this.aliases.getOrElse(mangle(name), this.parent.get.getAlias(name))
+  def getAlias(name: String): Option[Alias] =
+    this.aliases.get(mangle(name)).orElse(this.parent.flatMap(_.getAlias(name)))
 
   /**
    * Constructs an [[Alias]] to the [[Simple]] type and adds it to the Universe. Automatically
@@ -132,22 +132,26 @@ case class Universe private(
    * @param simple [[Simple]] type.
    */
   def putAlias(name: String, simple: Simple): Unit = {
+    // Construct a alias to the type, and to pointers of the type.
+    val typ = Alias(name, simple)
+    val ptr = Alias(name, Pointer(simple))
+
     // Add type aliases to the universe.
-    this.aliases += mangle(name) -> Alias(name, simple)
-    this.aliases += mangle(name + "&") -> Alias(name, Pointer(simple))
+    this.aliases += mangle(name) -> typ
+    this.aliases += mangle(name + "&") -> ptr
 
     // Add a constructor for pointers to the alias.
-    putFunction(name + "&",  Map("key" -> getAlias("String")), getAlias(name + "&")) { func =>
+    putFunction(name + "&",  Map("key" -> getAlias("String").get), ptr) { func =>
       Result(Pointer(simple), s"""load("${ func.mangle("key") })")""")
     }
 
     simple match {
       case r: Record =>
         // Add a constructor for record aliases.
-        putFunction(name, r.fields, getAlias(name)) { func =>
+        putFunction(name, r.fields, typ) { func =>
           Result(r, s"""text("${ func.scope }")""")
         }
-      case x => x
+      case _ =>
     }
   }
 
@@ -157,17 +161,17 @@ case class Universe private(
    * @param name Name.
    * @return Corresponding [[Service]].
    */
-  def getService(name: String): Service =
-    this.services.getOrElse(mangle(name), this.parent.get.getService(name))
+  def getService(name: String): Option[Service] =
+    this.services.get(mangle(name)).orElse(this.parent.flatMap(_.getService(name)))
 
   /**
    * Constructs a [[Service]] and adds it to the Universe.
    *
    * @param name Name.
-   * @param functions Functions.
+   * @param service Service.
    */
-  def putService(name: String, functions: Seq[Function]): Unit =
-    this.services += mangle(name) -> Service(name, functions)
+  def putService(name: String, service: Service): Unit =
+    this.services += mangle(name) -> service
 
 }
 

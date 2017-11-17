@@ -1,4 +1,4 @@
-module counter
+module caustic.example.counter
 
 /**
  * A counter.
@@ -16,6 +16,11 @@ service Counter {
 
   /**
    * Increments the total and returns its current value.
+   *
+   *
+   *
+   *
+   *
    *
    * @param x Total pointer.
    * @return Current value.

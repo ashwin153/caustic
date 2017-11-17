@@ -118,7 +118,7 @@ service Counter {
 }
 ```
 
-# Organization
+# Structure
 ```
 # Programming Language
 caustic/                            https://github.com/ashwin153/caustic
@@ -126,6 +126,7 @@ caustic/                            https://github.com/ashwin153/caustic
 +---caustic-benchmarks/             Performance tests.
 +---caustic-compiler/               Programming language and compiler.
 +---caustic-runtime/                Virutal machine.
++---build-support/                  Pants plugins and configuration.
 
 # Syntax Highlighting
 caustic.tmbundle/                   https://github.com/ashwin153/caustic.tmbundle

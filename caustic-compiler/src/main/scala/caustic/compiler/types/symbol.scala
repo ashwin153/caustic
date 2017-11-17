@@ -6,9 +6,8 @@ package caustic.compiler.types
 sealed trait Symbol
 
 /**
- * A local variable in a [[caustic.runtime.thrift.Transaction]]. Variables are the targets of
- * [[caustic.runtime.thrift.Store]] and [[caustic.runtime.thrift.Load]] expressions. The name
- * parameter corresponds to the name of the variable within the program, and the key parameter
+ * A local variable in a transaction Variables are the targets of load and store expressions. The
+ * name parameter corresponds to the name of the variable within the program, and the key parameter
  * corresponds to the globally unique identifier of the variable within the runtime.
  *
  * @param name Local name.
@@ -24,7 +23,7 @@ case class Variable(
 /**
  * A [[Type]] alias.
  *
- * @param name Name.
+ * @param name     Name.
  * @param datatype Underlying [[Type]].
  */
 case class Alias(

@@ -1,17 +1,19 @@
 module caustic.example.include
 
+// Import the account file.
 import "./account.acid"
 
-/*/
- *
+/**
+ * A bank application.
  */
 service Bank {
 
   /**
+   * Deposit the specified amount into the account.
    *
-   *
-   *
-   *
+   * @param account Account pointer.
+   * @param amount Amount to deposit.
+   * @return Current account balance.
    */
   def deposit(account: Account&, amount: Double): Double = {
     if account.balance {

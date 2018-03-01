@@ -1,6 +1,6 @@
 # Ammonite
 jar_library(name='ammonite', jars=[
-    jar(org='com.lihaoyi', name = 'ammonite_2.12.1', rev='1.0.2'),
+    jar(org='com.lihaoyi', name='ammonite_2.12.1', rev='1.0.2'),
 ])
 
 # ANTLR
@@ -33,6 +33,11 @@ jar_library(name='curator', dependencies=[':zookeeper'], jars=[
 # Curator Test
 jar_library(name='curator-test', jars=[
     jar(org='org.apache.curator', name='curator-test', rev='4.0.0'),
+])
+
+# Jedis
+jar_library(name='jedis', jars=[
+    jar(org='redis.clients', name='jedis', rev='2.9.0'),
 ])
 
 # JUnit
@@ -89,6 +94,11 @@ jar_library(name='scalameter', jars=[
 # Scalatest
 jar_library(name='scalatest', dependencies=[':scala-library', ':scala-reflect'], jars=[
     jar(org='org.scalatest', name='scalatest_2.12', rev='3.0.0', excludes=[exclude('org.scala-lang')]),
+])
+
+# Shapeless
+jar_library(name='shapeless', jars=[
+    jar(org='com.chuusai', name='shapeless_2.12', rev='2.3.2'),
 ])
 
 # SLF4J

@@ -58,7 +58,7 @@ trait DatabaseTest extends fixture.FunSuite
         assert(block.await(10, TimeUnit.SECONDS))
         super.answer(invocation)
       }
-    }).when(fake).cput(Map("x" -> 0L), Map.empty)(global)
+    }).when(fake).cas(Map("x" -> 0L), Map.empty)(global)
 
     // Construct a read-only transaction and wait for it to reach the faked 'put' method. Then
     // construct a second transaction that updates the value of the field and unblocks the first

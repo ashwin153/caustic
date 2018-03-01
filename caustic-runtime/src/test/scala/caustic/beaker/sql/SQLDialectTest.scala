@@ -34,7 +34,7 @@ trait SQLDialectTest extends DatabaseTest {
     val outcome = test(database)
 
     // Delete all the test data.
-    val connection = database.underlying.getConnection()
+    val connection = database.pool.getConnection()
     this.truncate(connection)
     connection.close()
     database.close()

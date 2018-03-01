@@ -1,13 +1,14 @@
 package caustic.runtime
 
 import java.util.{Timer, TimerTask}
-import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.{Future, Promise}
+import scala.util.Try
 import scala.util.control.NonFatal
 
 object Retry {
 
-  // Retry Scheduler.
+  // Retry scheduler.
   lazy val scheduler: Timer = new Timer(true)
 
   /**
@@ -22,13 +23,10 @@ object Retry {
    *
    * @param backoffs Backoff durations.
    * @param f Fallible task.
-   * @param ec Implicit execution context.
    * @return Result of task or exception on successive failure.
    */
-  def attempt[T](backoffs: Seq[FiniteDuration])(f: => Future[T])(
-    implicit ec: ExecutionContext
-  ): Future[T] =
-    f.recoverWith {
+  def attempt[T](backoffs: Seq[FiniteDuration])(f: => Try[T]): Future[T] = {
+    Future.fromTry(f).recoverWith {
       case NonFatal(e) if !e.isInstanceOf[NonRetryable] && backoffs.nonEmpty =>
         // Schedule the retries on the underlying timer.
         val result = Promise[T]()
@@ -40,5 +38,6 @@ object Retry {
         // Return a handle to the retry attempt.
         result.future
     }
+  }
 
 }

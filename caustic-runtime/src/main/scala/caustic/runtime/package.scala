@@ -2,12 +2,11 @@ package caustic
 
 import scala.language.implicitConversions
 
+import caustic.runtime.Runtime._
+
 package object runtime {
 
-  // Keys are strings.
   type Key = String
-
-  // Version numbers are i64.
   type Version = Long
 
   // Cache Literals.
@@ -21,65 +20,62 @@ package object runtime {
   def text(value: String): Literal = if (value.isEmpty) Empty else Text(value)
 
   // Simplify Expressions.
-  def read(k: Transaction): Transaction = k match {
-    case None => throw ExecutionException(s"Read undefined for key None")
+  def read(k: Program): Program = k match {
+    case Null => throw ExecutionException(s"Read undefined for key None")
     case Real(a) => throw ExecutionException(s"Read undefined for key $a")
     case Flag(a) => throw ExecutionException(s"Read undefined for key $a")
     case _ => Expression(Read, k :: Nil)
   }
 
-  def write(k: Transaction, v: Transaction): Transaction = (k, v) match {
-    case (None, _) => throw ExecutionException(s"Write undefined for key None")
+  def write(k: Program, v: Program): Program = (k, v) match {
+    case (Null, _) => throw ExecutionException(s"Write undefined for key None")
     case (Real(a), _) => throw ExecutionException(s"Write undefined for key $a")
     case (Flag(a), _) => throw ExecutionException(s"Write undefined for key $a")
     case _ => Expression(Write, k :: v :: Nil)
   }
 
-  def load(k: Transaction): Transaction = k match {
-    case None => throw ExecutionException(s"Load undefined for variable None")
+  def load(k: Program): Program = k match {
+    case Null => throw ExecutionException(s"Load undefined for variable None")
     case Real(a) => throw ExecutionException(s"Load undefined for variable $a")
     case Flag(a) => throw ExecutionException(s"Load undefined for variable $a")
     case _ => Expression(Load, k :: Nil)
   }
 
-  def store(k: Transaction, v: Transaction): Transaction = (k, v) match {
-    case (None, _) => throw ExecutionException(s"Store undefined for variable None")
+  def store(k: Program, v: Program): Program = (k, v) match {
+    case (Null, _) => throw ExecutionException(s"Store undefined for variable None")
     case (Real(a), _) => throw ExecutionException(s"Store undefined for variable $a")
     case (Flag(a), _) => throw ExecutionException(s"Store undefined for variable $a")
     case _ => Expression(Store, k :: v :: Nil)
   }
 
-  def cons(x: Transaction, y: Transaction): Transaction = x match {
+  def cons(x: Program, y: Program): Program = x match {
     case _: Literal => y
     case _ => Expression(Cons, x :: y :: Nil)
   }
 
-  def repeat(c: Transaction, b: Transaction): Transaction = (c, b) match {
-    case (None, _) => throw ExecutionException(s"Repeat undefined for condition None")
+  def repeat(c: Program, b: Program): Program = (c, b) match {
+    case (Null, _) => throw ExecutionException(s"Repeat undefined for condition None")
     case (Real(a), _) => throw ExecutionException(s"Repeat undefined for condition $a")
     case (Text(a), _) => throw ExecutionException(s"Repeat undefined for condition $a")
     case (Flag(true), _) => throw ExecutionException(s"Repeat causes infinite loop")
     case _ => Expression(Repeat, c :: b :: Nil)
   }
 
-  def branch(c: Transaction, p: Transaction, f: Transaction): Transaction = (c, p, f) match {
+  def branch(c: Program, p: Program, f: Program): Program = (c, p, f) match {
     case _ => Expression(Branch, c :: p :: f :: Nil)
   }
 
-  def rollback(m: Transaction): Transaction = m match {
+  def rollback(m: Program): Program = m match {
     case _ => Expression(Rollback, m :: Nil)
   }
 
-  def prefetch(k: Transaction): Transaction = k match {
-    case None => throw ExecutionException(s"Prefetch undefined for keys None")
-    case Real(a) => throw ExecutionException(s"Prefetch undefined for keys $a")
-    case Flag(a) => throw ExecutionException(s"Prefetch undefined for keys $a")
-    case _ => Expression(Prefetch, k :: Nil)
+  def random(): Program = {
+    Expression(Random, Nil)
   }
 
-  def add(x: Transaction, y: Transaction): Transaction = (x, y) match {
-    case (None, _) => y
-    case (_, None) => x
+  def add(x: Program, y: Program): Program = (x, y) match {
+    case (Null, _) => y
+    case (_, Null) => x
     case (Real(a), Real(b)) => real(a + b)
     case (Real(a), Flag(b)) => text(a.toString + b.toString)
     case (Real(a), Text(b)) => text(a.toString + b)
@@ -93,63 +89,63 @@ package object runtime {
     case _ => Expression(Add, x :: y :: Nil)
   }
 
-  def sub(x: Transaction, y: Transaction): Transaction = (x, y) match {
+  def sub(x: Program, y: Program): Program = (x, y) match {
     case (Real(a), Real(b)) => real(a - b)
     case (a: Literal, b: Literal) => throw ExecutionException(s"Sub undefined for $a, $b")
     case _ => Expression(Sub, x :: y :: Nil)
   }
 
-  def mul(x: Transaction, y: Transaction): Transaction = (x, y) match {
+  def mul(x: Program, y: Program): Program = (x, y) match {
     case (Real(a), Real(b)) => real(a * b)
     case (a: Literal, b: Literal) => throw ExecutionException(s"Mul undefined for $a, $b")
     case _ => Expression(Mul, x :: y :: Nil)
   }
 
-  def div(x: Transaction, y: Transaction): Transaction = (x, y) match {
+  def div(x: Program, y: Program): Program = (x, y) match {
     case (Real(a), Real(0)) => throw ExecutionException(s"Div undefined for $a, 0")
     case (Real(a), Real(b)) => real(a / b)
     case (a: Literal, b: Literal) => throw ExecutionException(s"Div undefined for $a, $b")
     case _ => Expression(Div, x :: y :: Nil)
   }
 
-  def mod(x: Transaction, y: Transaction): Transaction = (x, y) match {
+  def mod(x: Program, y: Program): Program = (x, y) match {
     case (Real(a), Real(0)) => throw ExecutionException(s"Mod undefined for $a, 0")
     case (Real(a), Real(b)) => real(a % b)
     case (a: Literal, b: Literal) => throw ExecutionException(s"Mod undefined for $a, $b")
     case _ => Expression(Mod, x :: y :: Nil)
   }
 
-  def pow(x: Transaction, y: Transaction): Transaction = (x, y) match {
+  def pow(x: Program, y: Program): Program = (x, y) match {
     case (Real(a), Real(b)) => real(math.pow(a, b))
     case (a: Literal, b: Literal) => throw ExecutionException(s"Pow undefined for $a, $b")
     case _ => Expression(Mul, x :: y :: Nil)
   }
 
-  def log(x: Transaction): Transaction = x match {
+  def log(x: Program): Program = x match {
     case Real(a) => real(math.log(a))
     case a: Literal => throw ExecutionException(s"Log undefined for $a")
     case _ => Expression(Log, x :: Nil)
   }
 
-  def sin(x: Transaction): Transaction = x match {
+  def sin(x: Program): Program = x match {
     case Real(a) => real(math.sin(a))
     case a: Literal => throw ExecutionException(s"Sin undefined for $a")
     case _ => Expression(Sin, x :: Nil)
   }
 
-  def cos(x: Transaction): Transaction = x match {
+  def cos(x: Program): Program = x match {
     case Real(a) => real(math.cos(a))
     case a: Literal => throw ExecutionException(s"Cos undefined for $a")
     case _ => Expression(Cos, x :: Nil)
   }
 
-  def floor(x: Transaction): Transaction = x match {
+  def floor(x: Program): Program = x match {
     case Real(a) => real(math.floor(a))
     case a: Literal => throw ExecutionException(s"Floor undefined for $a")
     case _ => Expression(Floor, x :: Nil)
   }
 
-  def both(x: Transaction, y: Transaction): Transaction = (x, y) match {
+  def both(x: Program, y: Program): Program = (x, y) match {
     case (Real(a), Real(b)) => flag(a != 0 && b != 0)
     case (Real(a), Flag(b)) => flag(a != 0 && b)
     case (Real(a), Text(b)) => flag(a != 0 && b.nonEmpty)
@@ -163,7 +159,7 @@ package object runtime {
     case _ => Expression(Both, x :: y :: Nil)
   }
 
-  def either(x: Transaction, y: Transaction): Transaction = (x, y) match {
+  def either(x: Program, y: Program): Program = (x, y) match {
     case (Real(a), Real(b)) => flag(a != 0 || b != 0)
     case (Real(a), Flag(b)) => flag(a != 0 || b)
     case (Real(a), Text(b)) => flag(a != 0 || b.nonEmpty)
@@ -177,7 +173,7 @@ package object runtime {
     case _ => Expression(Either, x :: y :: Nil)
   }
 
-  def negate(x: Transaction): Transaction = x match {
+  def negate(x: Program): Program = x match {
     case Real(a) => flag(a == 0)
     case Flag(a) => flag(!a)
     case Text(a) => flag(a.isEmpty)
@@ -185,7 +181,7 @@ package object runtime {
     case _ => Expression(Negate, x :: Nil)
   }
 
-  def length(x: Transaction): Transaction = x match {
+  def length(x: Program): Program = x match {
     case Flag(a) => real(a.toString.length)
     case Real(a) => real(a.toString.length)
     case Text(a) => real(a.length)
@@ -193,34 +189,34 @@ package object runtime {
     case _ => Expression(Length, x :: Nil)
   }
 
-  def slice(x: Transaction, l: Transaction, h: Transaction): Transaction = (x, l, h) match {
+  def slice(x: Program, l: Program, h: Program): Program = (x, l, h) match {
     case (Text(a), Real(b), Real(c)) => text(a.substring(b.toInt, c.toInt))
     case (a: Literal, b: Literal, c: Literal) => throw ExecutionException(s"Slice undefined for $a, $b, $c.")
     case _ => Expression(Slice, x :: l :: h :: Nil)
   }
 
-  def matches(x: Transaction, y: Transaction): Transaction = (x, y) match {
+  def matches(x: Program, y: Program): Program = (x, y) match {
     case (Text(a), Text(b)) => flag(a.matches(b))
     case (a: Literal, b: Literal) => throw ExecutionException(s"Matches undefined for $a, $b")
     case _ => Expression(Matches, x :: y :: Nil)
   }
 
-  def contains(x: Transaction, y: Transaction): Transaction = (x, y) match {
+  def contains(x: Program, y: Program): Program = (x, y) match {
     case (Text(a), Text(b)) => flag(a.contains(b))
     case (a: Literal, b: Literal) => throw ExecutionException(s"Contains undefined for $a, $b")
     case _ => Expression(Contains, x :: y :: Nil)
   }
 
-  def indexOf(x: Transaction, y: Transaction): Transaction = (x, y) match {
+  def indexOf(x: Program, y: Program): Program = (x, y) match {
     case (Text(a), Text(b)) => real(a.indexOf(b))
     case (a: Literal, b: Literal) => throw ExecutionException(s"IndexOf undefined for $a, $b")
     case _ => Expression(IndexOf, x :: y :: Nil)
   }
 
-  def equal(x: Transaction, y: Transaction): Transaction = (x, y) match {
-    case (None, None) => flag(true)
-    case (None, _: Literal) => flag(false)
-    case (_: Literal, None) => flag(false)
+  def equal(x: Program, y: Program): Program = (x, y) match {
+    case (Null, Null) => flag(true)
+    case (Null, _: Literal) => flag(false)
+    case (_: Literal, Null) => flag(false)
     case (Real(a), Real(b)) => flag(a == b)
     case (Flag(a), Flag(b)) => flag(a == b)
     case (Text(a), Text(b)) => flag(a == b)
@@ -228,10 +224,10 @@ package object runtime {
     case _ => Expression(Equal, x :: y :: Nil)
   }
 
-  def less(x: Transaction, y: Transaction): Transaction = (x, y) match {
-    case (None, None) => flag(false)
-    case (None, _: Literal) => flag(true)
-    case (_: Literal, None) => flag(false)
+  def less(x: Program, y: Program): Program = (x, y) match {
+    case (Null, Null) => flag(false)
+    case (Null, _: Literal) => flag(true)
+    case (_: Literal, Null) => flag(false)
     case (Real(a), Real(b)) => flag(a < b)
     case (Flag(a), Flag(b)) => flag(a < b)
     case (Text(a), Text(b)) => flag(a < b)

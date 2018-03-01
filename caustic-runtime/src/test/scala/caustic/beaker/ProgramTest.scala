@@ -5,7 +5,7 @@ import org.scalatest.junit.JUnitRunner
 import org.scalatest.{FunSuite, Matchers}
 
 @RunWith(classOf[JUnitRunner])
-class TransactionTest extends FunSuite with Matchers {
+class ProgramTest extends FunSuite with Matchers {
 
   test("Literals are cached.") {
     flag(true) should be theSameInstanceAs flag(true)
@@ -68,13 +68,13 @@ class TransactionTest extends FunSuite with Matchers {
   }
 
   test("Parse handles Thrift literals.") {
-    Transaction.parse(thrift.Transaction.literal(thrift.Literal.flag(true))) shouldEqual flag(true)
-    Transaction.parse(thrift.Transaction.literal(thrift.Literal.real(0))) shouldEqual real(0)
-    Transaction.parse(thrift.Transaction.literal(thrift.Literal.text("a"))) shouldEqual text("a")
+    Program.parse(thrift.Transaction.literal(thrift.Literal.flag(true))) shouldEqual flag(true)
+    Program.parse(thrift.Transaction.literal(thrift.Literal.real(0))) shouldEqual real(0)
+    Program.parse(thrift.Transaction.literal(thrift.Literal.text("a"))) shouldEqual text("a")
   }
 
   test("Parse handles Thrift expressions.") {
-    Transaction.parse(
+    Program.parse(
       thrift.Transaction.expression(thrift.Expression.read(new thrift.Read(
         thrift.Transaction.expression(thrift.Expression.add(new thrift.Add(
           thrift.Transaction.literal(thrift.Literal.text("foo")),

@@ -7,7 +7,7 @@ import caustic.runtime.Runtime._
 package object runtime {
 
   type Key = String
-  type Version = Long
+  type Version = java.lang.Long
 
   // Cache Literals.
   private val True = Flag(true)
@@ -21,30 +21,30 @@ package object runtime {
 
   // Simplify Expressions.
   def read(k: Program): Program = k match {
-    case Null => throw ExecutionException(s"Read undefined for key None")
-    case Real(a) => throw ExecutionException(s"Read undefined for key $a")
-    case Flag(a) => throw ExecutionException(s"Read undefined for key $a")
+    case Null => throw Fault(s"Read undefined for key None")
+    case Real(a) => throw Fault(s"Read undefined for key $a")
+    case Flag(a) => throw Fault(s"Read undefined for key $a")
     case _ => Expression(Read, k :: Nil)
   }
 
   def write(k: Program, v: Program): Program = (k, v) match {
-    case (Null, _) => throw ExecutionException(s"Write undefined for key None")
-    case (Real(a), _) => throw ExecutionException(s"Write undefined for key $a")
-    case (Flag(a), _) => throw ExecutionException(s"Write undefined for key $a")
+    case (Null, _) => throw Fault(s"Write undefined for key None")
+    case (Real(a), _) => throw Fault(s"Write undefined for key $a")
+    case (Flag(a), _) => throw Fault(s"Write undefined for key $a")
     case _ => Expression(Write, k :: v :: Nil)
   }
 
   def load(k: Program): Program = k match {
-    case Null => throw ExecutionException(s"Load undefined for variable None")
-    case Real(a) => throw ExecutionException(s"Load undefined for variable $a")
-    case Flag(a) => throw ExecutionException(s"Load undefined for variable $a")
+    case Null => throw Fault(s"Load undefined for variable None")
+    case Real(a) => throw Fault(s"Load undefined for variable $a")
+    case Flag(a) => throw Fault(s"Load undefined for variable $a")
     case _ => Expression(Load, k :: Nil)
   }
 
   def store(k: Program, v: Program): Program = (k, v) match {
-    case (Null, _) => throw ExecutionException(s"Store undefined for variable None")
-    case (Real(a), _) => throw ExecutionException(s"Store undefined for variable $a")
-    case (Flag(a), _) => throw ExecutionException(s"Store undefined for variable $a")
+    case (Null, _) => throw Fault(s"Store undefined for variable None")
+    case (Real(a), _) => throw Fault(s"Store undefined for variable $a")
+    case (Flag(a), _) => throw Fault(s"Store undefined for variable $a")
     case _ => Expression(Store, k :: v :: Nil)
   }
 
@@ -54,10 +54,10 @@ package object runtime {
   }
 
   def repeat(c: Program, b: Program): Program = (c, b) match {
-    case (Null, _) => throw ExecutionException(s"Repeat undefined for condition None")
-    case (Real(a), _) => throw ExecutionException(s"Repeat undefined for condition $a")
-    case (Text(a), _) => throw ExecutionException(s"Repeat undefined for condition $a")
-    case (Flag(true), _) => throw ExecutionException(s"Repeat causes infinite loop")
+    case (Null, _) => throw Fault(s"Repeat undefined for condition None")
+    case (Real(a), _) => throw Fault(s"Repeat undefined for condition $a")
+    case (Text(a), _) => throw Fault(s"Repeat undefined for condition $a")
+    case (Flag(true), _) => throw Fault(s"Repeat causes infinite loop")
     case _ => Expression(Repeat, c :: b :: Nil)
   }
 
@@ -85,63 +85,63 @@ package object runtime {
     case (Text(a), Real(b)) => text(a + b.toString)
     case (Text(a), Flag(b)) => text(a + b.toString)
     case (Text(a), Text(b)) => text(a + b)
-    case (a: Literal, b: Literal) => throw ExecutionException(s"Add undefined for $a, $b")
+    case (a: Literal, b: Literal) => throw Fault(s"Add undefined for $a, $b")
     case _ => Expression(Add, x :: y :: Nil)
   }
 
   def sub(x: Program, y: Program): Program = (x, y) match {
     case (Real(a), Real(b)) => real(a - b)
-    case (a: Literal, b: Literal) => throw ExecutionException(s"Sub undefined for $a, $b")
+    case (a: Literal, b: Literal) => throw Fault(s"Sub undefined for $a, $b")
     case _ => Expression(Sub, x :: y :: Nil)
   }
 
   def mul(x: Program, y: Program): Program = (x, y) match {
     case (Real(a), Real(b)) => real(a * b)
-    case (a: Literal, b: Literal) => throw ExecutionException(s"Mul undefined for $a, $b")
+    case (a: Literal, b: Literal) => throw Fault(s"Mul undefined for $a, $b")
     case _ => Expression(Mul, x :: y :: Nil)
   }
 
   def div(x: Program, y: Program): Program = (x, y) match {
-    case (Real(a), Real(0)) => throw ExecutionException(s"Div undefined for $a, 0")
+    case (Real(a), Real(0)) => throw Fault(s"Div undefined for $a, 0")
     case (Real(a), Real(b)) => real(a / b)
-    case (a: Literal, b: Literal) => throw ExecutionException(s"Div undefined for $a, $b")
+    case (a: Literal, b: Literal) => throw Fault(s"Div undefined for $a, $b")
     case _ => Expression(Div, x :: y :: Nil)
   }
 
   def mod(x: Program, y: Program): Program = (x, y) match {
-    case (Real(a), Real(0)) => throw ExecutionException(s"Mod undefined for $a, 0")
+    case (Real(a), Real(0)) => throw Fault(s"Mod undefined for $a, 0")
     case (Real(a), Real(b)) => real(a % b)
-    case (a: Literal, b: Literal) => throw ExecutionException(s"Mod undefined for $a, $b")
+    case (a: Literal, b: Literal) => throw Fault(s"Mod undefined for $a, $b")
     case _ => Expression(Mod, x :: y :: Nil)
   }
 
   def pow(x: Program, y: Program): Program = (x, y) match {
     case (Real(a), Real(b)) => real(math.pow(a, b))
-    case (a: Literal, b: Literal) => throw ExecutionException(s"Pow undefined for $a, $b")
+    case (a: Literal, b: Literal) => throw Fault(s"Pow undefined for $a, $b")
     case _ => Expression(Mul, x :: y :: Nil)
   }
 
   def log(x: Program): Program = x match {
     case Real(a) => real(math.log(a))
-    case a: Literal => throw ExecutionException(s"Log undefined for $a")
+    case a: Literal => throw Fault(s"Log undefined for $a")
     case _ => Expression(Log, x :: Nil)
   }
 
   def sin(x: Program): Program = x match {
     case Real(a) => real(math.sin(a))
-    case a: Literal => throw ExecutionException(s"Sin undefined for $a")
+    case a: Literal => throw Fault(s"Sin undefined for $a")
     case _ => Expression(Sin, x :: Nil)
   }
 
   def cos(x: Program): Program = x match {
     case Real(a) => real(math.cos(a))
-    case a: Literal => throw ExecutionException(s"Cos undefined for $a")
+    case a: Literal => throw Fault(s"Cos undefined for $a")
     case _ => Expression(Cos, x :: Nil)
   }
 
   def floor(x: Program): Program = x match {
     case Real(a) => real(math.floor(a))
-    case a: Literal => throw ExecutionException(s"Floor undefined for $a")
+    case a: Literal => throw Fault(s"Floor undefined for $a")
     case _ => Expression(Floor, x :: Nil)
   }
 
@@ -155,7 +155,7 @@ package object runtime {
     case (Text(a), Real(b)) => flag(a.nonEmpty && b != 0)
     case (Text(a), Flag(b)) => flag(a.nonEmpty && b)
     case (Text(a), Text(b)) => flag(a.nonEmpty && b.nonEmpty)
-    case (a: Literal, b: Literal) => throw ExecutionException(s"Both undefined for $a, $b")
+    case (a: Literal, b: Literal) => throw Fault(s"Both undefined for $a, $b")
     case _ => Expression(Both, x :: y :: Nil)
   }
 
@@ -169,7 +169,7 @@ package object runtime {
     case (Text(a), Real(b)) => flag(a.nonEmpty || b != 0)
     case (Text(a), Flag(b)) => flag(a.nonEmpty || b)
     case (Text(a), Text(b)) => flag(a.nonEmpty || b.nonEmpty)
-    case (a: Literal, b: Literal) => throw ExecutionException(s"Either undefined for $a, $b")
+    case (a: Literal, b: Literal) => throw Fault(s"Either undefined for $a, $b")
     case _ => Expression(Either, x :: y :: Nil)
   }
 
@@ -177,7 +177,7 @@ package object runtime {
     case Real(a) => flag(a == 0)
     case Flag(a) => flag(!a)
     case Text(a) => flag(a.isEmpty)
-    case a: Literal => throw ExecutionException(s"Negate undefined for $a")
+    case a: Literal => throw Fault(s"Negate undefined for $a")
     case _ => Expression(Negate, x :: Nil)
   }
 
@@ -185,31 +185,31 @@ package object runtime {
     case Flag(a) => real(a.toString.length)
     case Real(a) => real(a.toString.length)
     case Text(a) => real(a.length)
-    case a: Literal => throw ExecutionException(s"Length undefined for $a")
+    case a: Literal => throw Fault(s"Length undefined for $a")
     case _ => Expression(Length, x :: Nil)
   }
 
   def slice(x: Program, l: Program, h: Program): Program = (x, l, h) match {
     case (Text(a), Real(b), Real(c)) => text(a.substring(b.toInt, c.toInt))
-    case (a: Literal, b: Literal, c: Literal) => throw ExecutionException(s"Slice undefined for $a, $b, $c.")
+    case (a: Literal, b: Literal, c: Literal) => throw Fault(s"Slice undefined for $a, $b, $c.")
     case _ => Expression(Slice, x :: l :: h :: Nil)
   }
 
   def matches(x: Program, y: Program): Program = (x, y) match {
     case (Text(a), Text(b)) => flag(a.matches(b))
-    case (a: Literal, b: Literal) => throw ExecutionException(s"Matches undefined for $a, $b")
+    case (a: Literal, b: Literal) => throw Fault(s"Matches undefined for $a, $b")
     case _ => Expression(Matches, x :: y :: Nil)
   }
 
   def contains(x: Program, y: Program): Program = (x, y) match {
     case (Text(a), Text(b)) => flag(a.contains(b))
-    case (a: Literal, b: Literal) => throw ExecutionException(s"Contains undefined for $a, $b")
+    case (a: Literal, b: Literal) => throw Fault(s"Contains undefined for $a, $b")
     case _ => Expression(Contains, x :: y :: Nil)
   }
 
   def indexOf(x: Program, y: Program): Program = (x, y) match {
     case (Text(a), Text(b)) => real(a.indexOf(b))
-    case (a: Literal, b: Literal) => throw ExecutionException(s"IndexOf undefined for $a, $b")
+    case (a: Literal, b: Literal) => throw Fault(s"IndexOf undefined for $a, $b")
     case _ => Expression(IndexOf, x :: y :: Nil)
   }
 

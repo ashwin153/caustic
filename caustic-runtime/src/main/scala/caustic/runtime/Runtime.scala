@@ -6,13 +6,13 @@ import caustic.runtime.Retry._
 import caustic.runtime.Runtime._
 import caustic.service.Cluster
 import caustic.service.protocol.Thrift
-
+import java.util
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.Future
-import scala.util.{Success, Try}
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Success, Try}
 
 /**
  * A transactional virtual machine.
@@ -24,11 +24,16 @@ class Runtime(cluster: Cluster[Thrift.Client[Beaker.Client]]) {
   /**
    * Executes the [[Program]] asynchronously and returns the result, retrying failures with backoff.
    *
-   * @param backoffs Backoff durations.
+   * @param backoffs  Backoff durations.
    * @param program [[Program]] to execute.
+   * @throws Rollbacked If the [[Program]] was rolled back.
+   * @throws Aborted If the [[Program]] could not be executed.
+   * @throws Fault If the [[Program]] is illegally constructed.
    * @return [[Literal]] result or an exception on failure.
    */
-  def execute(backoffs: Seq[FiniteDuration])(program: Program): Future[Literal] = {
+  def execute(backoffs: Seq[FiniteDuration])(program: Program)(
+    implicit ec: ExecutionContext
+  ): Future[Literal] = {
     attempt(backoffs)(execute(program))
   }
 
@@ -38,7 +43,11 @@ class Runtime(cluster: Cluster[Thrift.Client[Beaker.Client]]) {
    * writes.
    *
    * @param program [[Program]] to execute.
-   * @return [[Literal]] result or an exception on failure.
+ *
+   * @throws Rollbacked If the [[Program]] was rolled back.
+   * @throws Aborted If the [[Program]] could not be executed.
+   * @throws Fault If the [[Program]] is illegally constructed.
+   * @return [[Literal]] result or exception on failure.
    */
   def execute(program: Program): Try[Literal] = {
     val depends  = mutable.Map.empty[Key, Version]
@@ -60,7 +69,7 @@ class Runtime(cluster: Cluster[Thrift.Client[Beaker.Client]]) {
       }
 
       val keys  = rwset(List(iteration), Set.empty) -- depends.keys
-      depends ++= keys.map(_ -> 0L)
+      depends ++= keys.map(_ -> long2Long(0L))
 
       // Fetch the keys, update the local snapshot, and reduce the program. If the result is a
       // literal then return, otherwise recurse on the partially evaluated program.
@@ -80,7 +89,7 @@ class Runtime(cluster: Cluster[Thrift.Client[Beaker.Client]]) {
       // Return Results.
       case (Nil, _) =>
         if (results.size != 1)
-          throw ExecutionException(s"Transaction evaluates to $results.")
+          throw Fault(s"Transaction evaluates to $results.")
         else
           results.head
 
@@ -111,7 +120,7 @@ class Runtime(cluster: Cluster[Thrift.Client[Beaker.Client]]) {
       case (Load :: rest, k :: rem) => reduce(rest, load(k) :: rem)
       case (Store :: rest, Text(k) :: (v: Literal) :: rem) => locals += k -> v; reduce(rest, v :: rem)
       case (Store :: rest, k :: v :: rem) => reduce(rest, store(k, v) :: rem)
-      case (Rollback :: _, (l: Literal) :: _) => throw RollbackException(l)
+      case (Rollback :: _, (l: Literal) :: _) => throw Rollbacked(l)
       case (Rollback :: rest, x :: rem) => reduce(rest, rollback(x) :: rem)
       case (Repeat :: rest, Flag(false) :: _ :: rem) => reduce(rest, rem)
       case (Repeat :: rest, c :: b :: rem) => reduce(rest, repeat(c, b) :: rem)
@@ -153,20 +162,25 @@ class Runtime(cluster: Cluster[Thrift.Client[Beaker.Client]]) {
       case (Less :: rest, x :: y :: rem) => reduce(rest, less(x, y) :: rem)
 
       // Default Error.
-      case _ => throw ExecutionException(s"$stack cannot be applied to $results.")
+      case _ => throw Fault(s"$stack cannot be applied to $results.")
     }
 
     // Recursively reduce the program, and then conditionally persist all changes made by the
     // transaction to the underlying database if and only if the versions of its various
     // dependencies have not changed. Filter out empty first changes to allow local variables.
-    evaluate(program) recover {
-      case e: RollbackException =>
-        buffer.clear()
-        e.result
+    evaluate(program) recoverWith { case e: Rollbacked =>
+      val transaction = new Transaction(depends.asJava, new util.HashMap)
+      this.cluster.random(_.connection.propose(transaction)) match {
+        case Success(true) => Failure(e)
+        case _             => Failure(Aborted)
+      }
     } flatMap { r =>
       val changes = buffer map { case (k, v) => k -> new Revision(depends(k) + 1, serialize(v)) }
-      val transaction = new Transaction(depends.mapValues(long2Long).asJava, changes.asJava)
-      this.cluster.random(_.connection.propose(transaction)) collect { case true => r }
+      val transaction = new Transaction(depends.asJava, changes.asJava)
+      this.cluster.random(_.connection.propose(transaction)) match {
+        case Success(true) => Success(r)
+        case _             => Failure(Aborted)
+      }
     }
   }
 
@@ -175,18 +189,23 @@ class Runtime(cluster: Cluster[Thrift.Client[Beaker.Client]]) {
 object Runtime {
 
   /**
-   * An exception that terminates execution and discards all writes.
+   * A non-retryable failure that terminates execution and discards all writes.
    *
    * @param result [[Literal]] return value.
    */
-  case class RollbackException(result: Literal) extends Exception
+  case class Rollbacked(result: Literal) extends Exception with NonRetryable
 
   /**
-   * An non-retryable execution failure that is thrown when a [[Program]] is illegally constructed.
+   * A retryable failure that indicates a [[Program]] could not be executed.
+   */
+  case object Aborted extends Exception
+
+  /**
+   * An non-retryable failure that is thrown when a [[Program]] is illegally constructed.
    *
    * @param message Error message.
    */
-  case class ExecutionException(message: String) extends Exception with NonRetryable
+  case class Fault(message: String) extends Exception with NonRetryable
 
   /**
    * Constructs a [[Runtime]] connected to the [[Cluster]].
@@ -194,7 +213,8 @@ object Runtime {
    * @param config [[Cluster]] configuration.
    * @return Connected [[Runtime]].
    */
-  def apply(config: Cluster.Config): Runtime =
+  def apply(config: Cluster.Config): Runtime = {
     new Runtime(Cluster(Thrift.Service(new Beaker.Client.Factory()), config))
+  }
 
 }

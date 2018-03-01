@@ -1,5 +1,7 @@
 package caustic.runtime
 
+import caustic.runtime
+
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.{FunSuite, Matchers}
@@ -7,7 +9,7 @@ import org.scalatest.{FunSuite, Matchers}
 @RunWith(classOf[JUnitRunner])
 class ProgramTest extends FunSuite with Matchers {
 
-  test("Literals are cached.") {
+  test("Caches literals") {
     flag(true) should be theSameInstanceAs flag(true)
     flag(false) should be theSameInstanceAs flag(false)
     text("") should be theSameInstanceAs text("")
@@ -15,7 +17,7 @@ class ProgramTest extends FunSuite with Matchers {
     real(1) should be theSameInstanceAs real(1)
   }
 
-  test("Expressions are simplified.") {
+  test("Simplifies expressions") {
     // Math Expressions.
     add(real(6), real(9)) shouldEqual real(15)
     add(text("a"), text("b")) shouldEqual text("ab")
@@ -36,7 +38,7 @@ class ProgramTest extends FunSuite with Matchers {
     floor(real(1.4)) shouldEqual real(1)
 
     // String Expressions.
-    caustic.runtime.length(text("Hello")) shouldEqual real(5.0)
+    runtime.length(text("Hello")) shouldEqual real(5.0)
     slice(text("Hello"), real(1), real(3)) shouldEqual text("el")
     matches(text("a41i3"), text("[a-z1-4]+")) shouldEqual flag(true)
     matches(text("a41i3"), text("[a-z1-4]")) shouldEqual flag(false)
@@ -54,34 +56,16 @@ class ProgramTest extends FunSuite with Matchers {
     negate(real(1)) shouldEqual flag(false)
     negate(text("")) shouldEqual flag(true)
     negate(text("foo")) shouldEqual flag(false)
-
-    caustic.runtime.equal(None, None) shouldEqual flag(true)
-    caustic.runtime.equal(None, real(0.0)) shouldEqual flag(false)
-    caustic.runtime.equal(real(0), real(0.0)) shouldEqual flag(true)
-    caustic.runtime.equal(text("a"), text("a")) shouldEqual flag(true)
-    caustic.runtime.equal(text(""), real(0)) shouldEqual flag(false)
-    caustic.runtime.equal(flag(true), flag(false)) shouldEqual flag(false)
+    runtime.equal(Null, Null) shouldEqual flag(true)
+    runtime.equal(Null, real(0.0)) shouldEqual flag(false)
+    runtime.equal(real(0), real(0.0)) shouldEqual flag(true)
+    runtime.equal(text("a"), text("a")) shouldEqual flag(true)
+    runtime.equal(text(""), real(0)) shouldEqual flag(false)
+    runtime.equal(flag(true), flag(false)) shouldEqual flag(false)
     less(real(2), real(10)) shouldEqual flag(true)
     less(real(-1), real(1)) shouldEqual flag(true)
     less(text("a"), text("ab")) shouldEqual flag(true)
     less(flag(false), flag(true)) shouldEqual flag(true)
-  }
-
-  test("Parse handles Thrift literals.") {
-    Program.parse(thrift.Transaction.literal(thrift.Literal.flag(true))) shouldEqual flag(true)
-    Program.parse(thrift.Transaction.literal(thrift.Literal.real(0))) shouldEqual real(0)
-    Program.parse(thrift.Transaction.literal(thrift.Literal.text("a"))) shouldEqual text("a")
-  }
-
-  test("Parse handles Thrift expressions.") {
-    Program.parse(
-      thrift.Transaction.expression(thrift.Expression.read(new thrift.Read(
-        thrift.Transaction.expression(thrift.Expression.add(new thrift.Add(
-          thrift.Transaction.literal(thrift.Literal.text("foo")),
-          thrift.Transaction.literal(thrift.Literal.text("bar"))
-        )))
-      )))
-    ) shouldEqual read(add(text("foo"), text("bar")))
   }
 
 }

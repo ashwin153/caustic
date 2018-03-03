@@ -41,8 +41,8 @@ object Thrift {
     factory: TServiceClientFactory[T]
   ) {
 
-    private[Thrift] val transport = new TFramedTransport(new TSocket(address.host, address.port))
-    private[Thrift] val protocol  = new TBinaryProtocol(this.transport)
+    val transport = new TFramedTransport(new TSocket(address.host, address.port))
+    val protocol  = new TBinaryProtocol(this.transport)
 
     // Underlying Thrift client.
     lazy val connection: T = {
@@ -64,10 +64,10 @@ object Thrift {
   ) extends service.Server {
 
     //  Construct an asynchronous, non-blocking Thrift server.
-    private val transport = new TNonblockingServerSocket(this.address.port)
-    private val arguments = new TNonblockingServer.Args(this.transport).processor(this.processor)
-    private val server    = new TNonblockingServer(this.arguments)
-    private val thread    = new Thread(() => this.server.serve())
+    val transport = new TNonblockingServerSocket(this.address.port)
+    val arguments = new TNonblockingServer.Args(this.transport).processor(this.processor)
+    val server    = new TNonblockingServer(this.arguments)
+    val thread    = new Thread(() => this.server.serve())
 
     override def serve(): Unit = {
       this.thread.start()

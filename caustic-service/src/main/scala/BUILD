@@ -2,6 +2,7 @@ scala_library(
     name='scala',
     sources=rglobs('*.scala'),
     dependencies=[
+        'caustic-beaker/src/main/thrift',
         '3rdparty/jvm:curator',
         '3rdparty/jvm:pureconfig',
         '3rdparty/jvm:slf4j-simple',

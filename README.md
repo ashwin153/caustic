@@ -123,9 +123,11 @@ service Counter {
 # Programming Language
 caustic/                            https://github.com/ashwin153/caustic
 +---caustic-assets/                 Documentation, results, and graphics.
-+---caustic-benchmarks/             Performance tests.
-+---caustic-compiler/               Programming language and compiler.
++---caustic-benchmark/              Performance tests.
++---caustic-beaker/                 Storage system.
++---caustic-compiler/               Programming language.
 +---caustic-runtime/                Virutal machine.
++---caustic-service/                Service discovery.
 +---build-support/                  Pants plugins and configuration.
 
 # Syntax Highlighting

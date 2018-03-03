@@ -113,7 +113,7 @@ jar_library(name='spray-json', jars=[
 
 # Thrift
 jar_library(name='thrift', jars=[
-    jar(org='org.apache.thrift', name='libthrift', rev='0.10.0'),
+    jar(org='org.apache.thrift', name='libthrift', rev='0.11.0'),
 ])
 
 # ZooKeeper

@@ -7,7 +7,7 @@ import caustic.runtime.Runtime._
 package object runtime {
 
   type Key = String
-  type Version = java.lang.Long
+  type Version = Long
 
   // Cache Literals.
   private val True = Flag(true)

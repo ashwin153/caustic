@@ -1,14 +1,12 @@
 package caustic.runtime
 
-import caustic.beaker.thrift.{Beaker, Revision, Transaction}
 import caustic.runtime.Literal._
 import caustic.runtime.Retry._
 import caustic.runtime.Runtime._
 import caustic.service.Cluster
-import caustic.service.protocol.Thrift
-import java.util
+import caustic.service.protocol.Beaker
+
 import scala.annotation.tailrec
-import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future}
@@ -19,7 +17,7 @@ import scala.util.{Failure, Success, Try}
  *
  * @param cluster Beaker [[Cluster]].
  */
-class Runtime(cluster: Cluster[Thrift.Client[Beaker.Client]]) {
+class Runtime(cluster: Cluster[Beaker.Client]) {
 
   /**
    * Executes the [[Program]] asynchronously and returns the result, retrying failures with backoff.
@@ -69,13 +67,13 @@ class Runtime(cluster: Cluster[Thrift.Client[Beaker.Client]]) {
       }
 
       val keys  = rwset(List(iteration), Set.empty) -- depends.keys
-      depends ++= keys.map(_ -> long2Long(0L))
+      depends ++= keys.map(_ -> 0L)
 
       // Fetch the keys, update the local snapshot, and reduce the program. If the result is a
       // literal then return, otherwise recurse on the partially evaluated program.
-      this.cluster.random(_.connection.read(keys.asJava)) flatMap { r =>
-        depends  ++= r.asScala.mapValues(r => r.version)
-        snapshot ++= r.asScala.mapValues(r => deserialize(r.value))
+      this.cluster.random(_.get(keys)) flatMap { r =>
+        depends  ++= r.mapValues(r => r.version)
+        snapshot ++= r.mapValues(r => deserialize(r.value))
 
         reduce(List(iteration), List.empty) match {
           case l: Literal => Success(l)
@@ -169,17 +167,14 @@ class Runtime(cluster: Cluster[Thrift.Client[Beaker.Client]]) {
     // transaction to the underlying database if and only if the versions of its various
     // dependencies have not changed. Filter out empty first changes to allow local variables.
     evaluate(program) recoverWith { case e: Rollbacked =>
-      val transaction = new Transaction(depends.asJava, new util.HashMap)
-      this.cluster.random(_.connection.propose(transaction)) match {
+      this.cluster.random(_.cas(depends.toMap, Map.empty)) match {
         case Success(true) => Failure(e)
-        case _             => Failure(Aborted)
+        case _ => Failure(Aborted)
       }
     } flatMap { r =>
-      val changes = buffer map { case (k, v) => k -> new Revision(depends(k) + 1, serialize(v)) }
-      val transaction = new Transaction(depends.asJava, changes.asJava)
-      this.cluster.random(_.connection.propose(transaction)) match {
+      this.cluster.random(_.cas(depends.toMap, buffer.mapValues(serialize).toMap)) match {
         case Success(true) => Success(r)
-        case _             => Failure(Aborted)
+        case _ => Failure(Aborted)
       }
     }
   }
@@ -213,8 +208,6 @@ object Runtime {
    * @param config [[Cluster]] configuration.
    * @return Connected [[Runtime]].
    */
-  def apply(config: Cluster.Config): Runtime = {
-    new Runtime(Cluster(Thrift.Service(new Beaker.Client.Factory()), config))
-  }
+  def apply(config: Cluster.Config): Runtime = new Runtime(Cluster(Beaker.Service, config))
 
 }

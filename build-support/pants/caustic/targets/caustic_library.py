@@ -11,5 +11,5 @@ class CausticLibrary(JvmTarget):
 
     @classmethod
     def compute_dependency_specs(cls, kwargs=None, payload=None):
-        yield 'caustic-runtime/src/main/scala:service'
+        yield 'caustic-runtime/src/main/scala'
 

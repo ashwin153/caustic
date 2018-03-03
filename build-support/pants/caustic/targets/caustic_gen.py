@@ -27,7 +27,7 @@ class CausticGen(SimpleCodegenTask):
         # Generated sources depend on spray-json for JSON serialization, and on the service package
         # of the caustic-runtime in order to connect to the runtime and execute transactions.
         return self.resolve_deps([
-                'caustic-runtime/src/main/scala:service',
+                'caustic-runtime/src/main/scala',
                 '3rdparty/jvm:spray-json',
             ])
 

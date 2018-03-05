@@ -73,9 +73,8 @@ object Beaker {
      * @param value Updated value.
      * @return Latest version of the key.
      */
-    def put(key: Key, value: Value): Option[Version] = {
+    def put(key: Key, value: Value): Option[Version] =
       put(Map(key -> value)).flatMap(_.get(key))
-    }
 
     /**
      * Conditionally applies the changes if and only if the dependencies remain unchanged. Returns
@@ -85,12 +84,8 @@ object Beaker {
      * @param changes Updated values.
      * @return Whether or not changes were applied.
      */
-    def cas(depends: Map[Key, Version], changes: Map[Key, Value]): Boolean = {
-      val deps = (changes.keySet -- depends.keySet).map(_ -> long2Long(0L)).toMap
-      val rset = depends.mapValues(long2Long) ++ deps
-      val wset = changes map { case (k, v) => k -> new thrift.Revision(rset(k) + 1, v) }
-      this.underlying.connection.propose(new thrift.Transaction(rset.asJava, wset.asJava))
-    }
+    def cas(depends: Map[Key, Version], changes: Map[Key, Value]): Boolean =
+      this.underlying.connection.cas(depends.mapValues(long2Long).asJava, changes.asJava)
 
     /**
      * Reloads the latest values of the keys. Guarantees that every instance will store the latest
@@ -100,9 +95,8 @@ object Beaker {
      * @param keys Keys to refresh.
      * @return Whether or not refresh was successful.
      */
-    def refresh(keys: Set[Key]): Boolean = {
+    def refresh(keys: Set[Key]): Boolean =
       cas(get(keys).mapValues(_.version), Map.empty)
-    }
 
   }
 

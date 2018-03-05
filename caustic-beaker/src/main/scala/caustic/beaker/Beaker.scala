@@ -4,8 +4,8 @@ import caustic.beaker.concurrent._
 import caustic.beaker.ordering._
 import caustic.beaker.storage.Local
 import caustic.beaker.thrift.{Ballot, Proposal, Revision, Transaction}
-import caustic.service.protocol.Thrift
-import caustic.service.{Address, Announcer, Cluster}
+import caustic.cluster.protocol.Thrift
+import caustic.cluster.{Address, Announcer, Cluster}
 import org.apache.thrift.async.AsyncMethodCallback
 import java.io.Closeable
 import java.{lang, util}
@@ -107,7 +107,12 @@ case class Beaker(
     }
   }
 
-  override def propose(transaction: Transaction, handler: AsyncMethodCallback[lang.Boolean]): Unit = {
+  override def cas(depends: util.Map[Key, Version], changes: util.Map[Key, Value], handler: AsyncMethodCallback[lang.Boolean]): Unit = {
+    // Changes implicitly depend on the initial version if no dependency is specified.
+    val rset = depends.asScala ++ changes.asScala.keySet.map(k => k -> depends.getOrDefault(k, 0L))
+    val wset = changes.asScala map { case (k, v) => k -> new thrift.Revision(rset(k) + 1, v) }
+    val transaction = new thrift.Transaction(rset.asJava, wset.asJava)
+
     // Asynchronously attempt to reach consensus on the transaction.
     val ballot = new Ballot(this.round.getAndIncrement(), this.id)
     val daemon = Task(paxos(new Proposal(ballot, Set(transaction).asJava)))
@@ -183,7 +188,7 @@ object Beaker {
     address: Address,
     database: Database,
     cluster: Cluster[Internal.Client]
-  ) extends caustic.service.Server {
+  ) extends caustic.cluster.Server {
 
     val beaker     = Beaker(address.hashCode(), this.database, Executor(), this.cluster)
     val processor  = new thrift.Beaker.AsyncProcessor(this.beaker)

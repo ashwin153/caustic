@@ -50,7 +50,7 @@ struct Proposal {
 service Beaker {
 
   /**
-   * Returns the latest revisions of the specified keys known to this [[Beaker]].
+   * Returns the latest revisions of the specified keys.
    *
    * @param keys
    * @return
@@ -59,10 +59,11 @@ service Beaker {
 
   /**
    *
-   * @param transaction
+   * @param depends
+   * @param changes
    * @return
    */
-  bool propose(1: Transaction transaction),
+  bool cas(1: map<Key, Version> depends, 2: map<Key, Value> changes),
 
   /**
    *

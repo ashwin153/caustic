@@ -3,8 +3,8 @@ package caustic.runtime
 import caustic.runtime.Literal._
 import caustic.runtime.Retry._
 import caustic.runtime.Runtime._
-import caustic.service.Cluster
-import caustic.service.protocol.Beaker
+import caustic.cluster.Cluster
+import caustic.cluster.protocol.Beaker
 
 import scala.annotation.tailrec
 import scala.collection.mutable

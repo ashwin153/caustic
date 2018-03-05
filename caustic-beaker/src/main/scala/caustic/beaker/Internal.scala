@@ -2,8 +2,9 @@ package caustic.beaker
 
 import caustic.beaker.concurrent.Executor
 import caustic.beaker.thrift.{Ballot, Proposal, Revision}
-import caustic.service.{Address, Announcer, Cluster}
-import caustic.service.protocol.Thrift
+import caustic.cluster
+import caustic.cluster.{Address, Announcer, Cluster}
+import caustic.cluster.protocol.Thrift
 
 import scala.collection.JavaConverters._
 
@@ -15,7 +16,7 @@ object Internal {
   /**
    * An internal, Beaker service.
    */
-  case object Service extends caustic.service.Service[Internal.Client] {
+  case object Service extends cluster.Service[Internal.Client] {
 
     private val underlying = Thrift.Service(new thrift.Beaker.Client.Factory())
 

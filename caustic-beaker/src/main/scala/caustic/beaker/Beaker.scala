@@ -32,7 +32,7 @@ case class Beaker(
   cluster: Cluster[Internal.Client]
 ) extends thrift.Beaker.AsyncIface with Closeable {
 
-  var round    : AtomicInteger                  = new AtomicInteger(0)
+  var round    : AtomicInteger                  = new AtomicInteger(1)
   val proposed : mutable.Map[Transaction, Task] = mutable.Map.empty
   val promised : mutable.Set[Proposal]          = mutable.Set.empty
   val accepted : mutable.Set[Proposal]          = mutable.Set.empty
@@ -133,9 +133,9 @@ case class Beaker(
         // If conflicting proposals are accepted, then they are merged together, promised, and
         // returned. Otherwise, the original proposal is promised and returned.
         val accept = this.accepted.filter(_ <| proposal)
-        val promise = accept.reduceOption(union).getOrElse(proposal)
+        val promise = accept.reduceOption(union).getOrElse(proposal.setBallot(new Ballot(0, 0)))
         this.promised --= this.promised.filter(_ <| proposal)
-        this.promised += promise
+        this.promised += promise.setBallot(proposal.ballot)
         handler.onComplete(promise)
     }
   }

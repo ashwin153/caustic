@@ -34,23 +34,25 @@ that are uniquely identified and totally ordered by a __ballot__ number. We say 
 and ```A``` has a lower ballot than ```B```. Proposals also contain a write-only *repair* 
 transaction that is used only for recovery. Proposals ```A``` and ```B``` may be *merged* by (1) 
 taking the maximum of their ballots, (2) combining their transactions choosing the transactions in 
-the higher ballot proposal in the case of conflicts, and (3) combining their repairs choosing 
+the newer proposal in the case of conflicts, and (3) combining their repairs choosing 
 the write with the highest version in the case of duplicates. 
 
 The leader for a proposal first *prepares* the proposal on a majority of beakers. If a beaker has 
-not made a promise to a newer proposal, it responds with a __promise__. If a beaker has 
-already accepted an older proposal, it merges them together and promises the result. Otherwise, it 
-promises the proposal. If the leader does not receive a majority of promises, it retries with a 
-higher ballot. Otherwise, it merges the returned promises into a single promise. If the promise does 
-not match its proposal, it retries with the promise. Otherwise, the leader *gets* the latest 
-versions of the keys that are read by the promise from a majority of beakers. The leader discards 
-all transactions in the promise that cannot be committed, and sets its repairs to the latest 
-revisions of keys that are read but not written by the promise for which the beakers disagree on 
-their version. The leader then sends the proposal to a majority of beakers. A beaker *accepts* a 
-proposal if it has not promised not to. If a beaker accepts a proposal, it discards all older 
-accepted proposals and broadcasts a vote for it. A beaker *learns* a proposal once a majority of 
-replicas vote for it. If a beaker learns a proposal, it commits its transactions and repairs on its 
-replica of the database.
+not made a promise to a newer proposal, it responds with a __promise__. When a beaker makes a 
+promise, it refuses to accept any proposal that conflicts with the proposal it returns with a lower
+ballot than the proposal it makes the promise to. It a beaker has already accepted an older
+proposal, it merges them together and returns the result. Otherwise, it returns the proposal with
+the initial ballot. If the leader does not receive a majority of promises, it retries with a 
+higher ballot. Otherwise, it merges the returned promises into a single proposal. If the proposal 
+does not match the proposal it prepared, it retries with the proposal. Otherwise, the leader *gets* 
+the latest versions of the keys that are read by the proposal from a majority of beakers. The leader 
+discards all transactions in the proposal that cannot be committed, and sets its repairs to the 
+latest revisions of keys that are read but not written by the proposal for which the beakers 
+disagree on their version. The leader then sends the proposal to a majority of beakers. A beaker
+*accepts* a proposal if it has not promised not to. If a beaker accepts a proposal, it discards all 
+older accepted proposals and broadcasts a __vote__ for it. A beaker *learns* a proposal once a 
+majority of replicas vote for it. If a beaker learns a proposal, it commits its transactions and 
+repairs on its replica of the database.
 
 ### Correctness
 The key idea underlying the correctness of Paxos and all its derivatives is quorum intersection; any 

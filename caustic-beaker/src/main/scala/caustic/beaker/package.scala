@@ -14,7 +14,7 @@ package object beaker {
   type Version = java.lang.Long
   type Value = String
 
-  // Ballots are uniquely identified and totally ordered by their (round, id).
+  // Ballots are totally ordered by their (round, id).
   implicit val ballotOrdering: Ordering[Ballot] = (x, y) => {
     if (x.round == y.round) x.id compare y.id else x.round compare y.round
   }
@@ -24,16 +24,38 @@ package object beaker {
     x.version compare y.version
   }
 
-  // Proposals are partially ordered by their ballot number whenever their transactions are related.
+  // Proposals are ordered by their ballot number whenever their transactions are conflict.
   implicit val proposalOrder: Order[Proposal] = (x, y) => {
-    x.group.asScala.find(t => y.group.asScala.exists(_ ~ t)).map(_ => x.ballot <= y.ballot)
+    x.commits.asScala.find(t => y.commits.asScala.exists(_ ~ t)).map(_ => x.ballot <= y.ballot)
   }
 
-  // Transactions are related by their read and write sets.
+  // Transactions are conflict if either reads or writes a key that the other writes.
   implicit val transactionRelation: Relation[Transaction] = (x, y) => {
     val (xr, xw) = (x.depends.keySet(), x.changes.keySet())
     val (yr, yw) = (y.depends.keySet(), y.changes.keySet())
     !disjoint(xr, yw) || !disjoint(yr, xw) || !disjoint(xw, yw)
+  }
+
+  /**
+   *
+   * @param x
+   * @param y
+   * @return
+   */
+  def matches(x: Proposal, y: Proposal): Boolean =
+    x.commits == y.commits
+
+  /**
+   *
+   * @param x
+   * @param y
+   * @return
+   */
+  def merge(x: Transaction, y: Transaction): Transaction = {
+    val merged = new Transaction(x)
+    y.depends.forEach(x.putToDepends(_, _))
+    y.changes.forEach(x.putToChanges(_, _))
+    merged
   }
 
   /**
@@ -44,11 +66,12 @@ package object beaker {
    * @param y Another [[Proposal]].
    * @return [[Proposal]] union.
    */
-  def union(x: Proposal, y: Proposal): Proposal = {
+  def merge(x: Proposal, y: Proposal): Proposal = {
     val (latest, oldest) = if (x <| y) (y, x) else (x, y)
-    val filter = oldest.group.asScala.filterNot(t => latest.group.asScala.exists(_ ~ t))
+    val filter = oldest.commits.asScala.filterNot(t => latest.commits.asScala.exists(_ ~ t))
     val merged = new Proposal(latest)
-    filter.foreach(merged.addToGroup)
+    filter.foreach(merged.addToCommits)
+    merged.repairs = merge(latest.repairs, oldest.repairs)
     merged
   }
 

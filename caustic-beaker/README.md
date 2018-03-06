@@ -1,8 +1,8 @@
 # Beaker
 Beaker is a distributed, transactional key-value store. Beaker uses a leader-less variation of
-[Generalized Paxos][1] to consistently execute transactions. Beaker is ```N/2``` fault tolerant; the 
-system tolerates a minority of failures. Beaker assumes that failures are fail-stop, but makes no
-assumptions about the underlying network; beakers may be partitioned arbitrarily as long as they
+[Generalized Paxos][1] to consistently execute transactions. Beaker is ```N / 2``` fault tolerant; 
+the system tolerates a minority of failures. Beaker assumes that failures are fail-stop, but makes 
+no assumptions about the underlying network; beakers may be partitioned arbitrarily as long as they
 remain connected to a majority of non-faulty peers.
 
 ## Background
@@ -93,6 +93,30 @@ have both been accepted by a majority. Because ```A``` is older than ```B```, a 
 accepted ```B``` after ```A```. Otherwise, ```A``` could not have been accepted by a majority. The 
 majority who accepted ```B``` after ```A``` will vote for ```A``` before they vote for ```B```. 
 Because messages are received in order, ```A``` will be learned before ```B```.
+
+## Bootstrapping
+Each beaker is required to be connected to a majority of non-faulty peers in order to guarantee 
+correctness. However, this correctness condition is only valid when the cluster is static. In
+practical systems, beakers may join or leave the cluster arbitrarily as the cluster grows or shrinks 
+in size. In this section, we describe how *fresh* beakers are *bootstrapped* when they join an 
+existing cluster. When a fresh beaker joins a cluster, its database is initially empty. In order to 
+guarantee correctness, its database must be immediately populated with the latest revision of every
+key-value pair. Otherwise, if ```N -+ 1``` fresh beakers join a cluster of size ```N``` it 
+is possible for a quorum to consist entirely of fresh beakers. 
+
+A naive solution might be for the fresh beaker to propose a read-only transaction that depends on
+the initial revision of every key-value pair in the database and conflicts with every other
+proposal. Then, the fresh beaker would automatically repair itself in the process of committing this
+transaction. However, this is infeasible in practical systems because databases may contain
+arbitrarily many key-value pairs. This approach would inevitably saturate the network because for a
+database of size ```D``` such a proposal consumes ```D * (3 * N / 2 + N * N)``` in bandwidth. 
+Furthermore, it prevents any proposals from being accepted in the interim.
+
+We can improve this solution by decoupling bootstrapping and consensus. A fresh beaker joins the 
+cluster as a non-voting member; it learns proposals, but does not participate in consensus. The 
+fresh beaker reads the contents of the database from a quorum. It then assembles a repair 
+transaction and commits it on its replica. It then joins the cluster as a voting member. This 
+approach consumes just ```D * N / 2``` in bandwidth and permits concurrent proposals.
 
 [1]: https://www.microsoft.com/en-us/research/wp-content/uploads/2016/02/tr-2005-33.pdf
 [2]: https://en.wikipedia.org/wiki/Consensus_(computer_science)

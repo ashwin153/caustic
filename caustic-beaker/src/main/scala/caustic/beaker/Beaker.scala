@@ -56,8 +56,8 @@ case class Beaker(
         paxos(proposal.setBallot(new Ballot(round, this.id)))
       } else {
         // Otherwise, merge together all the returned proposals.
-        val promise = promises.reduce(union).setBallot(proposal.ballot)
-        if (proposal != promise) {
+        val promise = promises.reduce(merge).setBallot(proposal.ballot)
+        if (proposal.commits != promise.commits) {
           // If the promise does not match the proposal, then retry with the promise.
           Thread.sleep(Random.nextInt(250) + 10000)
           val next = this.round.getAndIncrement()
@@ -128,12 +128,12 @@ case class Beaker(
     this.promised.find(_ |> proposal) match {
       case Some(r) =>
         // If a conflicting proposal with a higher ballot is promised, then its ballot is returned.
-        handler.onComplete(new Proposal(r.ballot, new util.HashSet))
+        handler.onComplete(new Proposal().setBallot(r.ballot))
       case None =>
         // If conflicting proposals are accepted, then they are merged together, promised, and
         // returned. Otherwise, the original proposal is promised and returned.
-        val accept = this.accepted.filter(_ <| proposal)
-        val promise = accept.reduceOption(union).getOrElse(proposal.setBallot(new Ballot(0, 0)))
+        val accept  = this.accepted.filter(_ <| proposal)
+        val promise = accept.reduceOption(merge).getOrElse(proposal.setBallot(new Ballot(0, 0)))
         this.promised --= this.promised.filter(_ <| proposal)
         this.promised += promise.setBallot(proposal.ballot)
         handler.onComplete(promise)
@@ -158,7 +158,7 @@ case class Beaker(
     // If a majority of the cluster has voted for a proposal, then commit its contents. Once a
     // transaction is learned, consensus on all conflicting proposed transactions completes.
     if (this.learned(proposal) == this.cluster.size / 2 + 1) {
-      proposal.group.asScala foreach { t =>
+      proposal.commits.asScala foreach { t =>
         this.executor.submit(t)(this.database.commit) onComplete { _ =>
           val completed = this.proposed.filterKeys(_ ~ t)
           completed foreach { case (u, v) => if (t == u) v.finish() else v.cancel() }

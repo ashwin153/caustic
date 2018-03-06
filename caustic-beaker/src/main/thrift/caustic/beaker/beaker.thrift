@@ -37,11 +37,13 @@ struct Ballot {
 /**
  *
  * @param ballot
- * @param group
+ * @param commits
+ * @param repairs
  */
 struct Proposal {
   1: Ballot ballot,
-  2: set<Transaction> group,
+  2: set<Transaction> commits,
+  3: Transaction repairs,
 }
 
 /**

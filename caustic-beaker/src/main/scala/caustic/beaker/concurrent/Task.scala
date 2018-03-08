@@ -5,7 +5,7 @@ import scala.concurrent.{Future, Promise}
 import scala.util.Try
 
 /**
- * An asynchronous, interruptible computation. Tasks are [[Future]] that respond to interrupts.
+ * An asynchronous, interruptible computation. Tasks are futures that respond to interrupts.
  * Tasks are particularly useful for representing computations that run indefinitely until some
  * external condition is satisfied.
  */
@@ -24,7 +24,7 @@ class Task(body: => Try[Unit]) {
   this.thread.start()
 
   /**
-   * Returns a [[Future]] that completes when the task terminates.
+   * Returns a future that completes when the task terminates.
    *
    * @return Computation handle.
    */
@@ -54,33 +54,33 @@ class Task(body: => Try[Unit]) {
 object Task {
 
   /**
-   * A failure that indicates a [[Task]] was cancelled.
+   * A failure that indicates a task was cancelled.
    */
   case object Cancelled extends Exception
 
   /**
-   * Constructs a [[Task]] that performs the body.
+   * Constructs a task that performs the body.
    *
    * @param body Computation.
-   * @return Asynchronous [[Task]].
+   * @return Asynchronous task.
    */
   def apply(body: => Try[Unit]): Task = new Task(body)
 
   /**
-   * Constructs a [[Task]] that indefinitely performs the body.
+   * Constructs a task that indefinitely performs the body.
    *
    * @param body Computation.
-   * @return Indefinite [[Task]].
+   * @return Indefinite task.
    */
   def indefinitely[T](body: => T): Task =
     Task { Try { while (true) { body; Thread.`yield`() } } }
 
   /**
-   * Constructs a [[Task]] that periodically performs the body.
+   * Constructs a task that periodically performs the body.
    *
    * @param delay Period.
    * @param body Computation.
-   * @return Periodic [[Task]].
+   * @return Periodic task.
    */
   def periodically[T](delay: Duration)(body: => T): Task =
     Task { Try { body; Thread.sleep(delay.toMillis) } }

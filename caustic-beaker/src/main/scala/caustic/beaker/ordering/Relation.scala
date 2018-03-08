@@ -3,8 +3,7 @@ package caustic.beaker.ordering
 import scala.language.implicitConversions
 
 /**
- * An equivalence relation. Relations are reflexive (x ~ x), symmetric (x ~ y -> y ~ x), and
- * transitive (x ~ y, y ~ z -> x ~ z). Relations partition a set into equivalence classes.
+ * An equivalence relation.
  */
 trait Relation[-T] {
 

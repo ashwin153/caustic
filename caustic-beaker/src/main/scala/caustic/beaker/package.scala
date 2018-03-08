@@ -1,15 +1,15 @@
 package caustic
 
 import caustic.beaker.ordering._
-import caustic.beaker.thrift.{Ballot, Proposal, Revision, Transaction}
+import caustic.beaker.thrift._
 
+import java.util
 import java.util.Collections._
 import scala.collection.JavaConverters._
 import scala.math.Ordering.Implicits._
 
 package object beaker {
 
-  //
   type Key = String
   type Version = java.lang.Long
   type Value = String
@@ -24,12 +24,12 @@ package object beaker {
     x.version compare y.version
   }
 
-  // Proposals are ordered by their ballot number whenever their transactions are conflict.
+  // Proposals are partially ordered by their ballot whenever their transactions conflict.
   implicit val proposalOrder: Order[Proposal] = (x, y) => {
     x.commits.asScala.find(t => y.commits.asScala.exists(_ ~ t)).map(_ => x.ballot <= y.ballot)
   }
 
-  // Transactions are conflict if either reads or writes a key that the other writes.
+  // Transactions conflict if either reads or writes a key that the other writes.
   implicit val transactionRelation: Relation[Transaction] = (x, y) => {
     val (xr, xw) = (x.depends.keySet(), x.changes.keySet())
     val (yr, yw) = (y.depends.keySet(), y.changes.keySet())
@@ -37,34 +37,23 @@ package object beaker {
   }
 
   /**
+   * Returns whether the proposals commit the same transactions.
    *
-   * @param x
-   * @param y
-   * @return
+   * @param x A proposal.
+   * @param y Another proposal.
+   * @return Whether the proposals match.
    */
   def matches(x: Proposal, y: Proposal): Boolean =
     x.commits == y.commits
 
   /**
+   * Merges the older proposal into the newer proposal by discarding all transactions in the older
+   * proposal that conflict with transactions in the newer proposal are discarded and merging their
+   * repairs.
    *
-   * @param x
-   * @param y
-   * @return
-   */
-  def merge(x: Transaction, y: Transaction): Transaction = {
-    val merged = new Transaction(x)
-    y.depends.forEach(x.putToDepends(_, _))
-    y.changes.forEach(x.putToChanges(_, _))
-    merged
-  }
-
-  /**
-   * Merges the older [[Proposal]] into the newer [[Proposal]]. Each [[Transaction]] in the older
-   * [[Proposal]] that conflicts with any [[Transaction]] in the newer [[Proposal]] is discarded.
-   *
-   * @param x A [[Proposal]].
-   * @param y Another [[Proposal]].
-   * @return [[Proposal]] union.
+   * @param x A proposal.
+   * @param y Another proposal.
+   * @return Union of proposals.
    */
   def merge(x: Proposal, y: Proposal): Proposal = {
     val (latest, oldest) = if (x <| y) (y, x) else (x, y)
@@ -76,11 +65,25 @@ package object beaker {
   }
 
   /**
-   * Merges two maps together. If both maps contain the same key, then the larger value is chosen.
+   * Merges the transactions together by merging their dependencies and changes.
    *
-   * @param x A [[Map]].
-   * @param y Another [[Map]].
-   * @return [[Map]] union.
+   * @param x A transaction.
+   * @param y Another transaction.
+   * @return Union of transactions.
+   */
+  def merge(x: Transaction, y: Transaction): Transaction = {
+    val depends = merge(x.depends.asScala.toMap, y.depends.asScala.toMap).asJava
+    val changes = merge(x.changes.asScala.toMap, y.changes.asScala.toMap).asJava
+    new Transaction(depends, changes)
+  }
+
+  /**
+   * Merges two maps together by selecting the larger value in the case of duplicate keys.
+   *
+   * @param x A map.
+   * @param y Another map.
+   * @param ordering Value ordering.
+   * @return Union of maps.
    */
   def merge[A, B](x: Map[A, B], y: Map[A, B])(implicit ordering: Ordering[B]): Map[A, B] = {
     x ++ y map { case (k, v) => k -> (x.getOrElse(k, v) max v) }

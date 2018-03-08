@@ -6,27 +6,27 @@ import scala.collection.JavaConverters._
 import scala.util.{Failure, Success, Try}
 
 /**
- * A write-through cache.
+ * A transactional, write-through cache.
  */
 trait Cache extends Database {
 
   /**
-   * Returns the underlying [[Database]].
+   * Returns the underlying database.
    *
-   * @return Underlying [[Database]].
+   * @return Underlying database.
    */
   def database: Database
 
   /**
-   * Returns the cached [[Revision]] of the specified keys.
+   * Returns the cached revision of the specified keys.
    *
    * @param keys Keys to fetch.
-   * @return Cached [[Revision]] of the keys.
+   * @return Cached revision of the keys.
    */
   def fetch(keys: Set[Key]): Try[Map[Key, Revision]]
 
   /**
-   * Applies the changes to the [[Cache]].
+   * Applies the changes to the cache.
    *
    * @param changes Changes to apply.
    */

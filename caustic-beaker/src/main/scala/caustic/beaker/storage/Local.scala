@@ -36,7 +36,7 @@ object Local {
   object Database {
 
     /**
-     * Constructs an empty in-memory [[Local.Database]].
+     * Constructs an empty in-memory database.
      *
      * @return Empty database.
      */
@@ -44,7 +44,7 @@ object Local {
       Local.Database(caffeine.Caffeine.newBuilder().build[Key, Revision]())
 
     /**
-     * Constructs an in-memory [[Local.Database]] initialized with the specified items.
+     * Constructs an in-memory database initialized with the specified items.
      *
      * @param items Initial contents.
      * @return Initialized database.
@@ -53,7 +53,7 @@ object Local {
       Local.Database(items.toMap)
 
     /**
-     * Constructs an in-memory [[Local.Database]] initialized with the specified key-value pairs.
+     * Constructs an in-memory database initialized with the specified key-value pairs.
      *
      * @param initial Initial contents.
      * @return Initialized database.
@@ -91,7 +91,7 @@ object Local {
   object Cache {
 
     /**
-     * A [[Local.Cache]] configuration.
+     * An in-memory cache configuration.
      *
      * @param capacity Maximum size in bytes.
      * @param expiration Duration after which stale entries are evicted.
@@ -102,11 +102,11 @@ object Local {
     )
 
     /**
-     * Constructs a [[Local.Cache]] from the provided configuration.
+     * Constructs an in-memory cache from the provided configuration.
      *
-     * @param database Underlying [[Database]].
+     * @param database Underlying database.
      * @param config Configuration.
-     * @return Configured [[Local.Cache]].
+     * @return Configured cache.
      */
     def apply(database: Database, config: Config): Local.Cache =
       Local.Cache(database, caffeine.Caffeine.newBuilder()

@@ -1,9 +1,8 @@
 package caustic.beaker
 
-import caustic.beaker.concurrent.Executor
-import caustic.beaker.thrift.{Ballot, Proposal, Revision}
+import caustic.beaker.thrift._
 import caustic.cluster
-import caustic.cluster.{Address, Announcer, Cluster}
+import caustic.cluster.Address
 import caustic.cluster.protocol.Thrift
 
 import scala.collection.JavaConverters._
@@ -29,54 +28,50 @@ object Internal {
   }
 
   /**
-   * An internal, Beaker client. Each [[Beaker]] uses an [[Internal.Client]] to communicate with
-   * the others. Supports operations that facilitate consensus, which are not safe to be made
-   * externally visible.
+   * An internal, Beaker client. Beakers use the client to communicate with each other. Supports
+   * operations that facilitate consensus, which are not safe to be made externally visible.
    *
-   * @param underlying Underlying [[Thrift.Client]].
+   * @param underlying Underlying Thrift client.
    */
   case class Client(underlying: Thrift.Client[thrift.Beaker.Client]) {
 
     /**
-     * Returns the latest known [[Revision]] of each key.
+     * Returns the latest known revision of each key.
      *
      * @param keys Keys to get.
-     * @return Latest known [[Revision]] of each key.
+     * @return Revision of each key.
      */
     def get(keys: Set[Key]): Map[Key, Revision] =
       this.underlying.connection.get(keys.asJava).asScala.toMap
 
     /**
-     * Prepares a [[Proposal]]. Beakers reply with a promise not to accept a conflicting
-     * [[Proposal]] with a lower [[Ballot]]. If it has already made a promise to a conflicting
-     * [[Proposal]] with a higher [[Ballot]], then the conflicting promise is returned. If it has
-     * already accepted a conflicting [[Proposal]] at a lower ballot, then the conflicting proposal
-     * is returned. Otherwise, the original [[Proposal]] is returned.
+     * Prepares a proposal. If a beaker has not made apromise to a newer proposal, it responds with
+     * a promise. When a beaker makes a promise, it refuses to accept any proposal that conflicts
+     * with the proposal it returns that has a lower ballot than the proposal it receives. If a
+     * beaker has already accepted older proposals, it merges them together and returns the result.
+     * Otherwise, it returns the proposal with a zero ballot.
      *
-     *
-     * @param proposal
-     * @return Promise
+     * @param proposal Proposal to prepare.
+     * @return Promise or the ballot of any newer promise that it has made.
      */
     def prepare(proposal: Proposal): Proposal =
       this.underlying.connection.prepare(proposal)
 
     /**
-     * Beakers accept any [[Proposal]] for which there does not exist a conflicting promise with a
-     * higher [[Ballot]]. If the [[Proposal]] is accepted, the Beaker broadcasts its vote to learn
-     * the [[Proposal]] to all members of the [[Cluster]].
+     * Accepts a proposal. Beakers accept a proposal if they have not promised not to. If a beaker
+     * accepts a proposal, it discards all older accepted proposals and broadcasts a vote for it.
      *
-     * @param proposal
-     * @return
+     * @param proposal Proposal to accept.
      */
     def accept(proposal: Proposal): Unit =
       this.underlying.connection.accept(proposal)
 
     /**
-     * Votes for a [[Proposal]]. A Beaker commits a [[Proposal]] once it receives a majority of
-     * votes from the members of the [[Cluster]].
+     * Votes for a proposal. Beakers learn a proposal once a majority of beakers vote for it. If a
+     * beaker learns a proposal, it commits its transactions and repairs on its replica of the
+     * database.
      *
-     * @param proposal
-     * @return
+     * @param proposal Proposal to learn.
      */
     def learn(proposal: Proposal): Unit =
       this.underlying.connection.learn(proposal)

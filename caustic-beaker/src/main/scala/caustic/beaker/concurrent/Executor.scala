@@ -5,7 +5,6 @@ import caustic.beaker.ordering.Relation
 import java.io.Closeable
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.locks.{Condition, ReentrantLock}
-
 import scala.collection.mutable
 import scala.concurrent.{Future, Promise}
 import scala.util.Try
@@ -86,10 +85,10 @@ class Executor[T](relation: Relation[T]) extends Closeable {
 object Executor {
 
   /**
-   * Constructs an [[Executor]] from the implicit [[Relation]].
+   * Constructs an executor from the implicit relation.
    *
    * @param relation Task relation.
-   * @return [[Executor]] on relation.
+   * @return Executor on relation.
    */
   def apply[T]()(implicit relation: Relation[T]): Executor[T] = new Executor[T](relation)
 

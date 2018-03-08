@@ -5,7 +5,7 @@ import scala.language.implicitConversions
 /**
  * A partial ordering. Orders are reflexive (x <| x) and anti-symmetric (x <| y -> y |> x), but,
  * unlike their mathematical counterparts, may not be transitive (x <| y, y <| z -> x <| z).
- * Orders induce a [[Relation]] on comparable elements.
+ * Orders induce a equivalence relation on comparable elements.
  */
 trait Order[-T] extends Relation[T] {
 

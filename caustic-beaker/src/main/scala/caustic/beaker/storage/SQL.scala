@@ -64,7 +64,7 @@ object SQL {
   object Database {
 
     /**
-     * A [[SQL.Database]] configuration.
+     * A SQL database configuration.
      *
      * @param username Database username.
      * @param password Database password.
@@ -79,10 +79,10 @@ object SQL {
     )
 
     /**
-     * Constructs a [[SQL.Database]] from the provided configuration.
+     * Constructs a SQL database from the provided configuration.
      *
      * @param config Configuration.
-     * @return Dynamically-configured [[SQL.Database]].
+     * @return Dynamically-configured SQL database.
      */
     def apply(config: Config): SQL.Database = {
       // Setup a C3P0 connection pool.
@@ -139,7 +139,9 @@ object SQL {
   object Dialect {
 
     /**
-     * A [[https://www.mysql.com/ MySQL]] implementation.
+     * A MySQL implementation.
+     *
+     * @see https://www.mysql.com/
      */
     object MySQL extends SQL.Dialect {
 
@@ -219,7 +221,9 @@ object SQL {
     }
 
     /**
-     * A [[https://www.postgresql.org/ PostgreSQL]] implementation.
+     * A PostgreSQL implementation.
+     *
+     * @see https://www.postgresql.org/
      */
     object PostgreSQL extends SQL.Dialect {
 

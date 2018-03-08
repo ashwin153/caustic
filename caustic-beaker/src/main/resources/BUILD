@@ -1,1 +1,0 @@
-resources(name='resources', sources=globs('*.conf'))

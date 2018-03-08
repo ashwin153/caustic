@@ -1,10 +1,8 @@
 package caustic.beaker
 
-import scala.math.Ordering.Implicits._
-
 package object ordering {
 
-  // Implicitly relation operations.
+  // Implicit relation operations.
   implicit class RelationOps[T](x: T)(implicit relation: Relation[T]) {
     def ~(y: T): Boolean = relation.equiv(x, y)
   }

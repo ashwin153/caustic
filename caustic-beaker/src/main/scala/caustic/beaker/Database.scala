@@ -9,20 +9,20 @@ import scala.math.Ordering.Implicits._
 import scala.util.{Failure, Try}
 
 /**
- * A key-value store.
+ * A transactional key-value store.
  */
 trait Database extends Closeable {
 
   /**
-   * Returns the [[Revision]] of the specified keys.
+   * Returns the latest revision of the specified keys.
    *
    * @param keys Keys to read.
-   * @return [[Revision]] of each key.
+   * @return Revision of each key.
    */
   def read(keys: Set[Key]): Try[Map[Key, Revision]]
 
   /**
-   * Applies the changes to the [[Database]].
+   * Applies the changes to the database.
    *
    * @param changes Changes to apply.
    * @return Whether or not changes were applied.
@@ -30,14 +30,15 @@ trait Database extends Closeable {
   def write(changes: Map[Key, Revision]): Try[Unit]
 
   /**
-   * Attempts to commit the [[Transaction]] on the [[Database]]. A [[Transaction]] may be committed
-   * if and only if no newer version of any of its dependencies exists. Because keys have
-   * monotonically increasing versions, if a newer version of a key that a [[Transaction]] changes
-   * exists the modification is discarded.
+   * Attempts to commit the transaction on the database. Transactions may be committed if and only
+   * if the versions they depend on are greater than or equal to their versions in the database.
+   * Revisions are monotonic; if a transaction changes a key for which there exists a newer
+   * revision, the modification is discarded. This ensures that transactions cannot undo the effect
+   * of other transactions.
    *
-   * @param transaction [[Transaction]] to commit.
+   * @param transaction Transaction to commit.
    * @throws Conflicts If a newer version of a dependent key exists.
-   * @return Whether or not the [[Transaction]] was committed.
+   * @return Whether or not the transaction was committed.
    */
   def commit(transaction: Transaction): Try[Unit] = {
     val wset = transaction.changes.asScala.toMap
@@ -56,9 +57,9 @@ trait Database extends Closeable {
 object Database {
 
   /**
-   * A failure that indicates a subset of the dependencies of a [[Transaction]] are invalid.
+   * A failure that indicates a subset of the dependencies of a transaction are invalid.
    *
-   * @param invalid Latest [[Revision]] of invalid dependencies.
+   * @param invalid Latest revision of invalid dependencies.
    */
   case class Conflicts(invalid: Map[Key, Revision]) extends Exception
 

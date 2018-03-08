@@ -48,7 +48,7 @@ it prepared, it retries with the proposal. Otherwise, the leader *gets* the late
 keys that are read by the proposal from a majority of beakers. The leader discards all transactions 
 in the proposal that cannot be committed given the latest versions, and sets its repairs to the
 latest revisions of keys that are read - but not written - by the proposal for which the beakers 
-disagree on their version. The leader then broadcasts the proposal to all beakers. A beaker
+disagree on their version. The leader then sends the proposal to all beakers. A beaker
 *accepts* a proposal if it has not promised not to. If a beaker accepts a proposal, it discards all 
 older accepted proposals and broadcasts a __vote__ for it. A beaker *learns* a proposal once a 
 majority of beakers vote for it. If a beaker learns a proposal, it commits its transactions and 

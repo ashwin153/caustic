@@ -93,7 +93,7 @@ case class Beaker(
             !promise.commits.isEmpty || !promise.repairs.changes.isEmpty
           } flatMap { _ =>
             // Otherwise, send the promise to a quorum of beakers and retry automatically.
-            this.cluster.broadcast(_.accept(promise))
+            this.cluster.quorum(_.accept(promise))
             Thread.sleep(backoff.toMillis)
             consensus(promise)
           }

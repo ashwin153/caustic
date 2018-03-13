@@ -4,7 +4,7 @@ jvm_binary(
     source='Master.scala',
     main='Master',
     dependencies=[
-        'caustic-service/src/main/scala',
+        'caustic-cluster/src/main/scala',
         'caustic-beaker/src/main/scala',
     ],
 )

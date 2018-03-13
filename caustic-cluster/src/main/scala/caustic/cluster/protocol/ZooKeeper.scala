@@ -1,5 +1,7 @@
-package caustic.service
+package caustic.cluster
 package protocol
+
+import caustic.cluster
 
 import org.apache.curator.framework.{CuratorFramework, CuratorFrameworkFactory}
 import org.apache.curator.framework.recipes.cache.PathChildrenCache
@@ -30,7 +32,7 @@ object ZooKeeper {
     curator: CuratorFramework,
     created: mutable.Map[Address, String] = mutable.Map.empty,
     awareOf: mutable.Map[String, Address] = mutable.Map.empty
-  ) extends caustic.service.Cluster[C] {
+  ) extends cluster.Cluster[C] {
 
     // Re-register all created addresses after disruptions in ZooKeeper connectivity.
     this.curator.getConnectionStateListenable.addListener((_, s) =>

@@ -1,9 +1,10 @@
-package caustic.service
+package caustic.cluster
 
 import java.io.Closeable
-
-import scala.collection.mutable
-import scala.util.{Random, Try}
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, Future}
+import scala.util.Random
 
 /**
  *
@@ -42,7 +43,7 @@ trait Cluster[C] extends Closeable {
    *
    * @return Number of members.
    */
-  final def size: Int = this.members.size
+  def size: Int = this.members.size
 
   /**
    * Performs the request on all members of the [[Cluster]] in parallel and returns their responses.
@@ -50,11 +51,9 @@ trait Cluster[C] extends Closeable {
    * @param request Request to perform.
    * @return Collection of responses.
    */
-  final def broadcast[R](request: C => R): Seq[Try[R]] = {
-    val client = this.members.map(service.connect).toSeq
-    val result = client.par.map(c => Try(request(c))).seq
-    client.foreach(this.service.disconnect)
-    result
+  def broadcast[R](request: C => R): Seq[Future[R]] = {
+    val client = this.members.toSeq.map(service.connect)
+    client.map(c => Future(request(c)) andThen { case _ => this.service.disconnect(c) })
   }
 
   /**
@@ -64,22 +63,20 @@ trait Cluster[C] extends Closeable {
    * @param request Request to perform.
    * @return Collection of responses.
    */
-  final def quorum[R](request: C => R): Try[Seq[R]] = {
-    Try(broadcast(request).filter(_.isSuccess).map(_.get)).filter(_.size >= this.size / 2 + 1)
+  def quorum[R](request: C => R): Future[Seq[R]] = {
+    val majority = Random.shuffle(this.members.toSeq).map(this.service.connect)
+    Future.sequence(majority.map(c => Future(request(c)) andThen { case _ => this.service.disconnect(c) }))
   }
 
   /**
    * Performs the request on a randomly chosen member of the [[Cluster]] and returns the response.
    *
    * @param request Request to perform.
-   * @tparam R
    * @return Collection of responses.
    */
-  final def random[R](request: C => R): Try[R] = {
+  def random[R](request: C => R): Future[R] = {
     val client = service.connect(Random.shuffle(this.members).head)
-    val result = Try(request(client))
-    service.disconnect(client)
-    result
+    Future(request(client)) andThen { case _ => this.service.disconnect(client) }
   }
 
 }

@@ -1,6 +1,6 @@
 package caustic
 
-import caustic.beaker.ordering._
+import caustic.beaker.common._
 import caustic.beaker.thrift._
 
 import java.util

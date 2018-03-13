@@ -1,11 +1,11 @@
 import caustic.beaker._
 import caustic.beaker.storage.Local
-import caustic.service.Address
-import caustic.service.protocol.{Test, Beaker => External}
-
+import caustic.cluster.Address
+import caustic.cluster.protocol.{Test, Beaker => External}
 import scala.collection.mutable
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
 import scala.io.StdIn
-import scala.util.Success
 
 object Master extends App {
 
@@ -34,7 +34,8 @@ object Master extends App {
       val cluster  = Test.Cluster(Internal.Service)
       val server   = Beaker.Server(address, database, cluster)
       this.servers += serverId.toInt -> server
-      this.servers.values.foreach(_.cluster.join(address))
+      this.servers.values.foreach(s => cluster.join(s.address))
+      this.servers.values.foreach(s => s.cluster.join(address))
 
       server.serve()
       this.global.join(address)
@@ -44,6 +45,7 @@ object Master extends App {
       this.servers.remove(serverId.toInt) foreach { server =>
         this.servers.values.foreach(_.cluster.leave(server.address))
         server.close()
+        this.global.leave(server.address)
       }
 
     case r"joinClient (\d+)${clientId} (\d+)${serverId}" =>
@@ -79,18 +81,19 @@ object Master extends App {
 
     case r"put (\d+)${clientId} ([0-1]+)${key} ([0-1]+)${value}" =>
       // Associates the given value with the key.
-      this.clients(clientId.toInt).random(_.put(key, value)) foreach {
-        this.current += (clientId.toInt, key) -> _.getOrElse(0L)
-      }
+      val rev = Await.result(this.clients(clientId.toInt).random(_.put(key, value)), Duration.Inf)
+      this.current += (clientId.toInt, key) -> rev.getOrElse(0L)
 
     case r"get (\d+)${clientId} ([0-1]+)${key}" =>
       // Tells a client to attempt to get the key associated with the given value. The value or
       // error returned should be printed to standard-out. Blocks until the client communicates with
       // a server and the master script.
       val latest = this.current.getOrElse((clientId.toInt, key), 0L)
-      println(s"$key:${this.clients(clientId.toInt).random(_.get(key)) match {
-        case Success(Some(r)) if r.version < latest => "ERR_DEP"
-        case Success(Some(r)) => this.current += (clientId.toInt, key) -> r.version; r.value
+      val value  = Await.result(this.clients(clientId.toInt).random(_.get(key)), Duration.Inf)
+
+      println(s"$key:${value match {
+        case Some(r) if r.version < latest => "ERR_DEP"
+        case Some(r) => this.current += (clientId.toInt, key) -> r.version; r.value
         case _ => "ERR_KEY"
       }}")
 

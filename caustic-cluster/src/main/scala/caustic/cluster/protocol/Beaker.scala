@@ -1,9 +1,9 @@
-package caustic.service
+package caustic.cluster
 package protocol
 
 import caustic.beaker.thrift
 import caustic.beaker.thrift.Revision
-import caustic.service
+import caustic.cluster
 
 import scala.collection.JavaConverters._
 
@@ -19,7 +19,7 @@ object Beaker {
   /**
    * A Beaker service.
    */
-  case object Service extends service.Service[Beaker.Client] {
+  case object Service extends cluster.Service[Beaker.Client] {
 
     private val underlying = Thrift.Service(new thrift.Beaker.Client.Factory())
 

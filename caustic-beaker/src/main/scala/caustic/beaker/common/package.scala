@@ -1,10 +1,10 @@
 package caustic.beaker
 
-package object ordering {
+package object common {
 
   // Implicit relation operations.
   implicit class RelationOps[T](x: T)(implicit relation: Relation[T]) {
-    def ~(y: T): Boolean = relation.equiv(x, y)
+    def ~(y: T): Boolean = relation.related(x, y)
   }
 
   // Implicit order operations.

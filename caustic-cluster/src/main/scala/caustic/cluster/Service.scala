@@ -1,4 +1,4 @@
-package caustic.service
+package caustic.cluster
 
 /**
  *

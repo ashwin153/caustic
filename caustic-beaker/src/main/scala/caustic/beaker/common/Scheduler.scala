@@ -1,6 +1,4 @@
-package caustic.beaker.concurrent
-
-import caustic.beaker.ordering.Relation
+package caustic.beaker.common
 
 import java.io.Closeable
 import java.util.concurrent.CountDownLatch
@@ -10,13 +8,13 @@ import scala.concurrent.{Future, Promise}
 import scala.util.Try
 
 /**
- * A task scheduler. Executors guarantee that for any tasks A, B such that A ~ B, A and B will never
+ * A task executor. Schedulers guarantee that for any tasks A, B such that A ~ B, A and B will never
  * be executed simultaneously. They execute related tasks sequentially and unrelated tasks
  * concurrently. Loosely based on https://www.cs.cmu.edu/~dga/papers/epaxos-sosp2013.pdf.
  *
  * @param relation Task relation.
  */
-class Executor[T](relation: Relation[T]) extends Closeable {
+class Scheduler[T](relation: Relation[T]) extends Closeable {
 
   private[this] var epoch    : Long                         = 0L
   private[this] val horizon  : mutable.Map[Long, Condition] = mutable.Map.empty
@@ -62,7 +60,7 @@ class Executor[T](relation: Relation[T]) extends Closeable {
     val execute = new Thread(() => {
       this.lock.lock()
       try {
-        val deps = this.schedule.filterKeys(relation.equiv(_, arg))
+        val deps = this.schedule.filterKeys(relation.related(_, arg))
         val date = if (deps.isEmpty) this.epoch + 1 else deps.values.max + 1
         this.schedule += arg -> date
         scheduled.countDown()
@@ -82,7 +80,7 @@ class Executor[T](relation: Relation[T]) extends Closeable {
 
 }
 
-object Executor {
+object Scheduler {
 
   /**
    * Constructs an executor from the implicit relation.
@@ -90,6 +88,6 @@ object Executor {
    * @param relation Task relation.
    * @return Executor on relation.
    */
-  def apply[T]()(implicit relation: Relation[T]): Executor[T] = new Executor[T](relation)
+  def apply[T]()(implicit relation: Relation[T]): Scheduler[T] = new Scheduler[T](relation)
 
 }

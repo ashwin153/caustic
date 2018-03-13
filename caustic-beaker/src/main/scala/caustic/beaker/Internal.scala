@@ -45,33 +45,36 @@ object Internal {
       this.underlying.connection.get(keys.asJava).asScala.toMap
 
     /**
-     * Prepares a proposal. If a beaker has not made apromise to a newer proposal, it responds with
+     * Prepares a proposal. If a beaker has not made a promise to a newer proposal, it responds with
      * a promise. When a beaker makes a promise, it refuses to accept any proposal that conflicts
      * with the proposal it returns that has a lower ballot than the proposal it receives. If a
      * beaker has already accepted older proposals, it merges them together and returns the result.
      * Otherwise, it returns the proposal with a zero ballot.
      *
      * @param proposal Proposal to prepare.
-     * @return Promise or the ballot of any newer promise that it has made.
+     * @return Promise or the ballot of any newer promise that has been made.
      */
     def prepare(proposal: Proposal): Proposal =
       this.underlying.connection.prepare(proposal)
 
     /**
-     * Accepts a proposal. Beakers accept a proposal if they have not promised not to. If a beaker
-     * accepts a proposal, it discards all older accepted proposals and broadcasts a vote for it.
      *
-     * @param proposal Proposal to accept.
+     * @param proposal
+     * @return
      */
-    def accept(proposal: Proposal): Unit =
+    def accept(proposal: Proposal): Boolean =
       this.underlying.connection.accept(proposal)
 
     /**
-     * Votes for a proposal. Beakers learn a proposal once a majority of beakers vote for it. If a
-     * beaker learns a proposal, it commits its transactions and repairs on its replica of the
-     * database.
      *
-     * @param proposal Proposal to learn.
+     * @param proposal
+     */
+    def share(proposal: Proposal): Unit =
+      this.underlying.connection.share(proposal)
+
+    /**
+     *
+     * @param proposal
      */
     def learn(proposal: Proposal): Unit =
       this.underlying.connection.learn(proposal)

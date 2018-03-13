@@ -1,13 +1,14 @@
-package caustic.beaker.ordering
+package caustic.beaker.common
 
 import scala.language.implicitConversions
 
 /**
- * An equivalence relation.
+ * A binary relation. Relations are symmetric (x ~ y -> y ~ x), but may not necessarily be reflexive
+ * (x ~ x) or transitive (x ~ y, y ~ z -> x ~ z).
  */
 trait Relation[-T] {
 
-  def equiv(x: T, y: T): Boolean
+  def related(x: T, y: T): Boolean
 
 }
 

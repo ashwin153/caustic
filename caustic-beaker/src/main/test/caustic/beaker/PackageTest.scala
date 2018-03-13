@@ -1,7 +1,7 @@
 package caustic.beaker
 
 import caustic.beaker.thrift.{Ballot, Revision, Transaction}
-import caustic.beaker.ordering._
+import caustic.beaker.common._
 
 import org.junit.runner.RunWith
 import org.scalatest.concurrent.ScalaFutures

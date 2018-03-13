@@ -1,5 +1,7 @@
-package caustic.service
+package caustic.cluster
 package protocol
+
+import caustic.cluster
 
 import scala.collection.mutable
 
@@ -13,7 +15,7 @@ object Test {
   case class Cluster[C](
     service: Service[C],
     buffer: mutable.Set[Address]
-  ) extends caustic.service.Cluster[C] {
+  ) extends cluster.Cluster[C] {
 
     override def members: Set[Address] = this.buffer.toSet
     override def join(instance: Address): Unit = this.buffer += instance

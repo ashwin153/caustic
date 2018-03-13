@@ -37,31 +37,105 @@ taking the maximum of their ballots, combining their transactions choosing the t
 the newer proposal in the case of conflicts, and combining their repairs choosing 
 the write with the highest version in the case of duplicates. 
 
-The leader for a proposal first *prepares* the proposal on a majority of beakers. If a beaker has 
-not made a promise to a newer proposal, it responds with a __promise__. When a beaker makes a 
-promise, it refuses to accept any proposal that conflicts with the proposal it returns that has a 
-lower ballot than the proposal it receives. If a beaker has already accepted older proposals, it 
-merges them together and returns the result. Otherwise, it returns the proposal with a zero ballot. 
-If the leader does not receive a majority of promises, it retries with a higher ballot. Otherwise, 
-it merges the returned promises into a single proposal. If the proposal does not match the proposal 
-it prepared, it retries with the proposal. Otherwise, the leader *gets* the latest versions of the 
-keys that are read by the proposal from a majority of beakers. The leader discards all transactions 
-in the proposal that cannot be committed given the latest versions, and sets its repairs to the
-latest revisions of keys that are read - but not written - by the proposal for which the beakers 
-disagree on their version. The leader then sends the proposal to all beakers. A beaker
-*accepts* a proposal if it has not promised not to. If a beaker accepts a proposal, it discards all 
-older accepted proposals and broadcasts a __vote__ for it. A beaker *learns* a proposal once a 
-majority of beakers vote for it. If a beaker learns a proposal, it commits its transactions and 
-repairs on its replica of the database.
+The leader for a proposal ```P``` first *prepares* ```P``` on ```Q(P)```. If a beaker in ```Q(P)``` 
+has not made a promise to a newer proposal, then it responds with a __promise__ not to accept any 
+proposal that conflicts with the proposal it returns that has a lower ballot than the proposal it 
+receives. If the beaker has already accepted older proposals, it merges them together and returns 
+the result. Otherwise, it returns the proposal with a zero ballot. If the leader does not receive a 
+promise from every beaker in ```Q(P)```, it retries with a higher ballot. Otherwise, it merges the 
+returned promises into a single proposal ```P'```. If ```P``` does not equal ```P'```, then it
+retries with ```P'```. Otherwise, the leader *gets* the latest revisions of the keys that are read 
+by ```P``` from ```Q(P)```. The leader discards all transactions in ```P``` that cannot be committed 
+given the latest returned revisions, and sets its repairs to the latest revisions for keys that are 
+read - but not written - by ```P``` for which the beakers in ```Q(P)``` have different versions. The
+leader then asks each beaker in ```Q(P)``` to *accept* the proposal. A beaker accepts a proposal if
+it has not promised not to. When a beaker accepts a proposal, it discards all older accepted 
+proposals and __votes__ for ```P```. We say that a proposal is *accepted* if every beaker in
+```Q(P)``` votes for it. If ```P``` is accepted, then the leader requests each beaker in ```Q(P)``` 
+to *learn* ```P```. Otherwise, the leader retries with ```P```.  When a beaker learns a proposal, it 
+commits its transactions and repairs on its replica and *shares* the transactions it committed with 
+every other beaker.
 
 ### Correctness
-The key idea underlying the correctness of Paxos and all its derivatives is quorum intersection; any 
-two majorities cannot be disjoint. Beaker makes use of this fact extensively in its proof of 
-correctness.
+The proof of correctness relies on the assumption of *quorum connectivity*, beakers are always
+connected to at least a majority of their peers, and the fact of *quorum intersection*, any majority
+of beakers will contain at least one beaker in common.
 
-__Theorem.__ If a proposal ```A``` has been accepted by a majority, a conflicting proposal can never 
-be prepared until ```A``` is learned. __Proof.__ By quorum intersection, at least one promise will
-contain ```A```. Therefore, ```A``` must be prepared.
+__Consistency.__ If a proposal ```A``` is accepted, it can be committed. __Proof.__ Suppose, for the 
+sake of contradiction, that ```A``` cannot be committed. Then there must exist some conflicting 
+proposal ```B``` that is accepted after but learned before ```A``` on some beaker. By quorum 
+intersection, ```Q(B)``` must contain at least one beaker that learned ```A```. Therefore, any 
+transactions in ```B``` that conflict with changes made by ```A``` are discarded before ```B```
+is accepted. 
+
+But now transactions in ```A``` that conflict with changes in ```B``` cannot be committed.
+
+A A
+    Achanges
+__Linearizability:__ If proposal ```A``` conflicts with ```B``` and ```A``` is committed before
+```B``` somewhere, then ```A``` will be committed before ```B``` everywhere. __Proof.__ Suppose, for 
+the sake of contradiction, that ```B``` is committed before ```A``` somewhere. Then, ```B``` must be 
+learned before ```A``` somewhere but after ```A``` somewhere else. But ```A``` conflicts with ```B```, 
+so ```A``` and be cannot be learned simultaneously. (Theorem 1)
+
+
+- __Liveness:__ If a proposal is proposed, then a proposal will be learned.
+- __Safety:__ If two proposals are learned, then the older proposal is learned first.
+- __Non Triviality:__ If a proposal is learned, then it was proposed.
+
+#### Appendix
+__Theorem 1.__ If a proposal ```A``` has been accepted by a majority, then a conflicting proposal 
+```B``` cannot be prepared until ```A``` is learned by a majority. __Proof.__ By quorum 
+intersection, at least one promise will contain ```A```. Therefore, ```A``` must always be prepared 
+until it is learned by a majority.
+
+
+
+
+__Theorem 2.__ If a proposal ```A``` is accepted by a majority, then its transactions can be 
+committed. 
+
+__Theorem 3.__ If a proposal ```A``` is accepted by a majority, then it is eventually learned.
+__Proof.__ Because a conflicting proposal ```B``` cannot be prepared until ```A``` is learned, 
+by  a
+
+
+
+
+
+__Theorem 2.__ If a proposal ```A``` has been accepted by a majority, then it is eventually learned.
+__Proof.__ By Theorem 1, a conflicting proposal can never be prepared until ```A``` is learned.
+Therefore, ```A``` is eventually learned.
+
+until
+after ```B``` is learned. However, ```A``` was accepted by a majority, so it must have been 
+prepared.
+
+B is learned before A is learned
+B is learned after A was accept by a majority
+  Accepted  Learned
+    |----------|
+        |
+        Learned
+
+
+Because ```B``` was learned and ```B``` conflicts
+
+
+Then, the transaction must read a key for which there exists a newer version. This is
+only possible if a conflicting proposal ```B``` was learned but not yet committed. 
+
+
+
+Because ```A``` was learned, a conflicting proposal can never be prepared until ```A``` is learned.
+
+Because a conflicting proposal can never be learned before ```A``` is learned, this is only possible 
+if there exists a conflicting proposal ```B``` that has been accepted, but not yet learned, by a 
+majority. Because ```B``` was accepted by a majority and ```B``` conflicts with ```A```, ```A``` 
+cannot be prepared until ```B``` is learned. But ```A``` was accepted, so it must have been 
+prepared.
+
+
 
 __Theorem.__ Let ```R``` denote the repairs for an accepted proposal ```A```. Any accepted proposal 
 ```B``` that conflicts with ```A + R``` commutes with ```A + R```. __Proof.__ Because ```A``` and 
@@ -86,8 +160,31 @@ be committed. __Proof.__ Because a conflicting proposal cannot be learned until 
 and the transactions in ```A``` can be committed, the transactions in ```A``` will eventually be 
 committed.
 
-__Theorem.__ If proposals ```A``` and ```B``` are learned and ```A``` is older than ```B```, then 
-```A``` will be learned before ```B```. __Proof.__ If ```A``` and ```B``` are learned, they must 
+
+
+__Theorem.__ If proposal ```A``` conflicts with ```B``` and ```A``` is learned, then ```A``` will be 
+committed before ```B```. __Proof.__ Suppose, for the sake of contradiction, that
+```B``` is committed before ```A```. Then, ```A``` must have been learned after ```B```. Therefore, 
+a majority must have accepted ```A``` after ```B```. But ```A``` was learned before ```B```, so
+```B``` cannot be accepted until after ```A``` is learned. (Theorem 1) 
+
+
+Because ```A``` is learned before ```B``` and
+```A``` conflicts with ```B```, ```B``` cannot be prepared until ```A``` is learned. (Theorem 1)
+Therefore, ```B``` is learned after ```A```. 
+
+
+Suppose, for the sake of contradiction, that
+```B``` is learned before ```A```. Because ```A``` and ```B``` are learned, they may both be
+committed. (Consistency) However, 
+
+
+Because ```A``` and ```B``` conflict, ```A``` cannot be prepared
+until ```B``` is learned. 
+
+
+
+If ```A``` and ```B``` are learned, they must 
 have both been accepted by a majority. Because ```A``` is older than ```B```, a majority must have 
 accepted ```B``` after ```A```. Otherwise, ```A``` could not have been accepted by a majority. The 
 majority who accepted ```B``` after ```A``` will vote for ```A``` before they vote for ```B```. 

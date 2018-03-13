@@ -1,7 +1,6 @@
 package caustic.beaker
 
-import caustic.beaker.concurrent._
-import caustic.beaker.ordering._
+import caustic.beaker.common._
 import caustic.beaker.storage.Local
 import caustic.beaker.thrift._
 import caustic.cluster.protocol.Thrift
@@ -14,34 +13,42 @@ import java.{lang, util}
 import java.util.concurrent.atomic.AtomicInteger
 import scala.collection.JavaConverters._
 import scala.collection.mutable
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
+import scala.concurrent.duration._
 import scala.language.postfixOps
 import scala.math.Ordering.Implicits._
-import scala.util.{Failure, Random, Success, Try}
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration._
+import scala.util.{Failure, Success}
 
 /**
  * A distributed, transactional key-value store.
  *
  * @param id Unique identifier.
  * @param database Underlying database.
- * @param executor Transaction executor.
+ * @param scheduler Transaction scheduler.
  * @param cluster Beaker cluster.
  * @param backoff Consensus backoff duration.
  */
 case class Beaker(
   id: Int,
   database: Database,
-  executor: Executor[Transaction],
+  scheduler: Scheduler[Transaction],
   cluster: Cluster[Internal.Client],
   backoff: Duration = 1 second
 ) extends thrift.Beaker.AsyncIface with Closeable {
 
-  var round    : AtomicInteger                  = new AtomicInteger(1)
-  val proposed : mutable.Map[Transaction, Task] = mutable.Map.empty
-  val promised : mutable.Set[Proposal]          = mutable.Set.empty
-  val accepted : mutable.Set[Proposal]          = mutable.Set.empty
-  val learned  : mutable.Map[Proposal, Int]     = mutable.Map.empty
+  val round    : AtomicInteger          = new AtomicInteger(1)
+  val promised : mutable.Set[Proposal]  = mutable.Set.empty
+  val accepted : mutable.Set[Proposal]  = mutable.Set.empty
+  val learned  : History[Ballot]        = History(100)
+
+  // IF WE LEARN A TRANSACTION THAT PROPOSAL APPLIES THAT EQUALS A TRANSACTION WE PROPOSED WE FINISH.
+  // IF WE LEARN A TRANSACTION THAT PROPOSAL REPAIRS THAT CONFLICTS WITH A TRANSACTION WE PROPOSED WE CANCEL.
+  // IGNORE REPAIRS.
+  // USE THE SAME QUORUMS FOR PREPARE/READ/ACCEPT/LEARN
+  // WHEN A PROPOSAL IS LEARNED, SHARE THE TRANSACTIONS WE LEARNED THAT WERE APPLIED.
+  // WE HAVE TO DEPEND ON EVERY KEY WE WRITE FOR EVERYTHING BUT REPAIRS.
+  // IF WE LEARN A PROPOSAL THAT WRITES A KEY WE READ WE TERMINATE CONSENSUS.
 
   /**
    * Coordinate consensus on a proposal. Uses a variation of Generalized Paxos that has several
@@ -53,26 +60,28 @@ case class Beaker(
    * @see https://www.microsoft.com/en-us/research/wp-content/uploads/2016/02/tr-2005-33.pdf
    * @see https://www.datastax.com/dev/blog/lightweight-transactions-in-cassandra-2-0
    * @see https://www.cs.cmu.edu/~dga/papers/epaxos-sosp2013.pdf
+   *
    * @param proposal Proposed proposal.
    * @return Failure on error, loops indefinitely otherwise.
    */
-  def consensus(proposal: Proposal): Try[Unit] = {
+  def consensus(proposal: Proposal): Future[Unit] = {
     // Prepare the proposal on a quorum of beakers.
     this.cluster.quorum(_.prepare(proposal)) flatMap { promises =>
       if (promises.map(_.ballot).max > proposal.ballot) {
         // If a promise has been made to a newer proposal, then retry with a higher ballot.
         Thread.sleep(backoff.toMillis)
-        val newer = promises.maxBy(_.ballot)
-        val round = this.round.updateAndGet(i => (i max newer.ballot.round) + 1)
-        consensus(proposal.setBallot(new Ballot(round, this.id)))
+        val newest = this.round.updateAndGet(i => (i max promises.map(_.ballot).max.round) + 1)
+        val ballot = new Ballot(newest, this.id)
+        consensus(proposal.setBallot(ballot))
       } else {
         // Otherwise, merge the returned promises into a single proposal.
         val promise = promises.reduce[Proposal](merge).setBallot(proposal.ballot)
         if (!matches(proposal, proposal)) {
           // If the promise does not match the proposal, then retry with the promise.
           Thread.sleep(backoff.toMillis)
-          val next = this.round.getAndIncrement()
-          consensus(promise.setBallot(new Ballot(next, this.id)))
+          val newest = this.round.getAndIncrement()
+          val ballot = new Ballot(newest, this.id)
+          consensus(promise.setBallot(ballot)).filter(x => x == x)
         } else {
           // Otherwise, get the keys that read by the promise from a quorum of beakers.
           val depends = promise.commits.asScala.flatMap(_.depends.asScala.keySet)
@@ -94,8 +103,17 @@ case class Beaker(
           } flatMap { _ =>
             // Otherwise, send the promise to a quorum of beakers and retry automatically.
             this.cluster.quorum(_.accept(promise))
-            Thread.sleep(backoff.toMillis)
-            consensus(promise)
+          } flatMap { votes =>
+            if (votes.forall(identity)) {
+              // If a majority of acceptors vote for the proposal, then share it with a majority.
+              learn(promise, null)
+              this.cluster.broadcast(_.share(promise))
+              Future.unit
+            } else {
+              // Otherwise, retry with the promise.
+              Thread.sleep(backoff.toMillis)
+              consensus(promise)
+            }
           }
         }
       }
@@ -109,9 +127,9 @@ case class Beaker(
     // Performs a read-only transaction on the underlying database.
     val depends = keys.asScala.map(_ -> long2Long(0L)).toMap
     val readOnly = new Transaction(depends.asJava, new util.HashMap)
-    this.executor.submit(readOnly)(_ => this.database.read(depends.keySet)) onComplete {
+    this.scheduler.submit(readOnly)(_ => this.database.read(depends.keySet)) onComplete {
       case Success(r) => handler.onComplete(r.asJava)
-      case Failure(e) => handler.onComplete(new util.HashMap)
+      case Failure(_) => handler.onComplete(new util.HashMap)
     }
   }
 
@@ -130,9 +148,7 @@ case class Beaker(
     val proposal = new Proposal(ballot, Set(transaction).asJava, new Transaction())
 
     // Asynchronously attempt to reach consensus on the proposal.
-    val daemon = Task(consensus(proposal))
-    this.proposed += transaction -> daemon
-    daemon.future onComplete {
+    consensus(proposal) onComplete {
       case Success(_) => handler.onComplete(true)
       case Failure(_) => handler.onComplete(false)
     }
@@ -161,43 +177,46 @@ case class Beaker(
 
   override def accept(
     proposal: Proposal,
-    handler: AsyncMethodCallback[Void]
+    handler: AsyncMethodCallback[lang.Boolean]
   ): Unit = synchronized {
-    // A beaker accepts a proposal if it has not promised not to. If a beaker accepts a proposal,
-    // it discards all older accepted proposals and broadcasts a vote for it.
-    if (!this.promised.exists(p => p.ballot < proposal.ballot && (p |> proposal))) {
+    if (this.promised.exists(p => p.ballot > proposal.ballot && (p |> proposal))) {
+      // If the beaker has made a promise to a newer proposal, it rejects the proposal.
+      handler.onComplete(false)
+    } else {
+      // Otherwise, the beaker accepts the proposal and discards all older accepted proposals.
       this.accepted --= this.accepted.filter(_ <| proposal)
       this.accepted += proposal
-      this.cluster.broadcast(_.learn(proposal))
+      handler.onComplete(true)
     }
+  }
+
+  override def share(
+    proposal: Proposal,
+    handler: AsyncMethodCallback[Void]
+  ): Unit = synchronized {
+    // When a beaker learns a proposal, it performs it on all beakers.
+    this.cluster.broadcast(_.learn(proposal))
   }
 
   override def learn(
     proposal: Proposal,
     handler: AsyncMethodCallback[Void]
   ): Unit = synchronized {
-    // Remove all older learned proposals and vote for the proposal.
-    val votes = this.learned.getOrElse(proposal, 0)
-    this.learned --= this.learned.keys.filter(_ <| proposal)
-    this.learned(proposal) = votes + 1
-
-    // Once a majority of beakers have voted for a proposal, its transactions and repairs are
-    // committed and consensus on all conflicting proposed transactions completes.
-    if (this.learned(proposal) == this.cluster.size / 2 + 1) {
-      this.accepted.retain(p => !(p <| proposal || p.commits.asScala.exists(_ ~ proposal.repairs)))
-      proposal.commits.asScala + proposal.repairs foreach { t =>
-        this.executor.submit(t)(this.database.commit) onComplete { _ =>
-          val completed = this.proposed.filterKeys(_ ~ t)
-          completed foreach { case (u, v) => if (t == u) v.finish() else v.cancel() }
-          this.proposed --= completed.keys
-        }
-      }
+    if (!this.learned.happened(proposal.ballot)) {
+      // If the proposal has not recently happened, then commit its transactions and repairs on the
+      // database and discard all older accepted proposals. Because proposals are idempotent, the
+      // same proposal may be safely committed multiple times. However, this is a waste of system
+      // resources and should be avoided whenever possible.
+      val transactions = proposal.commits.asScala + proposal.repairs
+      transactions.foreach(this.scheduler.submit(_)(this.database.commit))
+      this.accepted.retain(p => !(p <| proposal))
+      this.learned.occurred(proposal.ballot)
     }
   }
 
   override def close(): Unit = {
     this.database.close()
-    this.executor.close()
+    this.scheduler.close()
   }
 
 }
@@ -217,7 +236,7 @@ object Beaker {
     cluster: Cluster[Internal.Client]
   ) extends caustic.cluster.Server {
 
-    val beaker     = Beaker(address.hashCode(), this.database, Executor(), this.cluster)
+    val beaker     = Beaker(address.hashCode(), this.database, Scheduler(), this.cluster)
     val processor  = new thrift.Beaker.AsyncProcessor(this.beaker)
     val underlying = Announcer(cluster, Thrift.Server(address, this.processor))
 

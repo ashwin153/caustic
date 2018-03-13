@@ -1,4 +1,4 @@
-package caustic.service
+package caustic.cluster
 
 import java.net.InetAddress
 import java.nio.charset.Charset

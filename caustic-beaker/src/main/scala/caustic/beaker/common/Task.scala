@@ -1,4 +1,4 @@
-package caustic.beaker.concurrent
+package caustic.beaker.common
 
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Future, Promise}

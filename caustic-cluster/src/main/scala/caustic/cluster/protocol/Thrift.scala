@@ -1,7 +1,7 @@
-package caustic.service
+package caustic.cluster
 package protocol
 
-import caustic.service
+import caustic.cluster
 
 import org.apache.thrift.{TProcessor, TServiceClient, TServiceClientFactory}
 import org.apache.thrift.protocol.TBinaryProtocol
@@ -20,7 +20,7 @@ object Thrift {
    */
   case class Service[T <: TServiceClient](
     factory: TServiceClientFactory[T]
-  ) extends service.Service[Thrift.Client[T]] {
+  ) extends cluster.Service[Thrift.Client[T]] {
 
     override def connect(address: Address): Client[T] =
       Thrift.Client(address, this.factory)
@@ -61,7 +61,7 @@ object Thrift {
   case class Server(
     address: Address,
     processor: TProcessor
-  ) extends service.Server {
+  ) extends cluster.Server {
 
     //  Construct an asynchronous, non-blocking Thrift server.
     val transport = new TNonblockingServerSocket(this.address.port)

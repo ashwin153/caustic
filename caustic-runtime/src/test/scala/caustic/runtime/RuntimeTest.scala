@@ -31,14 +31,40 @@ class RuntimeTest extends FunSuite with MockitoSugar with ScalaFutures with Matc
     val runtime = Runtime(Database.Local())
 
     // Get on an unknown key returns a null value.
-    runtime.execute(read(text("x"))) shouldBe Success(Null)
+    runtime.execute(read("x")) shouldBe Success(Null)
 
     // Get on a inserted key returns the inserted value.
-    runtime.execute(write(text("x"), real(1))) shouldBe Success(Null)
-    runtime.execute(read(text("x"))) shouldBe Success(real(1))
+    runtime.execute(write("x", real(1))) shouldBe Success(Null)
+    runtime.execute(read("x")) shouldBe Success(real(1))
 
     // Get on a modified key within a transaction returns the modified value.
-    runtime.execute(cons(write(text("x"), real(2)), read(text("x")))) shouldBe Success(real(2))
+    runtime.execute(cons(write("x", real(2)), read("x"))) shouldBe Success(real(2))
+  }
+
+  test("Execute is thread-safe.") {
+    val runtime = Runtime(Database.Local())
+
+    // Construct a transaction that increments a counter.
+    val inc = write("x", add(real(1), branch(caustic.equal(read("x"), Null), real(0), read("x"))))
+
+    // Concurrently execute the transaction and count the total successes.
+    val tasks = Future.sequence(Seq.fill(99)(Future(runtime.execute(inc).map(_ => 1).getOrElse(0))))
+    val total = Await.result(tasks, 30 seconds).sum
+
+    // Verify that the number of increments matches the number of successful transactions.
+    runtime.execute(read("x")) shouldBe Success(real(total))
+  }
+
+  test("Execute maintains mutable state.") {
+    val runtime = Runtime(Database.Local())
+
+    // Verifies that local variables are correctly updated.
+    runtime execute {
+      cons(
+        store("i", real(0)),
+        cons(repeat(less(load("i"), real(3)), store("i", add(load("i"), real(1)))), load("i"))
+      )
+    } shouldBe Success(real(3))
   }
 
   test("Execute detects conflicts.") {
@@ -61,42 +87,14 @@ class RuntimeTest extends FunSuite with MockitoSugar with ScalaFutures with Matc
     // construct a second transaction that updates the value of the field and unblocks the first
     // transaction after it completes execution. This introduces a conflict that should cause the
     // first transaction to fail.
-    val exec = Future(runtime.execute(read(text("x"))).get)
+    val exec = Future(runtime.execute(read("x")).get)
     assert(ready.await(100, TimeUnit.MILLISECONDS))
-    runtime.execute(write(text("x"), text("foo"))) shouldBe Success(Null)
+    runtime.execute(write("x", "foo")) shouldBe Success(Null)
     block.countDown()
+
+    // Verify that the first transaction fails, but the second succeeds.
     whenReady(exec.failed)(_ shouldBe an [Exception])
-    runtime.execute(read(text("x"))) shouldBe Success(text("foo"))
-  }
-
-  test("Execute is thread-safe.") {
-    // Construct a transaction that increments a counter.
-    val runtime = Runtime(Database.Local())
-    val key = text("x")
-    val inc = write(key, add(real(1), branch(caustic.equal(read(key), Null), real(0), read(key))))
-
-    // Concurrently execute the transaction and count the total successes.
-    val tasks = Future.sequence(Seq.fill(99)(Future(runtime.execute(inc).map(_ => 1).getOrElse(0))))
-    val total = Await.result(tasks, 30 seconds).sum
-
-    // Verify that the number of increments matches the number of successful transactions.
-    runtime.execute(read(key)) shouldBe Success(real(total))
-  }
-
-  test("Execute maintains mutable state.") {
-    // Verifies that local variables and loops are properly handled by the database execution logic.
-    Runtime(Database.Local()) execute {
-      cons(
-        store(text("i"), real(0)),
-        cons(
-          repeat(
-            less(load(text("i")), real(3)),
-            store(text("i"), add(load(text("i")), real(1)))
-          ),
-          load(text("i"))
-        )
-      )
-    } shouldBe Success(real(3))
+    runtime.execute(read("x")) shouldBe Success(text("foo"))
   }
 
 }

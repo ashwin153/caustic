@@ -1,69 +1,71 @@
 package caustic.library.typing
 
+import caustic.library.typing.Reference._
+
 import shapeless.ops.record.Selector
-import shapeless.{HList, LabelledGeneric, Witness}
+import shapeless._
 
 /**
  * An object reference.
  */
-class Reference(key: Variable[String]) {
-
-  type To
+case class Reference[T](key: Variable[String]) {
 
   /**
-   * Returns a variable containing the value of the specified field.
+   * Returns a container that stores the value of the attribute with the specified name.
    *
-   * @param witness Field name.
+   * @param witness Attribute name.
    * @param gen Generic representation.
-   * @param selector Field selector.
-   * @return Variable containing scalar value.
+   * @param selector Attribute selector.
+   * @param field Field converter.
+   * @return Container for the value of the field.
    */
-  def get[Repr <: HList, Name <: Symbol, Field <: Primitive](witness: Witness.Lt[Name])(
-    implicit gen: LabelledGeneric.Aux[To, Repr],
-    selector: Selector.Aux[Repr, Name, Variable[Field]]
-  ): Variable[Field] = this.key.scope(witness.value.name)
-
-  /**
-   * Returns a reference to the referenced object with the specified name.
-   *
-   * @param witness Field name.
-   * @param gen Generic representation.
-   * @param selector Field selector.
-   * @return Reference to referenced object.
-   */
-  def get[Repr <: HList, Name <: Symbol, Field <: Reference](witness: Witness.Lt[Name])(
-    implicit gen: LabelledGeneric.Aux[To, Repr],
-    selector: Selector.Aux[Repr, Name, Variable[Field]]
-  ): Reference.To[Field] = this.key match {
-    case Variable.Local(_) => Reference(Variable.Local(this.key.scope(witness.value.name).value))
-    case Variable.Remote(_) => Reference(Variable.Remote(this.key.scope(witness.value.name).value))
-  }
-
-  /**
-   * Returns a reference to the nested object with the specified name.
-   *
-   * @param witness Field name.
-   * @param gen Generic representation.
-   * @param selector Field selector.
-   * @return Reference to nested object.
-   */
-  def get[Repr <: HList, Name <: Symbol, Field](witness: Witness.Lt[Name])(
-    implicit gen: LabelledGeneric.Aux[To, Repr],
-    selector: Selector.Aux[Repr, Name, Reference.To[Field]]
-  ): Reference.To[Field] = Reference(this.key.scope(witness.value.name))
+  def get[Repr <: HList, Name <: Symbol, Type, Container](witness: Witness.Lt[Name])(
+    implicit gen: LabelledGeneric.Aux[T, Repr],
+    selector: Selector.Aux[Repr, Name, Type],
+    field: Field.Aux[Type, Container]
+  ): Container = field(this.key, witness.value.name)
 
 }
 
 object Reference {
 
-  type To[T] = Reference { type To = T }
-
   /**
-   * Constructs a reference to the object stored at the specified key.
-   *
-   * @param key Reference key.
-   * @return Object reference.
+   * An object field. Fields have a static type and a container for their dynamic value.
    */
-  def apply[T](key: Variable[String]): Reference.To[T] = new Reference.To[T](key)
+  trait Field[Type] {
+    type Container
+    def apply(key: Variable[String], field: Value[String]): Container
+  }
+
+  object Field extends LowPriorityField {
+
+    // Scalar fields are contained in mutable variables.
+    implicit def scalar[T <: Primitive]: Aux[T, Variable[T]] = new Field[T] {
+      type Container = Variable[T]
+      override def apply(key: Variable[String], field: Value[String]): Variable[T] = key.scope(field)
+    }
+
+    // Pointers are dereferenced and contained in references.
+    implicit def pointer[T]: Aux[Reference[T], Reference[T]] = new Field[Reference[T]] {
+      override type Container = Reference[T]
+      override def apply(key: Variable[String], field: Value[String]): Reference[T] = key match {
+        case Variable.Local(_) => Reference(Variable.Local(key.scope(field).value))
+        case Variable.Remote(_) => Reference(Variable.Remote(key.scope(field).value))
+      }
+
+    }
+  }
+
+  trait LowPriorityField {
+
+    type Aux[Type, Container0] = Field[Type] { type Container = Container0 }
+
+    // References are contained in references.
+    implicit def reference[T]: Aux[T, Reference[T]] = new Field[T] {
+      override type Container = Reference[T]
+      override def apply(key: Variable[String], field: Value[String]): Reference[T] = Reference(key.scope(field))
+    }
+
+  }
 
 }

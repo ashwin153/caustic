@@ -1,0 +1,14 @@
+scala_library(
+    name='scala',
+    sources=rglobs('*.scala'),
+    dependencies=[
+        'caustic-runtime/src/main/scala',
+        '3rdparty/jvm:shapeless',
+    ],
+    provides=artifact(
+        org='com.madavan',
+        name='caustic-library_2.12',
+        repo=public,
+        publication_metadata=describe,
+    ),
+)

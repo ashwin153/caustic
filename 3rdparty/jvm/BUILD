@@ -3,7 +3,7 @@
 ####################################################################################################
 # Beaker Client
 jar_library(name='beaker-client', jars=[
-    jar(org='com.madavan', name='beaker-client_2.12', rev='0.0.1'),
+    jar(org='com.madavan', name='beaker-client_2.12', rev='1.0.1'),
 ])
 
 # Shapeless

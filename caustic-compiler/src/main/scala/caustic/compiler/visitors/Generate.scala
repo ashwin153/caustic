@@ -186,7 +186,7 @@ case class Generate(
 
     // Serialize Caustic services as Scala case classes.
     s"""// TODO: Copy block comment from *.acid file.
-       |case class $service(client: Client) {
+       |case class $service(runtime: Runtime) {
        |  ${ functions.map(toFunction).mkString("\n").replaceAll("\n", "\n|  ") }
        |}
      """.stripMargin
@@ -225,16 +225,14 @@ case class Generate(
        |def ${ function.name }(
        |  ${ function.args.map(x => s"""${ x.name }: ${ toScala(x.alias) }""").mkString(",\n|  ") }
        |): Try[${ toScala(function.returns) }] = {
-       |  this.client.execute($body) map { result =>
+       |  this.runtime.execute($body) map { result =>
        |    // Extract a Json string from the result.
-       |    if (result.isSetText)
-       |      result.getText
-       |    else if (result.isSetReal)
-       |      result.getReal.toString
-       |    else if (result.isSetFlag)
-       |      result.getFlag.toString
-       |    else
-       |      ""
+       |    result match {
+       |      case Text(x) => x
+       |      case Real(x) => x.toString
+       |      case Flag(x) => x.toString
+       |      case Null    => "null"
+       |    }
        |  } map {
        |    // Deserialize the result using Spray Json.
        |    _.parseJson.convertTo[${ toScala(function.returns) }]

@@ -1,22 +1,16 @@
 package caustic.example.counter
 
-import caustic.runtime.Server
-import caustic.runtime.service.Connection
+import caustic.runtime.{Database, Runtime}
 
 object CounterExample extends App {
 
   // Bootstrap an in-memory database, and establish a connection.
-  val server = Server()
-  val client = Connection(9090)
+  val runtime = Runtime(Database.Local())
 
   // Create a counter service, and perform increments.
-  val service = Counter(this.client)
+  val service = Counter(this.runtime)
   print(this.service.increment("x0"))
   print(this.service.increment("x0"))
   print(this.service.increment("x1"))
-
-  // Shut down the client and server.
-  this.client.close()
-  this.server.close()
 
 }

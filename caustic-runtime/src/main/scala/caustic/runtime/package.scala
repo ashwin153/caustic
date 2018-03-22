@@ -1,8 +1,8 @@
 package caustic
 
-import scala.language.implicitConversions
-
 import caustic.runtime.Runtime._
+
+import scala.language.implicitConversions
 
 package object runtime {
 
@@ -11,9 +11,9 @@ package object runtime {
   val False = Flag(false)
   val Empty = Text("")
 
-  def flag(value: Boolean): Literal = if (value) True else False
-  def real(value: Double): Literal = Real(value)
-  def text(value: String): Literal = if (value.isEmpty) Empty else Text(value)
+  implicit def flag(value: Boolean): Literal = if (value) True else False
+  implicit def real(value: Double): Literal = Real(value)
+  implicit def text(value: String): Literal = if (value.isEmpty) Empty else Text(value)
 
   // Simplify Expressions.
   def read(k: Program): Program = k match {

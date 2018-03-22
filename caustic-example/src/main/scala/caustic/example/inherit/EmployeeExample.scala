@@ -1,21 +1,15 @@
 package caustic.example.inherit
 
-import caustic.runtime.Server
-import caustic.runtime.service.Connection
+import caustic.runtime.{Runtime, Database}
 
 object EmployeeExample extends App {
 
   // Bootstrap an in-memory database, and establish a connection.
-  val server = Server()
-  val client = Connection(9090)
+  val runtime = Runtime(Database.Local())
 
   // Create a counter service, and perform increments.
-  val service = Payroll(this.client)
+  val service = Payroll(this.runtime)
   print(this.service.salary(Employee(100)))
   print(this.service.salary(Manager(1000, 100)))
-
-  // Shut down the server.
-  this.client.close()
-  this.server.close()
 
 }

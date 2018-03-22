@@ -1,7 +1,6 @@
-package caustic.lang
+package caustic.runtime
 
 import caustic.runtime.typing._
-import caustic.runtime._
 
 package object control {
 

@@ -1,8 +1,7 @@
 package caustic.runtime.collection
 
-import caustic.lang.{Value, caustic.runtime.control}
-import caustic.runtime.control.Context
-import caustic.runtime.typing.{Int, Value, Variable, caustic, collection, lang, ops}
+import caustic.runtime.control._
+import caustic.runtime.typing._
 
 /**
  *
@@ -11,14 +10,14 @@ import caustic.runtime.typing.{Int, Value, Variable, caustic, collection, lang, 
  */
 case class Collection[T](size: Variable[Int]) {
 
-  /**
-   *
-   * @param index
-   * @return
-   */
-  def get(index: Value[Int])(
-    implicit context: Context,
-    constructor: ops.Constructor[T]
-  ): T = constructor.construct(this.size.scope(index).watch(this.exists.set))
+//  /**
+//   *
+//   * @param index
+//   * @return
+//   */
+//  def get(index: Value[Int])(
+//    implicit context: Context,
+//    constructor: Constructor[T]
+//  ): T = constructor.construct(this.size.scope(index).watch(this.exists.set))
 
 }

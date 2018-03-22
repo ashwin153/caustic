@@ -205,9 +205,9 @@ object Runtime {
   /**
    * Constructs a [[Runtime]] connected to the [[Cluster]].
    *
-   * @param config [[Cluster]] configuration.
+   * @param cluster Cluster to connect to.
    * @return Connected [[Runtime]].
    */
-  def apply(config: Cluster.Config): Runtime = new Runtime(Cluster(Beaker.Service, config))
+  def apply(cluster: Cluster[Beaker.Client]): Runtime = new Runtime(cluster)
 
 }

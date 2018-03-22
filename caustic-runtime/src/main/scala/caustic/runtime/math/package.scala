@@ -1,4 +1,4 @@
-package caustic.lang
+package caustic.runtime
 
 import caustic.runtime.typing._
 import caustic.runtime
@@ -15,7 +15,7 @@ package object math {
   val E                                         : Value[Double] = scala.math.E
 
   // Functions.
-  def abs   [X <: Double](x: Value[X])          : Value[X]      = runtime.branch(x < Zero, -x, x)
+  def abs   [X <: Double](x: Value[X])          : Value[X]      = branch(x < Zero, -x, x)
   def ceil  (x: Value[Double])                  : Value[Int]    = floor(x) + One
   def cos   (x: Value[Double])                  : Value[Double] = runtime.cos(x)
   def cosh  (x: Value[Double])                  : Value[Double] = (exp(x) + exp(-x)) / Two
@@ -30,7 +30,7 @@ package object math {
   def log10 (x: Value[Double])                  : Value[Double] = log(x, Ten)
   def pow   (x: Value[Double], y: Value[Double]): Value[Double] = runtime.pow(x, y)
   def random()                                  : Value[Double] = runtime.random()
-  def round (x: Value[Double])                  : Value[Int]    = runtime.branch(x - floor(x) < Half, floor(x), ceil(x))
+  def round (x: Value[Double])                  : Value[Int]    = branch(x - floor(x) < Half, floor(x), ceil(x))
   def sec   (x: Value[Double])                  : Value[Double] = One / cos(x)
   def sech  (x: Value[Double])                  : Value[Double] = One / cosh(x)
   def sin   (x: Value[Double])                  : Value[Double] = runtime.sin(x)

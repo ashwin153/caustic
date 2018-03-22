@@ -2,8 +2,7 @@ scala_library(
     name='scala',
     sources=rglobs('*.scala'),
     dependencies=[
-        'caustic-cluster/src/main/scala',
-        'caustic-beaker/src/main/thrift',
+        '3rdparty/jvm:beaker-client',
     ],
     provides=artifact(
         org='com.madavan',

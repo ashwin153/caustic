@@ -1,7 +1,5 @@
 package caustic.runtime.collection
 
-import caustic.lang.Value
-import caustic.runtime.control._
 import caustic.runtime.typing._
 import shapeless._
 import shapeless.ops.record.Selector
@@ -10,7 +8,7 @@ import shapeless.ops.record.Selector
  *
  * @tparam T
  */
-case class Object[T](key: Value[String]) {
+case class Object[T](key: Variable[String]) {
 
   /**
    *

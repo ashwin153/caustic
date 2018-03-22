@@ -1,4 +1,4 @@
-package caustic.lang
+package caustic.runtime
 
 import caustic.runtime
 import caustic.runtime._

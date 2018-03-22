@@ -10,6 +10,7 @@ import org.scalatest.{FunSuite, Matchers}
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.mockito.MockitoSugar
+import org.scalatest.time._
 
 import java.util.concurrent.{CountDownLatch, TimeUnit}
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -20,6 +21,11 @@ import scala.util.Success
 
 @RunWith(classOf[JUnitRunner])
 class RuntimeTest extends FunSuite with MockitoSugar with ScalaFutures with Matchers {
+
+  implicit val defaultPatience: PatienceConfig = PatienceConfig(
+    timeout = Span(5, Seconds),
+    interval = Span(100, Millis)
+  )
 
   test("Execute is strongly consistent.") {
     val runtime = Runtime(Database.Local())
@@ -46,7 +52,7 @@ class RuntimeTest extends FunSuite with MockitoSugar with ScalaFutures with Matc
     doAnswer(new CallsRealMethods {
       override def answer(invocation: InvocationOnMock): Object = {
         ready.countDown()
-        assert(block.await(5, TimeUnit.SECONDS))
+        assert(block.await(1, TimeUnit.SECONDS))
         super.answer(invocation)
       }
     }).when(fake).cas(Map("x" -> 0L), Map.empty)
@@ -56,7 +62,7 @@ class RuntimeTest extends FunSuite with MockitoSugar with ScalaFutures with Matc
     // transaction after it completes execution. This introduces a conflict that should cause the
     // first transaction to fail.
     val exec = Future(runtime.execute(read(text("x"))).get)
-    assert(ready.await(1, TimeUnit.SECONDS))
+    assert(ready.await(100, TimeUnit.MILLISECONDS))
     runtime.execute(write(text("x"), text("foo"))) shouldBe Success(Null)
     block.countDown()
     whenReady(exec.failed)(_ shouldBe an [Exception])

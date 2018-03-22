@@ -4,15 +4,15 @@
 #                        https://github.com/ashwin153/caustic/wiki/Release                         #
 ####################################################################################################
 targets=(
-  "caustic-runtime/src/main/scala"
   "caustic-compiler/src/main/antlr"
   "caustic-compiler/src/main/scala"
+  "caustic-runtime/src/main/scala"
 )
 
 artifacts=(
-  "caustic-runtime_2.12"
   "caustic-grammar"
   "caustic-compiler_2.12"
+  "caustic-runtime_2.12"
 )
 
 ####################################################################################################

@@ -24,7 +24,7 @@ object Compiler {
   def main(args: Array[String]): Unit = {
     // Print usage information.
     if (args.length < 1 || args.length > 2) {
-      println("Usage: caustic <source> [config]")
+      println("Usage: causticc <source> [config]")
       System.exit(1)
     }
 

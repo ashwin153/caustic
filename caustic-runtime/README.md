@@ -1,75 +1,85 @@
-# Runtime
-The ```caustic-runtime``` executes transactions on arbitrary key-value stores.
+# Programs
+The runtime is a virtual machine that dynamically compiles __programs__ into __transactions__ that 
+are *atomically* and *consistently* executed on any transactional key-value store in *isolation*.
+Programs are composed of scalar __literal__ values and __expressions__ that transform literal
+arguments into literal results. The runtime uses tail-recursive, partial evaluation to gradually 
+reduce programs to a single literal result.
 
-## Getting Started
-A ```Server``` may be started and run using [Docker][1]. By default, the ```Server``` will serve an 
-in-memory database over port ```9090```. Refer to the [reference configuration][2] for
-information about the various configuration parameters and their default values. This configuration
-may be optionally overriden by providing a configuration file.
+Literals may be of type ```Flag```, ```Real```, ```Text```, and ```Null``` which correspond to
+bool, double, string, and null respectively in most C-style languages. The following table
+enumerates the various expressions supported by the runtime. The list of expressions may seem 
+primitive; however, they may be composed together arbitrarily to create more sophisticated 
+subroutines.
 
-```
-docker run -d \
-  -p 9090:9090 \
-  -v </path/to/application.conf>:/caustic/caustic-runtime/src/main/resources/application.conf \
-  ashwin153/caustic \
-  ./pants run caustic-runtime/src/main/scala:server \
-```
+| Expression               | Description                                                           |
+|:-------------------------|:----------------------------------------------------------------------|
+| ```add(x, y)```          | Sum of ```x``` and ```y```.                                           | 
+| ```both(x, y)```         | Bitwise AND of ```x``` and ```y```.                                   |
+| ```branch(c, p, f)```    | Executes ```p``` if ```c``` is true, or ```f``` otherwise.            | 
+| ```cons(a, b)```         | Executes ```a``` and then ```b```.                                    | 
+| ```contains(x, y)```     | Returns whether ```x``` contains ```y```.                             |
+| ```cos(x)```             | Cosine of ```x```.                                                    |
+| ```div(x, y)```          | Quotient of ```x``` and ```y```.                                      |
+| ```either(x, y)```       | Bitwise OR of ```x``` and ```y```.                                    |
+| ```equal(x, y)```        | Returns whether ```x``` and ```y``` are equal.                        |
+| ```floor(x)```           | Floor of ```x```.                                                     |
+| ```indexOf(x, y)```      | Returns the index of the first occurrence of ```y``` in ```x```.      | 
+| ```length(x)```          | Returns the number of characters in ```x```.                          |
+| ```less(x, y)```         | Returns whether ```x``` is strictly less than ```y```.                |
+| ```load(n)```            | Loads the value of the variable ```n```.                              |
+| ```log(x)```             | Natural log of ```x```.                                               |
+| ```matches(x, y)```      | Returns whether or not ```x``` matches the regex pattern ```y```.     |
+| ```mod(x, y)```          | Remainder of ```x``` divided by ```y```.                              |
+| ```mul(x, y)```          | Product of ```x``` and ```y```.                                       | 
+| ```negate(x)```          | Bitwise negation of ```x```.                                          |
+| ```pow(x, y)```          | Returns ```x``` raised to the power ```y```.                          | 
+| ```prefetch(k)```        | Reads the values of the common delimited list of keys ```k```.        |
+| ```read(k)```            | Reads the value of the key ```k```.                                   |
+| ```repeat(c, b)```       | Repeatedly executes ```b``` while ```c``` is true.                    |
+| ```rollback(r)```        | Discards all writes and returns ```r```.                              |
+| ```sin(x)```             | Sine of ```x```.                                                      | 
+| ```slice(x, l, h)```     | Returns the substring of ```x``` between ```[l, h)```.                |
+| ```store(n, v)```        | Stores the value ```v``` for the variable ```n```.                    |
+| ```sub(x, y)```          | Difference of ```x``` and ```y```.                                    |
+| ```write(k, v)```        | Writes the value ```v``` for the key ```k```.                         |
 
-A ```Server``` may also be run programmatically.
+# Execution
+Changes to keys are detected using [multiversion concurrency control][1]. Each key is associated 
+with a __revision__, or versioned value, whose version number is incremented each time that its 
+value is modified. A revision ```A``` *conflicts with* ```B``` if ```A``` and ```B``` correspond 
+to the same key, and the version of ```A``` is greater than ```B```. Conflict is an 
+[asymmetric relation][2]; if ```A``` conflicts with ```B```, then ```B``` does not conflict with 
+```A```. 
 
-```scala
-import caustic.runtime.Server
+The runtime can *execute* programs on any key-value store that supports *get* and *cas*. A get 
+retrieves the revisions of a set of keys and a cas conditionally updates a set of keys if and 
+only if a set of dependent versions do not conflict. Given correct implementations of get and cas, 
+the runtime executes programs according to the following procedure.
 
-// Serves an in-memory database over port 9090.
-val server = Server()
+1. __Retrieve__: Call get on all keys that are read and written by the transaction, and add the 
+   returned revisions to a local snapshot. In order to guarantee [snapshot isolation][3], get is 
+   only called when a key is read or written for the first time. By batching reads and writes 
+   and avoiding duplicate fetches, databases are guaranteed to perform a minimal number of 
+   roundtrips to and from the underlying key-value store. 
+2. __Evaluate__: Recursively replace all expressions that have literal operands with their 
+   corresponding literal result. For example, ```add(real(1), sub(real(0), real(2)))``` returns 
+   ```real(-1)```. The result of all ```write```expressions is saved to a local buffer and the 
+   result of all ```read``` expressions is the latest value of the key in either the local buffer or 
+   snapshot.  
+3. __Repeat__: Re-evaluate the program until it reduces to a single literal value. Because all 
+   expressions with literal operands return a literal value, all programs eventually reduce to a 
+   literal.
+4. __Commit__: Call cas on all keys that are written by the program conditioned on all
+   the keys that are read or written by the program remaining unchanged. Because programs are 
+   executed with snapshot isolation, they are guaranteed to be serializable. Serializability 
+   implies that concurrent execution has the same effect as sequential execution, and, therefore,
+   that program execution will be robust against race conditions.
+   
+# Optimizations
+First, the runtime is tail-recursive. Therefore, programs may be composed of arbitrarily many nested
+expressions. Second, the runtime batches I/O. Reads are performed simultaneously whenever possible 
+and writes are buffered. This significantly reduces amount of I/O performed during execution.
 
-// Terminates the server.
-server.close()
-```
-
-A ```Connection``` to this ```Server``` may then be established and used to execute transactions.
-
-```scala
-import caustic.runtime.service._
-
-// Establishes a connection to localhost:9090.
-val client = Connection(9090)
-
-// Executes a transaction on the remote server.
-client.execute(write("x", 3))
-
-// Terminates the connection.
-client.close()
-```
-
-An exhaustive list of the various supported transactional operations can be found [here][3].
-
-## Service Discovery
-A ```Server``` may also be run as a member of a dynamically discoverable ```Cluster``` of instances,
-by setting the ```caustic.server.discoverable``` configuration parameter. Service discovery is
-managed by a ```Registry``` that notifies clients whenever a ```Server``` comes online or goes 
-offline. A ```Registry``` stores its state within a configurable [ZooKeeper][4] ensemble. Clients 
-may connect to this ```Registry``` and use it to execute transactions on registered 
-```Server``` instances.
-
-```scala
-import caustic.runtime.service._
-
-// Establishes a connection to ZooKeeper at localhost:2181.
-val registry = Registry()
-
-// Establishes connections to all registered servers.
-val client = Cluster(registry)
-
-// Executes a transaction on a random, registered server.
-client.execute(write("x", 3))
-
-// Terminates the connections.
-client.close()
-registry.close()
-```
-
-[1]: https://hub.docker.com/r/ashwin153/caustic/
-[2]: https://github.com/ashwin153/caustic/blob/master/caustic-runtime/src/main/resources/reference.conf
-[3]: https://github.com/ashwin153/caustic/wiki/Runtime#transaction
-[4]: https://zookeeper.apache.org/
+[1]: https://en.wikipedia.org/wiki/Multiversion_concurrency_control
+[2]: https://en.wikipedia.org/wiki/Asymmetric_relation
+[3]: https://en.wikipedia.org/wiki/Snapshot_isolation

@@ -1,4 +1,4 @@
-![Logo](https://github.com/ashwin153/caustic/blob/master/caustic-assets/images/banner.png)
+![Logo](https://github.com/ashwin153/caustic/blob/master/caustic-assets/images/caustic-banner.png)
 ---
 [![Build Status](https://travis-ci.org/ashwin153/caustic.svg?branch=master)][3]
 [![Maven Central](https://img.shields.io/maven-central/v/com.madavan/caustic-runtime_2.12.svg)][2]
@@ -123,11 +123,8 @@ service Counter {
 # Programming Language
 caustic/                            https://github.com/ashwin153/caustic
 +---caustic-assets/                 Documentation, results, and graphics.
-+---caustic-benchmark/              Performance tests.
-+---caustic-beaker/                 Storage system.
 +---caustic-compiler/               Programming language.
 +---caustic-runtime/                Virutal machine.
-+---caustic-service/                Service discovery.
 +---build-support/                  Pants plugins and configuration.
 
 # Syntax Highlighting
@@ -135,10 +132,6 @@ caustic.tmbundle/                   https://github.com/ashwin153/caustic.tmbundl
 +---Preferences/                    TextMate preferences.
 +---Snippets/                       TextMate code snippets.
 +---Syntaxes/                       TextMate grammar.
-
-# YCSB Benchmarks
-ycsb/                               https://github.com/ashwin153/YCSB
-+---caustic                         Caustic integration.
 ```
 
 # Requirements

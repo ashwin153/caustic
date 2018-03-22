@@ -10,11 +10,9 @@ import org.scalatest.{FunSuite, Matchers}
 class ProgramTest extends FunSuite with Matchers {
 
   test("Caches literals") {
-    flag(true) should be theSameInstanceAs flag(true)
-    flag(false) should be theSameInstanceAs flag(false)
-    text("") should be theSameInstanceAs text("")
-    real(0) should be theSameInstanceAs real(0)
-    real(1) should be theSameInstanceAs real(1)
+    flag(true) should be theSameInstanceAs True
+    flag(false) should be theSameInstanceAs False
+    text("") should be theSameInstanceAs Empty
   }
 
   test("Simplifies expressions") {

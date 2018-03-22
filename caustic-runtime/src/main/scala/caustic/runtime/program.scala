@@ -2,6 +2,7 @@ package caustic.runtime
 
 import java.io._
 import java.nio.charset.Charset
+import java.util.Base64
 
 /**
  * A transactional procedure. Programs are an abstract-syntax tree composed of [[Literal]] leaves
@@ -40,7 +41,7 @@ object Literal {
    * @return
    */
   def deserialize(repr: String): Literal = {
-    val bytes  = new ByteArrayInputStream(repr.getBytes(this.charset))
+    val bytes  = new ByteArrayInputStream(Base64.getDecoder.decode(repr))
     val stream = new ObjectInputStream(bytes)
     stream.readObject().asInstanceOf[Literal]
   }
@@ -54,7 +55,7 @@ object Literal {
     val bytes  = new ByteArrayOutputStream()
     val stream = new ObjectOutputStream(bytes)
     stream.writeObject(literal)
-    new String(bytes.toByteArray, this.charset)
+    Base64.getEncoder.encodeToString(bytes.toByteArray)
   }
 
 }

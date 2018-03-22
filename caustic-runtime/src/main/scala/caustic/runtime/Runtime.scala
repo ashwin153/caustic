@@ -1,55 +1,34 @@
 package caustic.runtime
 
 import caustic.runtime.Literal._
-import caustic.runtime.Retry._
 import caustic.runtime.Runtime._
-import caustic.cluster.Cluster
-import caustic.cluster.protocol.Beaker
+
+import beaker.client._
 
 import scala.annotation.tailrec
 import scala.collection.mutable
-import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
 /**
  * A transactional virtual machine.
  *
- * @param cluster Beaker [[Cluster]].
+ * @param database Underlying database.
  */
-class Runtime(cluster: Cluster[Beaker.Client]) {
+class Runtime(database: Database) {
 
   /**
-   * Executes the [[Program]] asynchronously and returns the result, retrying failures with backoff.
+   * Executes the program and returns the result. Programs are repeatedly partially evaluated until
+   * they are reduced to a single literal value. Automatically batches reads and buffers writes.
    *
-   * @param backoffs  Backoff durations.
-   * @param program [[Program]] to execute.
-   * @throws Rollbacked If the [[Program]] was rolled back.
-   * @throws Aborted If the [[Program]] could not be executed.
-   * @throws Fault If the [[Program]] is illegally constructed.
-   * @return [[Literal]] result or an exception on failure.
-   */
-  def execute(backoffs: Seq[FiniteDuration])(program: Program)(
-    implicit ec: ExecutionContext
-  ): Future[Literal] = {
-    attempt(backoffs)(execute(program))
-  }
-
-  /**
-   * Executes the [[Program]] and returns the result. Programs are repeatedly partially evaluated
-   * until they are reduced to a single [[Literal]] value. Automatically batches reads and buffers
-   * writes.
-   *
-   * @param program [[Program]] to execute.
- *
-   * @throws Rollbacked If the [[Program]] was rolled back.
-   * @throws Aborted If the [[Program]] could not be executed.
-   * @throws Fault If the [[Program]] is illegally constructed.
-   * @return [[Literal]] result or exception on failure.
+   * @param program Program to execute.
+   * @throws Rollbacked If the program was rolled back.
+   * @throws Aborted If the program could not be executed.
+   * @throws Fault If the program is illegally constructed.
+   * @return Literal result or exception on failure.
    */
   def execute(program: Program): Try[Literal] = {
     val depends  = mutable.Map.empty[Key, Version]
-    val snapshot = mutable.Map.empty[Key, Literal]
+    val snapshot = mutable.Map.empty[Key, Literal].withDefaultValue(Null)
     val buffer   = mutable.Map.empty[Key, Literal]
     val locals   = mutable.Map.empty[Key, Literal]
 
@@ -71,7 +50,7 @@ class Runtime(cluster: Cluster[Beaker.Client]) {
 
       // Fetch the keys, update the local snapshot, and reduce the program. If the result is a
       // literal then return, otherwise recurse on the partially evaluated program.
-      this.cluster.random(_.get(keys)) flatMap { r =>
+      this.database.get(keys) flatMap { r =>
         depends  ++= r.mapValues(r => r.version)
         snapshot ++= r.mapValues(r => deserialize(r.value))
 
@@ -99,7 +78,7 @@ class Runtime(cluster: Cluster[Beaker.Client]) {
         reduce(rest, buffer.getOrElse(k, snapshot(k)) :: rem)
       case (Expression(Write, Text(k) :: (v: Literal) :: Nil) :: rest, rem) =>
         buffer += k -> v
-        reduce(rest, v :: rem)
+        reduce(rest, Null :: rem)
       case (Expression(Branch, cmp :: pass :: fail :: Nil) :: rest, rem) =>
         reduce(cmp :: Branch :: rest, pass :: fail :: rem)
       case (Expression(Cons, first :: second :: Nil) :: rest, rem) =>
@@ -167,13 +146,13 @@ class Runtime(cluster: Cluster[Beaker.Client]) {
     // transaction to the underlying database if and only if the versions of its various
     // dependencies have not changed. Filter out empty first changes to allow local variables.
     evaluate(program) recoverWith { case e: Rollbacked =>
-      this.cluster.random(_.cas(depends.toMap, Map.empty)) match {
-        case Success(true) => Failure(e)
+      this.database.cas(depends.toMap, Map.empty) match {
+        case Success(_) => Failure(e)
         case _ => Failure(Aborted)
       }
     } flatMap { r =>
-      this.cluster.random(_.cas(depends.toMap, buffer.mapValues(serialize).toMap)) match {
-        case Success(true) => Success(r)
+      this.database.cas(depends.toMap, buffer.mapValues(serialize).toMap) match {
+        case Success(_) => Success(r)
         case _ => Failure(Aborted)
       }
     }
@@ -186,28 +165,28 @@ object Runtime {
   /**
    * A non-retryable failure that terminates execution and discards all writes.
    *
-   * @param result [[Literal]] return value.
+   * @param result Literal return value.
    */
-  case class Rollbacked(result: Literal) extends Exception with NonRetryable
+  case class Rollbacked(result: Literal) extends Exception
 
   /**
-   * A retryable failure that indicates a [[Program]] could not be executed.
+   * A retryable failure that indicates a program could not be executed.
    */
   case object Aborted extends Exception
 
   /**
-   * An non-retryable failure that is thrown when a [[Program]] is illegally constructed.
+   * An non-retryable failure that is thrown when a program is illegally constructed.
    *
    * @param message Error message.
    */
-  case class Fault(message: String) extends Exception with NonRetryable
+  case class Fault(message: String) extends Exception
 
   /**
-   * Constructs a [[Runtime]] connected to the [[Cluster]].
+   * Constructs a runtime connected to the specified database.
    *
-   * @param cluster Cluster to connect to.
-   * @return Connected [[Runtime]].
+   * @param database Underlying database.
+   * @return Initialized runtime.
    */
-  def apply(cluster: Cluster[Beaker.Client]): Runtime = new Runtime(cluster)
+  def apply(database: Database): Runtime = new Runtime(database)
 
 }

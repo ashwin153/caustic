@@ -1,6 +1,11 @@
 ####################################################################################################
 #                                             Compile                                              #
 ####################################################################################################
+# Beaker Client
+jar_library(name='beaker-client', jars=[
+    jar(org='com.madavan', name='beaker-client_2.12', rev='0.0.1'),
+])
+
 # Shapeless
 jar_library(name='shapeless', jars=[
     jar(org='com.chuusai', name='shapeless_2.12', rev='2.3.2'),

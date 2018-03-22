@@ -6,17 +6,13 @@ import caustic.runtime.Runtime._
 
 package object runtime {
 
-  type Key = String
-  type Version = Long
-
   // Cache Literals.
-  private val True = Flag(true)
-  private val False = Flag(false)
-  private val Empty = Text("")
-  private val Numbers = (-128 to 128).map(x => x.toDouble -> Real(x)).toMap
+  val True = Flag(true)
+  val False = Flag(false)
+  val Empty = Text("")
 
   def flag(value: Boolean): Literal = if (value) True else False
-  def real(value: Double): Literal = Numbers.getOrElse(value, Real(value))
+  def real(value: Double): Literal = Real(value)
   def text(value: String): Literal = if (value.isEmpty) Empty else Text(value)
 
   // Simplify Expressions.

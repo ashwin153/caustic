@@ -78,11 +78,10 @@ necessary to architect correct distributed systems.
 
 # Example
 Consider the following example of a distributed counter written in Caustic. It is statically typed
-and distributable. It interoperates with any transactional key-value store (currently supports
-MySQL, PostgreSQL, and memory), and compiles into a Scala Library that is compatible with all
-existing frameworks, tooling, and infrastructure for the JVM. Please refer [here][16] for 
-information about how to bootstrap the runtime and [here][17] for information about how to compile
-and run Caustic programs.
+and distributable. It interoperates with any transactional key-value store, and compiles into a 
+Scala Library that is compatible with all existing frameworks, tooling, and infrastructure for the 
+JVM. Please refer [here][16] for information about how to bootstrap the runtime and [here][17] for 
+information about how to compile and run Caustic programs.
 
 ```
 module counter
@@ -124,6 +123,8 @@ service Counter {
 caustic/                            https://github.com/ashwin153/caustic
 +---caustic-assets/                 Documentation, results, and graphics.
 +---caustic-compiler/               Programming language.
++---caustic-example/                Example programs.
++---caustic-library/                Standard library.
 +---caustic-runtime/                Virutal machine.
 +---build-support/                  Pants plugins and configuration.
 
@@ -144,10 +145,10 @@ Artifacts are published to the [Sonatype Nexus][1] and synced to [Maven Central]
 the ```master``` branch are built using [Travis CI][3] and images are available on [Docker][4]. 
 
 ```xml
-<!-- Client Library -->
+<!-- Compiler Library -->
 <dependency>
   <groupId>com.madavan</groupId>
-  <artifactId>caustic-service_2.12</artifactId>
+  <artifactId>caustic-compiler_2.12</artifactId>
   <version>1.3.1</version>
 </dependency>
 

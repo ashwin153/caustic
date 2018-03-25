@@ -1,9 +1,9 @@
 # Programs
 The runtime is a virtual machine that dynamically compiles __programs__ into __transactions__ that 
 are *atomically* and *consistently* executed on any transactional key-value store in *isolation*.
-Programs are composed of scalar __literal__ values and __expressions__ that transform literal
-arguments into literal results. The runtime uses tail-recursive, partial evaluation to gradually 
-reduce programs to a single literal result.
+Programs are abstract-syntax trees that are composed of scalar __literal__ values and 
+__expressions__ that transform literal arguments into literal results. The runtime uses 
+tail-recursive, partial evaluation to gradually reduce programs to a single literal result.
 
 Literals may be of type ```Flag```, ```Real```, ```Text```, and ```Null``` which correspond to
 bool, double, string, and null respectively in most C-style languages. The following table

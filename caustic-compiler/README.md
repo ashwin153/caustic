@@ -40,11 +40,16 @@ service Counter {
 ```
 
 # Compilation
-The Caustic compiler, or ```causticc```, is modeled after the Rust compiler's [query system][2]. The
-execution of a goal like ```repl```, may trigger other goals like ```compile``` and ```run``` to be 
-executed first. This will enable memoization and fast incremental compilation, which should 
-significantly improve the performance of the compiler. The following queries are currently supported 
-by the compiler, and are executed by running ```causticc <query> <file>``` from the command line.
+The Caustic language is to the runtime as C is to Assembly. While runtime programs are powerful, 
+they lack the expressivity of most modern programming languages. The Caustic compiler, __causticc__,
+compiles code written in Caustic into runtime-compatible programs, to provide both the robustness of
+a full-featured programming language and the transactional guarantees of the Caustic runtime.
+
+The compiler is modeled after the Rust compiler's [query system][2]. The execution of a goal like 
+```repl```, may trigger other goals like ```compile``` and ```run``` to be executed first. This will 
+enable memoization and fast incremental compilation, which should significantly improve the 
+performance of the compiler. The following queries are currently supported by the compiler, and are 
+executed by running ```causticc <query> <file>``` from the command line.
 
 - ```declare```: Parses all the declarations in a program. Requires ```simplify```.
 - ```generate```: Code generation. Requires ```declare```.

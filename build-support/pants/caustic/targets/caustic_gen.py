@@ -10,7 +10,7 @@ from caustic.targets.caustic_library import CausticLibrary
 
 class CausticGen(SimpleCodegenTask):
     """
-
+    Generate Scala source code from Caustic *.acid files.
     """
 
     @classmethod
@@ -24,8 +24,8 @@ class CausticGen(SimpleCodegenTask):
         return CausticLibrary
 
     def synthetic_target_extra_dependencies(self, target, target_workdir):
-        # Generated sources depend on spray-json for JSON serialization, and on the service package
-        # of the caustic-runtime in order to connect to the runtime and execute transactions.
+        # Generated sources depend on spray-json for JSON serialization, and on the caustic-runtime
+        # in order to transactionally execute programs.
         return self.resolve_deps([
                 'caustic-runtime/src/main/scala',
                 '3rdparty/jvm:spray-json',

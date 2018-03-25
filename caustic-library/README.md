@@ -36,16 +36,16 @@ provides a rich math package. The following table enumerates the various support
 | ```tan(x)```             | Tangent of ```x```.                                                   |
 
 # References
-The standard library supports __references__ to objects. It uses [Shapeless][1] to reflect on the
-fields of standard Scala case classes and enable transactional accesses and modifications. Fields
-may be primitives, nested objects, or references to other objects. For example, the following case
-class definition is compatible with the standard library.
+The standard library supports __references__ to objects. It uses [Shapeless][1] to reflect on 
+standard Scala case classes and enable transactional accesses and modifications to their fields. 
+Fields may be primitives, nested objects, or references to other objects. For example, the following 
+case class definition is compatible with the standard library.
 
 ```scala
 case class Foo(
   x: Int,
   y: Foo,
-  z: Reference.To[Foo]
+  z: Reference[Foo]
 )
 ```
 

@@ -121,18 +121,13 @@ service Counter {
 ```
 # Programming Language
 caustic/                            https://github.com/ashwin153/caustic
++---build-support/                  Pants plugins and configuration.
 +---caustic-assets/                 Documentation, results, and graphics.
 +---caustic-compiler/               Programming language.
 +---caustic-example/                Example programs.
 +---caustic-library/                Standard library.
 +---caustic-runtime/                Virutal machine.
-+---build-support/                  Pants plugins and configuration.
-
-# Syntax Highlighting
-caustic.tmbundle/                   https://github.com/ashwin153/caustic.tmbundle
-+---Preferences/                    TextMate preferences.
-+---Snippets/                       TextMate code snippets.
-+---Syntaxes/                       TextMate grammar.
++---caustic-tmbundle/	            Syntax highlighting and hints.
 ```
 
 # Requirements

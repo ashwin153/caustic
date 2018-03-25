@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>contactEmailRot13</key>
+  	<string>ashwin.madavan@gmail.com</string>
+	<key>contactName</key>
+	<string>Ashwin Madavan</string>
+	<key>description</key>
+	<string>New shiny bundle for Caustic.</string>
+	<key>name</key>
+	<string>Caustic</string>
+	<key>uuid</key>
+	<string>497530BD-F700-48A8-BECF-935C0DA33954</string>
+</dict>
+</plist>

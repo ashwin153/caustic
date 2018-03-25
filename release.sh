@@ -6,12 +6,14 @@
 targets=(
   "caustic-compiler/src/main/antlr"
   "caustic-compiler/src/main/scala"
+  "caustic-library/src/main/scala"
   "caustic-runtime/src/main/scala"
 )
 
 artifacts=(
   "caustic-grammar"
   "caustic-compiler_2.12"
+  "caustic-library_2.12"
   "caustic-runtime_2.12"
 )
 

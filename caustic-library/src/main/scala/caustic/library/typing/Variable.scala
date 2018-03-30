@@ -16,13 +16,6 @@ trait Variable[T <: Primitive] extends Value[T] {
   def key: Value[String]
 
   /**
-   * Returns the current value of the variable.
-   *
-   * @return Current value.
-   */
-  def value: Value[T] = Constant(this.get)
-
-  /**
    * Updates the value of the variable.
    *
    * @param that Updated value.

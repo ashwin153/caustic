@@ -53,7 +53,8 @@ package object control {
 
   /**
    * Rollsback the transaction and returns the specified result. All modifications made by a program
-   * are discarded on rollback.
+   * are discarded on rollback, and program execution terminates. Rollbacked programs are guaranteed
+   * to see a consistent snapshot of the database.
    *
    * @param result Return value.
    * @param context Parsing context.

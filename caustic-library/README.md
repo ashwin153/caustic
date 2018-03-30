@@ -35,10 +35,10 @@ provides a rich math package. The following table enumerates the various support
 | ```sqrt(x)```            | Square root of ```x```.                                               | 
 | ```tan(x)```             | Tangent of ```x```.                                                   |
 
-# References
-The standard library supports __references__ to objects. It uses [Shapeless][1] to reflect on 
+# Records
+The standard library supports __references__ to records. It uses [Shapeless][1] to reflect on 
 standard Scala case classes and enable transactional accesses and modifications to their fields. 
-Fields may be primitives, nested objects, or references to other objects. For example, the following 
+Fields may be primitives, nested records, or references to other records. For example, the following 
 case class definition is compatible with the standard library.
 
 ```scala
@@ -75,6 +75,9 @@ def example(x: Value[Int])(implicit context: Context): Unit = {
   While (x < 0) {
     x += 1
   }
+  
+  // Exceptions.
+  Rollback (x)
 }
 ```
 

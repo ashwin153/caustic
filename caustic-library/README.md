@@ -14,7 +14,13 @@ provides a rich math package. The following table enumerates the various support
 | Function                 | Description                                                           |
 |:-------------------------|:----------------------------------------------------------------------|
 | ```abs(x)```             | Absolute value of ```x```.                                            | 
-| ```ceil(x)```            | Smallest integer greater than or equal to ```x```.                     |
+| ```acos(x)```            | Cosine inverse of ```x```.                                            |
+| ```acot(x)```            | Cotangent inverse of ```x```.                                         | 
+| ```acsc(x)```            | Consecant inverse of ```x```.                                         | 
+| ```asec(x)```            | Secant inverse of ```x```.                                            | 
+| ```asin(x)```            | Sine inverse of ```x```.                                              | 
+| ```atan(x)```            | Tangent inverse of ```x```.                                           | 
+| ```ceil(x)```            | Smallest integer greater than or equal to ```x```.                    |
 | ```cos(x)```             | Cosine of ```x```.                                                    | 
 | ```cosh(x)```            | Hyperbolic cosine of ```x```.                                         | 
 | ```cot(x)```             | Cotangent of ```x```.                                                 |
@@ -24,10 +30,13 @@ provides a rich math package. The following table enumerates the various support
 | ```exp(x)```             | Exponential of ```x```.                                               |
 | ```floor(x)```           | Largest integer less than or equal to ```x```.                        |
 | ```log(x)```             | Natural logarithm of ```x```.                                         | 
+| ```log(x, y)```          | Log base ```y``` of ```x```.                                          |
 | ```log10(x)```           | Log base 10 of ```x```.                                               |
+| ```log2(x)```            | Log base 2 of ```x```.                                                |
 | ```pow(x, y)```          | Power of ```x``` to the ```y```.                                      |
 | ```random()```           | Uniformly random number on [0, 1).                                    |
 | ```round(x)```           | Closest integer to ```x```.                                           |
+| ```round(x, y)```        | Closest multiple of ```y``` to ```x```.                               |
 | ```sec(x)```             | Secant of ```x```.                                                    |
 | ```sech(x)```            | Hyperbolic secant of ```x```.                                         |
 | ```sin(x)```             | Sine of ```x```.                                                      | 

@@ -63,4 +63,14 @@ package object control {
     context += rollback(result)
   }
 
+  /**
+   * Asserts that the specified value is true or rollsback otherwise. Useful for testing.
+   *
+   * @param x Value to assert.
+   * @param context Parse context.
+   */
+  def Assert(x: Value[Boolean])(implicit context: Context): Unit = {
+    If (!x) { Rollback("Assertion Failure.") }
+  }
+
 }

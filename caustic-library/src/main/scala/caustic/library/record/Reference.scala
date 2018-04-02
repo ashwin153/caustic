@@ -1,7 +1,7 @@
 package caustic.library.record
 
 import caustic.library.control.Context
-import caustic.library.typing.{String, Value, Variable}
+import caustic.library.typing._
 
 import shapeless._
 import shapeless.ops.hlist.LeftFolder
@@ -74,5 +74,22 @@ case class Reference[T](key: Variable[String]) {
     keys: Keys.Aux[Repr, KeysRepr],
     folder: LeftFolder.Aux[KeysRepr, ops.json.Args[T], ops.json.type, ops.json.Args[T]]
   ): Value[String] = keys().foldLeft(ops.json.Args(this, "", recursive))(ops.json).json
+
+  /**
+   * Returns whether or not the references are equal.
+   *
+   * @param that Another reference.
+   * @param context Parse context.
+   * @param generic Generic representation.
+   * @param keys Attribute names.
+   * @param folder Attribute iterator.
+   * @return Whether or not the references are equal.
+   */
+  def ===[Repr <: HList, KeysRepr <: HList](that: Reference[T])(
+    implicit context: Context,
+    generic: LabelledGeneric.Aux[T, Repr],
+    keys: Keys.Aux[Repr, KeysRepr],
+    folder: LeftFolder.Aux[KeysRepr, ops.equal.Args[T], ops.equal.type, ops.equal.Args[T]]
+  ): Value[Boolean] = keys().foldLeft(ops.equal.Args(this, that, false))(ops.equal).equals
 
 }

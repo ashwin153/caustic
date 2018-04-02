@@ -11,7 +11,7 @@ class ReferenceTest extends FunSuite with Matchers {
 
   case class Foo(
     x: Int,
-    y: Reference[Foo],
+    y: Reference[Bar],
     z: Bar
   )
 

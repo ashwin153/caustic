@@ -86,6 +86,7 @@ object Database {
 
     override def cas(depends: Map[Key, Version], changes: Map[Key, Value]): Try[Unit] =
       this.client.cas(depends, changes).map(_ => ())
+
   }
 
   object Beaker {

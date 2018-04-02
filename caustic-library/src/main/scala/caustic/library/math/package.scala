@@ -17,6 +17,12 @@ package object math {
 
   // Functions.
   def abs   [X <: Double](x: Value[X])          : Value[X]      = branch(x < Zero, -x, x)
+  def acos  (x: Value[Double])                  : Value[Double] = Pi / 2 - asin(x)
+  def acot  (x: Value[Double])                  : Value[Double] = Pi / 2 - atan(x)
+  def acsc  (x: Value[Double])                  : Value[Double] = Pi / 2 - asec(x)
+  def asec  (x: Value[Double])                  : Value[Double] = acos(pow(x, -1))
+  def asin  (x: Value[Double])                  : Value[Double] = x + pow(x, 3) / 6 + pow(x, 5) * 3 / 40 + pow(x, 7) * 15 / 336
+  def atan  (x: Value[Double])                  : Value[Double] = asin(x / pow(x * x + 1, Half))
   def ceil  (x: Value[Double])                  : Value[Int]    = floor(x) + One
   def cos   (x: Value[Double])                  : Value[Double] = runtime.cos(x)
   def cosh  (x: Value[Double])                  : Value[Double] = (exp(x) + exp(-x)) / Two
@@ -29,9 +35,11 @@ package object math {
   def log   (x: Value[Double])                  : Value[Double] = runtime.log(x)
   def log   (x: Value[Double], y: Value[Double]): Value[Double] = log(x) / log(y)
   def log10 (x: Value[Double])                  : Value[Double] = log(x, Ten)
+  def log2  (x: Value[Double])                  : Value[Double] = log(x, Two)
   def pow   (x: Value[Double], y: Value[Double]): Value[Double] = runtime.pow(x, y)
   def random()                                  : Value[Double] = runtime.random()
   def round (x: Value[Double])                  : Value[Int]    = branch(x - floor(x) < Half, floor(x), ceil(x))
+  def round (x: Value[Double], y: Value[Double]): Value[Double] = branch(x % y < y / 2, x - x % y, x - x % y + y)
   def sec   (x: Value[Double])                  : Value[Double] = One / cos(x)
   def sech  (x: Value[Double])                  : Value[Double] = One / cosh(x)
   def sin   (x: Value[Double])                  : Value[Double] = runtime.sin(x)

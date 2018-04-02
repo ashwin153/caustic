@@ -58,6 +58,8 @@ package object runtime {
   }
 
   def branch(c: Program, p: Program, f: Program): Program = (c, p, f) match {
+    case (Flag(true), a, _) => a
+    case (Flag(false), _, b) => b
     case _ => Expression(Branch, c :: p :: f :: Nil)
   }
 

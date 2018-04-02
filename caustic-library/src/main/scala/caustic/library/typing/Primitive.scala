@@ -4,8 +4,8 @@ package caustic.library.typing
  * A scalar type.
  */
 sealed trait Primitive
-trait Null extends Primitive
-trait String extends Null
+trait String extends Primitive
 trait Double extends String
 trait Int extends Double
 trait Boolean extends Int
+trait Null extends Boolean

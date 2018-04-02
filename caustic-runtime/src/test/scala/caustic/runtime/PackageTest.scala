@@ -7,15 +7,15 @@ import org.scalatest.junit.JUnitRunner
 import org.scalatest.{FunSuite, Matchers}
 
 @RunWith(classOf[JUnitRunner])
-class ProgramTest extends FunSuite with Matchers {
+class PackageTest extends FunSuite with Matchers {
 
-  test("Caches literals") {
+  test("Literals are cached") {
     flag(true) should be theSameInstanceAs True
     flag(false) should be theSameInstanceAs False
     text("") should be theSameInstanceAs Empty
   }
 
-  test("Simplifies expressions") {
+  test("Expressions are simplified") {
     // Math Expressions.
     add(real(6), real(9)) shouldEqual real(15)
     add(text("a"), text("b")) shouldEqual text("ab")

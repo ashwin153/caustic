@@ -19,7 +19,7 @@ package object control {
      * @throws Fault If the program is illegally constructed.
      * @return Literal result or exception on failure.
      */
-    def execute[U](f: Context => U): Try[Literal] = {
+    def perform[U](f: Context => U): Try[Literal] = {
       val context = Context()
       f(context)
       x.execute(context.body)

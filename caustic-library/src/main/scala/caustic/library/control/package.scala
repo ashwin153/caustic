@@ -1,9 +1,31 @@
 package caustic.library
 
 import caustic.library.typing._
+import caustic.runtime.Runtime.{Aborted, Fault, Rollbacked}
 import caustic.runtime._
 
+import scala.util.Try
+
 package object control {
+
+  implicit class RuntimeOps(x: Runtime) {
+
+    /**
+     * Executes the parsed program on the runtime and returns the result.
+     *
+     * @param f Program builder.
+     * @throws Rollbacked If the program was rolled back.
+     * @throws Aborted If the program could not be executed.
+     * @throws Fault If the program is illegally constructed.
+     * @return Literal result or exception on failure.
+     */
+    def execute[U](f: Context => U): Try[Literal] = {
+      val context = Context()
+      f(context)
+      x.execute(context.body)
+    }
+
+  }
 
   /**
    * Branches on the value of the specified condition. An Else clause may be optionally specified.
@@ -59,9 +81,17 @@ package object control {
    * @param result Return value.
    * @param context Parsing context.
    */
-  def Rollback[T <: Primitive](result: Value[T])(implicit context: Context): Unit = {
+  def Rollback[T <: Primitive](result: Value[T])(implicit context: Context): Unit =
     context += rollback(result)
-  }
+
+  /**
+   * Adds the value to the parse context. Return does not break execution.
+   *
+   * @param result Value to return.
+   * @param context Parse context.
+   */
+  def Return[T <: Primitive](result: Value[T])(implicit context: Context): Unit =
+    context += result
 
   /**
    * Asserts that the specified value is true or rollsback otherwise. Useful for testing.
@@ -69,8 +99,7 @@ package object control {
    * @param x Value to assert.
    * @param context Parse context.
    */
-  def Assert(x: Value[Boolean])(implicit context: Context): Unit = {
-    If (!x) { Rollback("Assertion Failure.") }
-  }
+  def Assert(x: Value[Boolean])(implicit context: Context): Unit =
+    If (!x) { Rollback(s"Assertion Failure: ${x.get} evaluates to false") }
 
 }

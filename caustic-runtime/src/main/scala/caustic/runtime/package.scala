@@ -17,7 +17,7 @@ package object runtime {
 
   // Simplify Expressions.
   def read(k: Program): Program = k match {
-    case Null => throw Fault(s"Read undefined for key None")
+    case Null => Null
     case Real(a) => throw Fault(s"Read undefined for key $a")
     case Flag(a) => throw Fault(s"Read undefined for key $a")
     case _ => Expression(Read, k :: Nil)
@@ -31,7 +31,7 @@ package object runtime {
   }
 
   def load(k: Program): Program = k match {
-    case Null => throw Fault(s"Load undefined for variable None")
+    case Null => Null
     case Real(a) => throw Fault(s"Load undefined for variable $a")
     case Flag(a) => throw Fault(s"Load undefined for variable $a")
     case _ => Expression(Load, k :: Nil)

@@ -3,8 +3,8 @@ package caustic.library.record.ops
 import caustic.library.control.Context
 import caustic.library.record.{Field, Reference}
 import caustic.library.typing._
-
-import shapeless.{HList, LabelledGeneric, Poly2}
+import caustic.runtime._
+import shapeless._
 import shapeless.ops.hlist.LeftFolder
 import shapeless.ops.record.{Keys, Selector}
 
@@ -19,43 +19,19 @@ object json extends Poly2 {
    */
   case class Args[T](src: Reference[T], json: Value[String], recursive: scala.Boolean)
 
-  implicit def caseBoolean[
+  implicit def caseScalar[
     T,
     TRepr <: HList,
-    FieldName <: Symbol
+    FieldName <: Symbol,
+    FieldType <: Double
   ](
     implicit context: Context,
     generic: LabelledGeneric.Aux[T, TRepr],
-    selector: Selector.Aux[TRepr, FieldName, Boolean],
-    field: Field.Aux[Boolean, Variable[Boolean]]
+    selector: Selector.Aux[TRepr, FieldName, FieldType],
+    field: Field.Aux[FieldType, Variable[FieldType]]
   ): Case.Aux[Args[T], FieldName, Args[T]] = at[Args[T], FieldName] { (x, f) =>
-    x.copy(json = x.json ++ ", \"" ++ f.name ++ "\": " ++ field(x.src, f.name))
-  }
-
-  implicit def caseInt[
-    T,
-    TRepr <: HList,
-    FieldName <: Symbol
-  ](
-    implicit context: Context,
-    generic: LabelledGeneric.Aux[T, TRepr],
-    selector: Selector.Aux[TRepr, FieldName, Int],
-    field: Field.Aux[Int, Variable[Int]]
-  ): Case.Aux[Args[T], FieldName, Args[T]] = at[Args[T], FieldName] { (x, f) =>
-    x.copy(json = x.json ++ ", \"" ++ f.name ++ "\": " ++ field(x.src, f.name))
-  }
-
-  implicit def caseDouble[
-    T,
-    TRepr <: HList,
-    FieldName <: Symbol
-  ](
-    implicit context: Context,
-    generic: LabelledGeneric.Aux[T, TRepr],
-    selector: Selector.Aux[TRepr, FieldName, Double],
-    field: Field.Aux[Double, Variable[Double]]
-  ): Case.Aux[Args[T], FieldName, Args[T]] = at[Args[T], FieldName] { (x, f) =>
-    x.copy(json = x.json ++ ", \"" ++ f.name ++ "\": " ++ field(x.src, f.name))
+    val json = branch(field(x.src, f.name) <> Null, field(x.src, f.name), "null")
+    x.copy(json = x.json ++ ", \"" ++ f.name ++ "\": " ++ json)
   }
 
   implicit def caseString[
@@ -68,37 +44,27 @@ object json extends Poly2 {
     selector: Selector.Aux[TRepr, FieldName, String],
     field: Field.Aux[String, Variable[String]]
   ): Case.Aux[Args[T], FieldName, Args[T]] = at[Args[T], FieldName] { (x, f) =>
-    x.copy(json = x.json ++ ", \"" ++ f.name ++ "\": \"" ++ field(x.src, f.name) ++ "\"")
-  }
-
-  implicit def caseNull[
-    T,
-    TRepr <: HList,
-    FieldName <: Symbol
-  ](
-    implicit context: Context,
-    generic: LabelledGeneric.Aux[T, TRepr],
-    selector: Selector.Aux[TRepr, FieldName, Double],
-    field: Field.Aux[Double, Variable[Double]]
-  ): Case.Aux[Args[T], FieldName, Args[T]] = at[Args[T], FieldName] { (x, f) =>
-    x.copy(json = x.json ++ ", \"" ++ f.name ++ "\": null")
+    val json = branch(field(x.src, f.name) <> Null, field(x.src, f.name).quoted, "null")
+    x.copy(json = x.json ++ ", \"" ++ f.name ++ "\": " ++ json)
   }
 
   implicit def casePointer[
     T,
     TRepr <: HList,
     FieldName <: Symbol,
+    FieldType,
     FieldT,
     FieldRepr <: HList,
     FieldKeys <: HList
   ](
     implicit context: Context,
     generic: LabelledGeneric.Aux[T, TRepr],
-    selector: Selector.Aux[TRepr, FieldName, Reference[FieldT]],
-    field: Field.Aux[Reference[FieldT], Reference[FieldT]],
+    selector: Selector.Aux[TRepr, FieldName, FieldType],
+    field: Field.Aux[FieldType, Reference[FieldT]],
     fieldGeneric: LabelledGeneric.Aux[FieldT, FieldRepr],
     fieldKeys: Keys.Aux[FieldRepr, FieldKeys],
-    fieldFolder: LeftFolder.Aux[FieldKeys, Args[FieldT], json.type, Args[FieldT]]
+    fieldFolder: LeftFolder.Aux[FieldKeys, Args[FieldT], json.type, Args[FieldT]],
+    evidence: FieldType <:< Reference[FieldT]
   ): Case.Aux[Args[T], FieldName, Args[T]] = at[Args[T], FieldName] { (x, f) =>
     val json = if (x.recursive) field(x.src, f.name).json() else field(x.src, f.name).key
     x.copy(json = x.json ++ ", \"" ++ f.name ++ "\": \"" ++ json ++ "\"")
@@ -119,10 +85,10 @@ object json extends Poly2 {
     field: Field.Aux[FieldType, Reference[FieldT]],
     fieldGeneric: LabelledGeneric.Aux[FieldT, FieldRepr],
     fieldKeys: Keys.Aux[FieldRepr, FieldKeys],
-    fieldFolder: LeftFolder.Aux[FieldKeys, Args[FieldT], json.type, Args[FieldT]]
+    fieldFolder: LeftFolder.Aux[FieldKeys, Args[FieldT], json.type, Args[FieldT]],
+    evidence: FieldType <:!< Reference[FieldT]
   ): Case.Aux[Args[T], FieldName, Args[T]] = at[Args[T], FieldName] { (x, f) =>
-    val json = field(x.src, f.name).json()
-    x.copy(json = x.json ++ "{\"key\": \"" ++ field(x.src, f.name).key ++ "\"" ++ json ++ "}")
+    x.copy(json = x.json ++ ", \"" ++ f.name ++ "\": " ++ field(x.src, f.name).json())
   }
 
 }

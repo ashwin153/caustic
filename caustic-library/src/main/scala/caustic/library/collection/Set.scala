@@ -4,6 +4,8 @@ import caustic.library.control._
 import caustic.library.typing._
 import caustic.runtime.Null
 
+import scala.language.reflectiveCalls
+
 /**
  * A dynamically-sized collection of unique scalar values.
  *

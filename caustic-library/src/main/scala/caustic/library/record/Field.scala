@@ -8,7 +8,7 @@ import caustic.library.typing._
 trait Field[Type] {
   type Container
   def apply(key: Variable[String], field: Value[String]): Container
-  def apply(ref: Reference[_], field: Value[String]): Container = apply(ref.key, field)
+  def apply(ref: Reference[_], field: Value[String]): Container = apply(ref.pointer, field)
 }
 
 object Field extends LowPriorityField {
@@ -16,18 +16,13 @@ object Field extends LowPriorityField {
   // Scalar fields are contained in mutable variables.
   implicit def scalar[T <: Primitive]: Aux[T, Variable[T]] = new Field[T] {
     type Container = Variable[T]
-    override def apply(key: Variable[String], field: Value[String]): Variable[T] = {
-      key.scope(field)
-    }
+    override def apply(key: Variable[String], field: Value[String]): Variable[T] = key.scope(field)
   }
 
   // Pointers are dereferenced and contained in references.
   implicit def pointer[T]: Aux[Reference[T], Reference[T]] = new Field[Reference[T]] {
     override type Container = Reference[T]
-    override def apply(key: Variable[String], field: Value[String]): Reference[T] = key match {
-      case Variable.Local(_) => Reference(Variable.Local(key.scope(field)))
-      case Variable.Remote(_) => Reference(Variable.Remote(key.scope(field)))
-    }
+    override def apply(key: Variable[String], field: Value[String]): Reference[T] = Reference(key.scope(field))
   }
 }
 
@@ -38,9 +33,7 @@ trait LowPriorityField {
   // References are contained in references.
   implicit def nested[T]: Aux[T, Reference[T]] = new Field[T] {
     override type Container = Reference[T]
-    override def apply(key: Variable[String], field: Value[String]): Reference[T] = {
-      Reference(key.scope(field))
-    }
+    override def apply(key: Variable[String], field: Value[String]): Reference[T] = Reference(key.scope(field))
   }
 
 }

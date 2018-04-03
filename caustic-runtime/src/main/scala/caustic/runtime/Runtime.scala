@@ -14,7 +14,7 @@ import scala.util.{Failure, Success, Try}
  *
  * @param database Underlying database.
  */
-class Runtime(database: Database) {
+class Runtime(database: Volume) {
 
   /**
    * Executes the program and returns the result. Programs are repeatedly partially evaluated until
@@ -187,6 +187,6 @@ object Runtime {
    * @param database Underlying database.
    * @return Initialized runtime.
    */
-  def apply(database: Database): Runtime = new Runtime(database)
+  def apply(database: Volume): Runtime = new Runtime(database)
 
 }

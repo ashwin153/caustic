@@ -1,11 +1,11 @@
 package caustic.example.inherit
 
-import caustic.runtime.{Runtime, Database}
+import caustic.runtime.{Runtime, Volume}
 
 object EmployeeExample extends App {
 
   // Bootstrap an in-memory database, and establish a connection.
-  val runtime = Runtime(Database.Local())
+  val runtime = Runtime(Volume.Memory())
 
   // Create a counter service, and perform increments.
   val service = Payroll(this.runtime)

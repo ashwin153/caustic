@@ -9,8 +9,17 @@ import shapeless.ops.record.{Keys, Selector}
 
 /**
  * A record reference.
+ *
+ * @param pointer Underlying pointer.
  */
-case class Reference[T](key: Variable[String]) {
+case class Reference[T](pointer: Variable[String]) {
+
+  /**
+   * Returns the address of the reference.
+   *
+   * @return Referenced address.
+   */
+  def key: Value[String] = this.pointer.key
 
   /**
    * Returns a container that stores the value of the attribute with the specified name.
@@ -25,7 +34,7 @@ case class Reference[T](key: Variable[String]) {
     implicit gen: LabelledGeneric.Aux[T, Repr],
     selector: Selector.Aux[Repr, Name, Type],
     field: Field.Aux[Type, Container]
-  ): Container = field(this.key, witness.value.name)
+  ): Container = field(this.pointer, witness.value.name)
 
   /**
    * Deletes all attributes of the record.
@@ -36,7 +45,7 @@ case class Reference[T](key: Variable[String]) {
    * @param keys Attribute names.
    * @param folder Attribute iterator.
    */
-  def delete[Repr <: HList, KeysRepr <: HList](recursive: scala.Boolean = true)(
+  def delete[Repr <: HList, KeysRepr <: HList](recursive: scala.Boolean = false)(
     implicit context: Context,
     generic: LabelledGeneric.Aux[T, Repr],
     keys: Keys.Aux[Repr, KeysRepr],
@@ -68,12 +77,15 @@ case class Reference[T](key: Variable[String]) {
    * @param keys Attribute names.
    * @param folder Attribute iterator.
    */
-  def json[Repr <: HList, KeysRepr <: HList](recursive: scala.Boolean = true)(
+  def json[Repr <: HList, KeysRepr <: HList](recursive: scala.Boolean = false)(
     implicit context: Context,
     generic: LabelledGeneric.Aux[T, Repr],
     keys: Keys.Aux[Repr, KeysRepr],
     folder: LeftFolder.Aux[KeysRepr, ops.json.Args[T], ops.json.type, ops.json.Args[T]]
-  ): Value[String] = keys().foldLeft(ops.json.Args(this, "", recursive))(ops.json).json
+  ): Value[String] = {
+    val obj = convert("{\"key\": ") ++ this.pointer.key.quoted
+    obj ++ keys().foldLeft(ops.json.Args(this, "", recursive))(ops.json).json ++ "}"
+  }
 
   /**
    * Returns whether or not the references are equal.

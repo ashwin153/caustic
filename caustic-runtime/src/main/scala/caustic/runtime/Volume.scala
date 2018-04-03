@@ -10,7 +10,7 @@ import scala.util.Try
 /**
  * A transactional key-value store.
  */
-trait Database {
+trait Volume {
 
   /**
    * Returns the revisions of the specified keys.
@@ -31,14 +31,14 @@ trait Database {
 
 }
 
-object Database {
+object Volume {
 
   /**
    * An in-memory, thread-safe database. Useful for testing.
    *
    * @param underlying Underlying map.
    */
-  class Local(underlying: mutable.Map[Key, Revision]) extends Database with Locking {
+  class Memory(underlying: mutable.Map[Key, Revision]) extends Volume with Locking {
 
     override def get(keys: Set[Key]): Try[Map[Key, Revision]] = shared {
       Try(this.underlying.filterKeys(keys.contains).toMap)
@@ -52,7 +52,7 @@ object Database {
 
   }
 
-  object Local {
+  object Memory {
 
     /**
      * Constructs an in-memory database initialized with the specified values.
@@ -60,8 +60,8 @@ object Database {
      * @param initial Initial values.
      * @return Initialized local database.
      */
-    def apply(initial: (Key, Revision)*): Database.Local =
-      Database.Local(initial.toMap)
+    def apply(initial: (Key, Revision)*): Volume.Memory =
+      Volume.Memory(initial.toMap)
 
     /**
      * Constructs an in-memory database initialized with the specified values.
@@ -69,8 +69,8 @@ object Database {
      * @param initial Initialized values.
      * @return Initialized local database.
      */
-    def apply(initial: Map[Key, Revision]): Database.Local =
-      new Database.Local(mutable.Map(initial.toSeq: _*))
+    def apply(initial: Map[Key, Revision]): Volume.Memory =
+      new Volume.Memory(mutable.Map(initial.toSeq: _*))
 
   }
 
@@ -79,14 +79,14 @@ object Database {
    *
    * @param client Beaker client.
    */
-  class Beaker(client: Client) extends Database {
+  class Beaker(client: Client) extends Volume {
 
     override def get(keys: Set[Key]): Try[Map[Key, Revision]] =
       this.client.get(keys)
 
     override def cas(depends: Map[Key, Version], changes: Map[Key, Value]): Try[Unit] =
       this.client.cas(depends, changes).map(_ => ())
-
+    
   }
 
   object Beaker {
@@ -98,8 +98,8 @@ object Database {
      * @param port Port number.
      * @return Connected beaker database.
      */
-    def apply(name: String, port: Int): Database.Beaker =
-      Database.Beaker(Address(name, port))
+    def apply(name: String, port: Int): Volume.Beaker =
+      Volume.Beaker(Address(name, port))
 
     /**
      * Constructs a Beaker database connected to the specified address.
@@ -107,8 +107,8 @@ object Database {
      * @param address Network location.
      * @return Connected beaker database.
      */
-    def apply(address: Address): Database.Beaker =
-      Database.Beaker(Client(address))
+    def apply(address: Address): Volume.Beaker =
+      Volume.Beaker(Client(address))
 
     /**
      * Constructs a Beaker database connected to the specified client.
@@ -116,8 +116,8 @@ object Database {
      * @param client Beaker client.
      * @return Connected beaker database.
      */
-    def apply(client: Client): Database.Beaker =
-      new Database.Beaker(client)
+    def apply(client: Client): Volume.Beaker =
+      new Volume.Beaker(client)
 
   }
 

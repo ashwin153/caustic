@@ -28,7 +28,7 @@ class RuntimeTest extends FunSuite with MockitoSugar with ScalaFutures with Matc
   )
 
   test("Execute is strongly consistent.") {
-    val runtime = Runtime(Database.Local())
+    val runtime = Runtime(Volume.Memory())
 
     // Get on an unknown key returns a null value.
     runtime.execute(read("x")) shouldBe Success(Null)
@@ -42,7 +42,7 @@ class RuntimeTest extends FunSuite with MockitoSugar with ScalaFutures with Matc
   }
 
   test("Execute is thread-safe.") {
-    val runtime = Runtime(Database.Local())
+    val runtime = Runtime(Volume.Memory())
 
     // Construct a transaction that increments a counter.
     val inc = write("x", add(real(1), branch(caustic.equal(read("x"), Null), real(0), read("x"))))
@@ -56,7 +56,7 @@ class RuntimeTest extends FunSuite with MockitoSugar with ScalaFutures with Matc
   }
 
   test("Execute maintains mutable state.") {
-    val runtime = Runtime(Database.Local())
+    val runtime = Runtime(Volume.Memory())
 
     // Verifies that local variables are correctly updated.
     runtime execute {
@@ -70,7 +70,7 @@ class RuntimeTest extends FunSuite with MockitoSugar with ScalaFutures with Matc
   test("Execute detects conflicts.") {
     // Spy the underlying database to insert latches inside its put method that will enable
     // deterministic injection of race conditions into transaction execution.
-    val fake = spy(Database.Local())
+    val fake = spy(Volume.Memory())
     val runtime = Runtime(fake)
     val ready = new CountDownLatch(1)
     val block = new CountDownLatch(1)

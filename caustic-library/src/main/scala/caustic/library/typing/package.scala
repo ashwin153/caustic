@@ -21,6 +21,7 @@ package object typing {
   // Implicit Operations.
   implicit class Textual[X <: String](x: Value[X]) {
     def ++[Y <: X](y: Value[X]): Value[String] = add(x, y)
+    def quoted: Value[String] = add("\"", add(x, "\""))
     def contains[Y <: X](y: Value[Y]): Value[Boolean] = runtime.contains(x, y)
     def indexOf[Y <: X](y: Value[Y]): Value[Boolean] = runtime.indexOf(x, y)
     def length[Y <: X](): Value[Int] = runtime.length(x)

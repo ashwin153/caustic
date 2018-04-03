@@ -16,11 +16,11 @@ class ReferenceTest extends FunSuite with Matchers {
   )
 
   case class Bar(
-    x: Int
+    a: String
   )
 
   test("References are statically typed") {
-    val foo = Reference[Foo](Variable.Local("foo"))
+    val foo = Reference[Foo](Local("foo"))
     "foo.get('a)" shouldNot compile
     "foo.get('x)" should compile
   }

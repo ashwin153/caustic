@@ -4,9 +4,9 @@ import caustic.library.control.Context
 import caustic.library.record.{Field, Reference}
 import caustic.library.typing._
 
+import shapeless._
 import shapeless.ops.hlist.LeftFolder
 import shapeless.ops.record.{Keys, Selector}
-import shapeless.{HList, LabelledGeneric, Poly2}
 
 object equal extends Poly2 {
 
@@ -35,19 +35,21 @@ object equal extends Poly2 {
     T,
     TRepr <: HList,
     FieldName <: Symbol,
+    FieldType,
     FieldT,
     FieldRepr <: HList,
     FieldKeys <: HList
   ](
     implicit context: Context,
     generic: LabelledGeneric.Aux[T, TRepr],
-    selector: Selector.Aux[TRepr, FieldName, Reference[FieldT]],
-    field: Field.Aux[Reference[FieldT], Reference[FieldT]],
+    selector: Selector.Aux[TRepr, FieldName, FieldType],
+    field: Field.Aux[FieldType, Reference[FieldT]],
     fieldGeneric: LabelledGeneric.Aux[FieldT, FieldRepr],
     fieldKeys: Keys.Aux[FieldRepr, FieldKeys],
-    fieldFolder: LeftFolder.Aux[FieldKeys, Args[FieldT], equal.type, Args[FieldT]]
+    fieldFolder: LeftFolder.Aux[FieldKeys, Args[FieldT], equal.type, Args[FieldT]],
+    evidence: FieldType <:< Reference[FieldT]
   ): Case.Aux[Args[T], FieldName, Args[T]] = at[Args[T], FieldName] { (x, f) =>
-    x.copy(equals = x.equals && field(x.a, f.name).key === field(x.b, f.name).key)
+    x.copy(equals = x.equals && field(x.a, f.name).pointer === field(x.b, f.name).pointer)
   }
 
   implicit def caseNested[
@@ -65,7 +67,8 @@ object equal extends Poly2 {
     field: Field.Aux[FieldType, Reference[FieldT]],
     fieldGeneric: LabelledGeneric.Aux[FieldT, FieldRepr],
     fieldKeys: Keys.Aux[FieldRepr, FieldKeys],
-    fieldFolder: LeftFolder.Aux[FieldKeys, Args[FieldT], equal.type, Args[FieldT]]
+    fieldFolder: LeftFolder.Aux[FieldKeys, Args[FieldT], equal.type, Args[FieldT]],
+    evidence: FieldType <:!< Reference[FieldT]
   ): Case.Aux[Args[T], FieldName, Args[T]] = at[Args[T], FieldName] { (x, f) =>
     x.copy(equals = x.equals && field(x.a, f.name) === field(x.b, f.name))
   }

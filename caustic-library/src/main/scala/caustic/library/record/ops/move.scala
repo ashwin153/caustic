@@ -4,9 +4,9 @@ package ops
 import caustic.library.control.Context
 import caustic.library.typing.{Primitive, Variable}
 
+import shapeless._
 import shapeless.ops.hlist.LeftFolder
 import shapeless.ops.record.{Keys, Selector}
-import shapeless.{HList, LabelledGeneric, Poly2}
 
 object move extends Poly2 {
 
@@ -38,16 +38,18 @@ object move extends Poly2 {
     T,
     TRepr <: HList,
     FieldName <: Symbol,
+    FieldType,
     FieldT,
     FieldRepr <: HList,
     FieldKeys <: HList
   ](
     implicit context: Context,
     generic: LabelledGeneric.Aux[T, TRepr],
-    selector: Selector.Aux[TRepr, FieldName, Reference[FieldT]],
-    field: Field.Aux[Reference[FieldT], Reference[FieldT]]
+    selector: Selector.Aux[TRepr, FieldName, FieldType],
+    field: Field.Aux[FieldType, Reference[FieldT]],
+    evidence: FieldType <:< Reference[FieldT]
   ): Case.Aux[Args[T], FieldName, Args[T]] = at[Args[T], FieldName] { (x, f) =>
-    field(x.dest, f.name).key.set(field(x.src, f.name).key)
+    field(x.dest, f.name).pointer.set(field(x.src, f.name).pointer)
     x
   }
 
@@ -66,7 +68,8 @@ object move extends Poly2 {
     field: Field.Aux[FieldType, Reference[FieldT]],
     fieldGeneric: LabelledGeneric.Aux[FieldT, FieldRepr],
     fieldKeys: Keys.Aux[FieldRepr, FieldKeys],
-    fieldFolder: LeftFolder.Aux[FieldKeys, Args[FieldT], move.type, Args[FieldT]]
+    fieldFolder: LeftFolder.Aux[FieldKeys, Args[FieldT], move.type, Args[FieldT]],
+    evidence: FieldType <:!< Reference[FieldT]
   ): Case.Aux[Args[T], FieldName, Args[T]] = at[Args[T], FieldName] { (x, f) =>
     field(x.src, f.name).move(field(x.dest, f.name))
     x

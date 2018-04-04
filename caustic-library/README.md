@@ -7,6 +7,16 @@ for values of the corresponding types. There are two kinds of values: __constant
 __variables__. Constants store an immutable value and variables store a mutable value either locally 
 in a buffer or remotely in the database.
 
+```scala
+val x = Local[Int]("x")
+val y = Remote[String]("y")
+
+x := 4
+x += 3
+y := "hello"
+y.indexOf("e")
+```
+      
 # Math
 In addition to the standard arithmetic operations on numeric values, the standard library also
 provides a rich math package. The following table enumerates the various supported functions.
@@ -53,8 +63,14 @@ case class definition is compatible with the standard library.
 ```scala
 case class Foo(
   x: Int,
-  y: Foo,
-  z: Reference[Foo]
+  y: Bar,
+  z: Reference[Bar]
+)
+
+case class Bar(
+  a: Boolean,
+  b: Double,
+  c: String
 )
 ```
 
@@ -88,6 +104,26 @@ def example(x: Value[Int])(implicit context: Context): Unit = {
   // Exceptions.
   Rollback (x)
 }
+```
+
+# Collections
+The standard library supports __collections__ of primitive values. More specifically, the standard
+library provides __list__, __set__, and __map__ implementations. Although collections cannot 
+directly store records, they may contain references to them.
+
+```scala
+val x = List[String](Local("x"))
+x.get(0)
+x.set(2, "hello")
+x.foreach(s => Reference[Foo](Local(s)).set('x, 0))
+
+val y = Set[Int](Local("y"))
+y.add(2)
+y.contains(3)
+
+val z = Map[Int, Double](Local("y"))
+z.get(2)
+z.put(4, 2.1)
 ```
 
 [1]: https://github.com/milessabin/shapeless

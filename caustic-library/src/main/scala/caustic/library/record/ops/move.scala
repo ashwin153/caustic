@@ -2,7 +2,7 @@ package caustic.library.record
 package ops
 
 import caustic.library.control.Context
-import caustic.library.typing.{Primitive, Variable}
+import caustic.library.typing._
 
 import shapeless._
 import shapeless.ops.hlist.LeftFolder

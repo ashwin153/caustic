@@ -10,14 +10,15 @@ case object Load      extends Operator  // Returns the value of variable (1).   
 case object Store     extends Operator  // Sets the value of variable (1) to (2).   (Text, Any) => Null
 case object Cons      extends Operator  // Evaluate (1) and then returns (2).       (Any, Any) => Any
 case object Repeat    extends Operator  // Evaluate (2) until (1) is not satisfied. (Flag, Any) => Null
+case object Prefetch  extends Operator  // Reads keys at (1)/i for i in [0, (2)).   (Text, Int) => Null
 case object Branch    extends Operator  // Evaluate (2) if (1) or (3) otherwise.    (Flag, Any, Any) => Any
 case object Rollback  extends Operator  // Discard changes and return (1).          (Any) => Any
 case object Random    extends Operator  // Returns a uniformly random on [0, 1).    () => Real
-case object Add       extends Operator  // Returns (1) plus (2).                    (Real, Real) => Real
+case object Add       extends Operator  // Returns (1) plus (2).                    (Any, Any) => Any
 case object Sub       extends Operator  // Returns (1) minus (2).                   (Real, Real) => Real
 case object Mul       extends Operator  // Returns (1) times (2).                   (Real, Real) => Real
 case object Div       extends Operator  // Returns (1) divided by (2).              (Real, Real) => Real
-case object Mod       extends Operator  // Returns (1) mod (2).                     (Real, Real) => Real
+case object Mod       extends Operator  // Retu rns (1) mod (2).                     (Real, Real) => Real
 case object Pow       extends Operator  // Returns (1) raised to the (2).           (Real, Real) => Real
 case object Log       extends Operator  // Returns the natural logarithm of (1).    (Real) => Real
 case object Sin       extends Operator  // Returns the sine of (1) in radians.      (Real) => Real

@@ -1,25 +1,21 @@
 package caustic.library
 
 import caustic.library.typing._
-import caustic.runtime.Runtime.{Aborted, Fault, Rollbacked}
-import caustic.runtime._
+import caustic.runtime
 
 import scala.util.Try
 
 package object control {
 
-  implicit class RuntimeOps(x: Runtime) {
+  implicit class RuntimeOps(x: runtime.Runtime) {
 
     /**
      * Executes the parsed program on the runtime and returns the result.
      *
      * @param f Program builder.
-     * @throws Rollbacked If the program was rolled back.
-     * @throws Aborted If the program could not be executed.
-     * @throws Fault If the program is illegally constructed.
      * @return Literal result or exception on failure.
      */
-    def perform[U](f: Context => U): Try[Literal] = {
+    def execute[U](f: Context => U): Try[runtime.Literal] = {
       val context = Context()
       f(context)
       x.execute(context.body)
@@ -43,14 +39,14 @@ package object control {
     success
     private val pass = context.body
     context.body = before
-    context += branch(condition, pass, Null)
+    context += runtime.branch(condition, pass, Null)
 
     def Else(failure: => T): T = {
       context.body = Null
       val result = failure
       val fail = context.body
       context.body = before
-      context += branch(condition, pass, fail)
+      context += runtime.branch(condition, pass, fail)
       result
     }
   }
@@ -70,7 +66,7 @@ package object control {
     block
     val body = context.body
     context.body = before
-    context += repeat(condition, body)
+    context += runtime.repeat(condition, body)
   }
 
   /**
@@ -82,7 +78,7 @@ package object control {
    * @param context Parsing context.
    */
   def Rollback[T <: Primitive](result: Value[T])(implicit context: Context): Unit =
-    context += rollback(result)
+    context += runtime.rollback(result)
 
   /**
    * Adds the value to the parse context. Return does not break execution.

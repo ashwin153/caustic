@@ -101,12 +101,8 @@ class Runtime(database: Volume) {
       case (Rollback :: rest, x :: rem) => reduce(rest, rollback(x) :: rem)
       case (Repeat :: rest, Flag(false) :: _ :: rem) => reduce(rest, rem)
       case (Repeat :: rest, c :: b :: rem) => reduce(rest, repeat(c, b) :: rem)
-      case (Cons :: rest, f :: s :: rem) if f.isInstanceOf[Literal] => reduce(s :: rest, rem)
+      case (Prefetch :: rest, k :: s :: rem) => reduce(rest, prefetch(k, s) :: rem)
       case (Cons :: rest, f :: s :: rem) => reduce(rest, cons(f, s) :: rem)
-      case (Branch :: rest, Flag(true) :: pass :: _ :: rem) => reduce(pass :: rest, rem)
-      case (Branch :: rest, Flag(false) :: _ :: fail :: rem) => reduce(fail :: rest, rem)
-      case (Branch :: rest, Null :: _ :: fail :: rem) => reduce(fail :: rest, rem)
-      case (Branch :: rest, (_: Literal) :: pass :: _ :: rem) => reduce(pass :: rest, rem)
       case (Branch :: rest, c :: p :: f :: rem) => reduce(rest, branch(c, p, f) :: rem)
       case (Random :: rest, rem) => reduce(rest, random() :: rem)
 

@@ -1,6 +1,7 @@
 package caustic.library.control
 
-import caustic.runtime._
+import caustic.library.typing._
+import caustic.runtime
 
 /**
  * A parsing context.
@@ -8,7 +9,8 @@ import caustic.runtime._
  * @param body Current program.
  */
 case class Context(
-  private[library] var body: Program = Null
+  private[library] var body: runtime.Program = Null,
+  private[library] var current: scala.Int = -1
 ) {
 
   /**
@@ -16,7 +18,16 @@ case class Context(
    *
    * @param that Program to append.
    */
-  def +=(that: Program): Unit =
-    this.body = cons(this.body, that)
+  def +=(that: runtime.Program): Unit =
+    this.body = runtime.cons(this.body, that)
+
+  /**
+   *
+   * @return
+   */
+  def label(): Value[String] = {
+    this.current += 1
+    string("$") ++ this.current
+  }
 
 }

@@ -12,6 +12,7 @@ package object runtime {
   val Empty = Text("")
 
   implicit def flag(value: Boolean): Literal = if (value) True else False
+  implicit def real(value: Int): Literal = Real(value)
   implicit def real(value: Double): Literal = Real(value)
   implicit def text(value: String): Literal = if (value.isEmpty) Empty else Text(value)
 
@@ -57,9 +58,21 @@ package object runtime {
     case _ => Expression(Repeat, c :: b :: Nil)
   }
 
+  def prefetch(k: Program, s: Program): Program = (k, s) match {
+    case (Text(a), Real(b)) =>
+      (0 until b.toInt)
+        .map(i => read(add(k, add(text("/"), real(i)))))
+        .foldLeft[Program](Null)(cons)
+    case (a: Literal, _) => throw Fault(s"Prefetch undefined for key $a")
+    case (_, b: Literal) => throw Fault(s"Prefetch undefined for size $b")
+    case _ => Expression(Prefetch, k :: s :: Nil)
+  }
+
   def branch(c: Program, p: Program, f: Program): Program = (c, p, f) match {
     case (Flag(true), a, _) => a
     case (Flag(false), _, b) => b
+    case (Null, _, b) => b
+    case (_: Literal, a, _) => a
     case _ => Expression(Branch, c :: p :: f :: Nil)
   }
 

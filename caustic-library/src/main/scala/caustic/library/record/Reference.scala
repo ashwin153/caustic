@@ -77,13 +77,13 @@ case class Reference[T](pointer: Variable[String]) {
    * @param keys Attribute names.
    * @param folder Attribute iterator.
    */
-  def json[Repr <: HList, KeysRepr <: HList](recursive: scala.Boolean = false)(
+  def toJson[Repr <: HList, KeysRepr <: HList](recursive: scala.Boolean = false)(
     implicit context: Context,
     generic: LabelledGeneric.Aux[T, Repr],
     keys: Keys.Aux[Repr, KeysRepr],
     folder: LeftFolder.Aux[KeysRepr, ops.json.Args[T], ops.json.type, ops.json.Args[T]]
   ): Value[String] = {
-    val obj = convert("{\"key\": ") ++ this.pointer.key.quoted
+    val obj = string("{\"key\": ") ++ this.pointer.key.quoted
     obj ++ keys().foldLeft(ops.json.Args(this, "", recursive))(ops.json).json ++ "}"
   }
 

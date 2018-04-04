@@ -30,8 +30,8 @@ trait Variable[T <: Primitive] extends Value[T] {
    * @return Scoped variable.
    */
   def scope[U <: Primitive](x: Value[String]): Variable[U] = this match {
-    case Local(a) => Local[U](this.key ++ "@@" ++ x)
-    case Remote(a) => Remote[U](this.key ++ "@@" ++ x)
+    case Local(a) => Local[U](this.key ++ "/" ++ x)
+    case Remote(a) => Remote[U](this.key ++ "/" ++ x)
   }
 
 }

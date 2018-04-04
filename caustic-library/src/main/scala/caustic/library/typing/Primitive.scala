@@ -8,4 +8,3 @@ trait String extends Primitive
 trait Double extends String
 trait Int extends Double
 trait Boolean extends Int
-trait Null extends Boolean

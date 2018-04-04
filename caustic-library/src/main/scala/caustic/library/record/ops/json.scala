@@ -3,7 +3,7 @@ package caustic.library.record.ops
 import caustic.library.control.Context
 import caustic.library.record.{Field, Reference}
 import caustic.library.typing._
-import caustic.runtime._
+
 import shapeless._
 import shapeless.ops.hlist.LeftFolder
 import shapeless.ops.record.{Keys, Selector}
@@ -23,29 +23,14 @@ object json extends Poly2 {
     T,
     TRepr <: HList,
     FieldName <: Symbol,
-    FieldType <: Double
+    FieldType <: Primitive
   ](
     implicit context: Context,
     generic: LabelledGeneric.Aux[T, TRepr],
     selector: Selector.Aux[TRepr, FieldName, FieldType],
     field: Field.Aux[FieldType, Variable[FieldType]]
   ): Case.Aux[Args[T], FieldName, Args[T]] = at[Args[T], FieldName] { (x, f) =>
-    val json = branch(field(x.src, f.name) <> Null, field(x.src, f.name), "null")
-    x.copy(json = x.json ++ ", \"" ++ f.name ++ "\": " ++ json)
-  }
-
-  implicit def caseString[
-    T,
-    TRepr <: HList,
-    FieldName <: Symbol
-  ](
-    implicit context: Context,
-    generic: LabelledGeneric.Aux[T, TRepr],
-    selector: Selector.Aux[TRepr, FieldName, String],
-    field: Field.Aux[String, Variable[String]]
-  ): Case.Aux[Args[T], FieldName, Args[T]] = at[Args[T], FieldName] { (x, f) =>
-    val json = branch(field(x.src, f.name) <> Null, field(x.src, f.name).quoted, "null")
-    x.copy(json = x.json ++ ", \"" ++ f.name ++ "\": " ++ json)
+    x.copy(json = x.json ++ ", \"" ++ f.name ++ "\": " ++ field(x.src, f.name).toJson)
   }
 
   implicit def casePointer[
@@ -66,7 +51,7 @@ object json extends Poly2 {
     fieldFolder: LeftFolder.Aux[FieldKeys, Args[FieldT], json.type, Args[FieldT]],
     evidence: FieldType <:< Reference[FieldT]
   ): Case.Aux[Args[T], FieldName, Args[T]] = at[Args[T], FieldName] { (x, f) =>
-    val json = if (x.recursive) field(x.src, f.name).json() else field(x.src, f.name).key
+    val json = if (x.recursive) field(x.src, f.name).toJson() else field(x.src, f.name).key
     x.copy(json = x.json ++ ", \"" ++ f.name ++ "\": \"" ++ json ++ "\"")
   }
 
@@ -88,7 +73,7 @@ object json extends Poly2 {
     fieldFolder: LeftFolder.Aux[FieldKeys, Args[FieldT], json.type, Args[FieldT]],
     evidence: FieldType <:!< Reference[FieldT]
   ): Case.Aux[Args[T], FieldName, Args[T]] = at[Args[T], FieldName] { (x, f) =>
-    x.copy(json = x.json ++ ", \"" ++ f.name ++ "\": " ++ field(x.src, f.name).json())
+    x.copy(json = x.json ++ ", \"" ++ f.name ++ "\": " ++ field(x.src, f.name).toJson())
   }
 
 }

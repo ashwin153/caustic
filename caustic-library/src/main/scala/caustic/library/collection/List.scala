@@ -2,110 +2,172 @@ package caustic.library.collection
 
 import caustic.library.control._
 import caustic.library.typing._
-import caustic.runtime.Null
+import caustic.runtime
 
 import scala.language.reflectiveCalls
 
 /**
- * A dynamically-sized collection of scalar values.
+ * A mutable collection of values.
  *
- * @param size Current size.
+ * @param length Current size.
  */
-case class List[T <: Primitive](size: Variable[Int]) {
+class List[T <: Primitive](length: Variable[Int]) {
+
+  /**
+   * Returns the number of values in the list.
+   *
+   * @return Number of values.
+   */
+  def size: Value[Int] = this.length
 
   /**
    * Returns the value at the specified index.
    *
    * @param index Index.
-   * @return Value at index.
-   */
-  def get(index: Value[Int]): Value[T] = size.scope(index)
-
-  /**
-   * Sets the value at the specified index.
-   *
-   * @param index Index.
-   * @param value Updated value.
    * @param context Parse context.
+   * @return Value.
    */
-  def set(index: Value[Int], value: Value[T])(implicit context: Context): Unit = {
-    // Grow the list if a larger index is added.
-    If (index >= this.size) {
-      this.size := index
-    }
-
-    // Shrink the list if the last index is deleted.
-    If (index === this.size && value === Null) {
-      this.size -= 1
-    }
-
-    // Set the value of the specified index.
-    this.size.scope[T](index) := value
+  def apply(index: Value[Int])(implicit context: Context): Variable[T] = {
+    this.length.scope[T](index)
   }
 
   /**
-   * Returns whether or not the list contains the value.
+   * Appends the value to the end of the list.
    *
-   * @param value Value to lookup.
+   * @param value Value.
    * @param context Parse context.
-   * @return Whether or not the list contains the value.
+   */
+  def append(value: Value[T])(implicit context: Context): Unit = {
+    this.length.scope[T](this.length) := value
+    this.length += 1
+  }
+
+  /**
+   * Applies the function to each value in the list.
+   *
+   * @param f Function.
+   * @param context Parse context.
+   */
+  def foreach[U](f: (Value[Int], Value[T]) => U)(implicit context: Context): Unit = {
+    if (this.length.isInstanceOf[Remote[Int]]) context += runtime.prefetch(this.length.key, this.length)
+    val index = Local[Int](context.label())
+    index := 0
+
+    While (index < this.length) {
+      f(index, this(index))
+    }
+  }
+
+  /**
+   * Removes the value from the list.
+   *
+   * @param value Value.
+   * @param context Parse context.
+   */
+  def remove(value: Value[T])(implicit context: Context): Unit = {
+    val index = this.indexOf(value)
+
+    If (index <> -1) {
+      // Shift over all values after the index of the removed value.
+      foreach { case (i, _) =>
+        If (i >= index && i < this.length - 1) {
+          this.length.scope[T](i) := this(i + 1)
+        }
+      }
+
+      // Decrement the size of the list.
+      this.length.scope[T](this.length - 1) := Null
+      this.length -= 1
+    }
+  }
+
+  /**
+   * Returns whether or not the list contains the specified value.
+   *
+   * @param value Value.
+   * @param context Parse context.
+   * @return Whether or not the value is in the list.
    */
   def contains(value: Value[T])(implicit context: Context): Value[Boolean] = {
     indexOf(value) >= 0
   }
 
   /**
-   * Returns the index of the specified value.
+   * Returns the index of the value in the list of -1 if it is not present.
    *
-   * @param value Value to lookup.
+   * @param value Value.
    * @param context Parse context.
-   * @return Whether or not the list contains the value.
+   * @return Index of value in list or -1.
    */
   def indexOf(value: Value[T])(implicit context: Context): Value[Int] = {
-    val index = this.size.scope[Int]("$i")
-    index := this.size - 1
-
-    // Iterate through the list until the value is found.
-    While (index >= 0 && get(index) <> value) {
-      index -= 1
-    }
-
+    val index = Local[Int](context.label())
+    index := -1
+    foreach { case (i, v) => If (index === -1 && v === value)(index := i) }
     index
   }
 
   /**
-   * Returns whether or not the lists contain the same elements.
+   * Returns whether or not the lists contain the same values.
    *
    * @param that Another list.
    * @param context Parse context.
-   * @return Whether or not the lists are equal.
+   * @return Whether or not the lists contain the same values.
    */
   def ===(that: List[T])(implicit context: Context): Value[Boolean] = {
-    val index = this.size.scope[Int]("$i")
-    index := 0
-
-    // Iterate through both lists and verify that all values are the same.
-    While (index < this.size && index < that.size && get(index) === that.get(index)) {
-      index += 1
-    }
-
-    this.size === that.size && index <> this.size
+    val equal = Local[Boolean](context.label())
+    equal := true
+    foreach { case (i, v) => equal := equal && this(i) === v }
+    this.size === that.size && equal
   }
 
   /**
-   * Applies the function to each element of the list.
+   * Removes all values from the list.
    *
-   * @param f Function to apply.
    * @param context Parse context.
    */
-  def foreach[U](f: (Value[Int], Value[T]) => U)(implicit context: Context): Unit = {
-    val index = this.size.scope[Int]("$i")
-    index := 0
-
-    // Iterate through the list.
-    While (index < this.size) {
-      f(index, get(index))
-    }
+  def clear()(implicit context: Context): Unit = {
+    foreach { case (i, _) => this.length.scope[T](i) := Null }
+    this.length := 0
   }
+
+  /**
+   * Returns the contents of the list as a JSON string.
+   *
+   * @param context Parse context.
+   * @return JSON representation.
+   */
+  def toJson(implicit context: Context): Value[String] = {
+    val json = Local[String](context.label())
+    json := "["
+
+    foreach { case (_, v) =>
+      If (json === "[") {
+        json := json ++ v.toJson
+      } Else {
+        json := json ++ ", " ++ v.toJson
+      }
+    }
+
+    json ++ "]"
+  }
+
+  /**
+   * Returns the list as a set.
+   *
+   * @return Set.
+   */
+  def toSet: Set[T] = new Set(this)
+
+}
+
+object List {
+
+  /**
+   * Constructs a list backed by the specified variable.
+   *
+   * @param length Variable.
+   * @return List.
+   */
+  def apply[T <: Primitive](length: Variable[Int]): List[T] = new List(length)
 
 }

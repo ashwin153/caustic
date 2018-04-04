@@ -1,21 +1,24 @@
 package caustic.library
 
 import caustic.library.typing._
-import caustic.runtime
-
+import caustic.runtime.Runtime.{Aborted, Fault, Rollbacked}
+import caustic.runtime._
 import scala.util.Try
 
 package object control {
 
-  implicit class RuntimeOps(x: runtime.Runtime) {
+  implicit class RuntimeOps(x: Runtime) {
 
     /**
      * Executes the parsed program on the runtime and returns the result.
      *
      * @param f Program builder.
+     * @throws Rollbacked If the program was rolled back.
+     * @throws Aborted If the program could not be executed.
+     * @throws Fault If the program is illegally constructed.
      * @return Literal result or exception on failure.
      */
-    def execute[U](f: Context => U): Try[runtime.Literal] = {
+    def execute[U](f: Context => U): Try[Literal] = {
       val context = Context()
       f(context)
       x.execute(context.body)
@@ -35,18 +38,18 @@ package object control {
    */
   def If[T](condition: Value[Boolean])(success: => T)(implicit context: Context) = new {
     private val before = context.body
-    context.body = Null
+    context.body = None
     success
     private val pass = context.body
     context.body = before
-    context += runtime.branch(condition, pass, Null)
+    context += branch(condition, pass, None)
 
     def Else(failure: => T): T = {
-      context.body = Null
+      context.body = None
       val result = failure
       val fail = context.body
       context.body = before
-      context += runtime.branch(condition, pass, fail)
+      context += branch(condition, pass, fail)
       result
     }
   }
@@ -62,11 +65,11 @@ package object control {
    */
   def While(condition: Value[Boolean])(block: => Unit)(implicit context: Context): Unit = {
     val before = context.body
-    context.body = Null
+    context.body = None
     block
     val body = context.body
     context.body = before
-    context += runtime.repeat(condition, body)
+    context += repeat(condition, body)
   }
 
   /**
@@ -78,7 +81,7 @@ package object control {
    * @param context Parsing context.
    */
   def Rollback[T <: Primitive](result: Value[T])(implicit context: Context): Unit =
-    context += runtime.rollback(result)
+    context += rollback(result)
 
   /**
    * Adds the value to the parse context. Return does not break execution.

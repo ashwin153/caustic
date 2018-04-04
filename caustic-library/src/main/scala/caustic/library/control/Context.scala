@@ -1,7 +1,7 @@
 package caustic.library.control
 
 import caustic.library.typing._
-import caustic.runtime
+import caustic.runtime._
 
 /**
  * A parsing context.
@@ -9,7 +9,7 @@ import caustic.runtime
  * @param body Current program.
  */
 case class Context(
-  private[library] var body: runtime.Program = Null,
+  private[library] var body: Program = None,
   private[library] var current: scala.Int = -1
 ) {
 
@@ -18,8 +18,8 @@ case class Context(
    *
    * @param that Program to append.
    */
-  def +=(that: runtime.Program): Unit =
-    this.body = runtime.cons(this.body, that)
+  def +=(that: Program): Unit =
+    this.body = cons(this.body, that)
 
   /**
    *

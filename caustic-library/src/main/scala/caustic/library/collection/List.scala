@@ -2,7 +2,7 @@ package caustic.library.collection
 
 import caustic.library.control._
 import caustic.library.typing._
-import caustic.runtime
+import caustic.runtime._
 
 import scala.language.reflectiveCalls
 
@@ -49,7 +49,7 @@ class List[T <: Primitive](length: Variable[Int]) {
    * @param context Parse context.
    */
   def foreach[U](f: (Value[Int], Value[T]) => U)(implicit context: Context): Unit = {
-    if (this.length.isInstanceOf[Remote[Int]]) context += runtime.prefetch(this.length.key, this.length)
+    if (this.length.isInstanceOf[Remote[Int]]) context += prefetch(this.length.key, this.length)
     val index = Local[Int](context.label())
     index := 0
 
@@ -76,7 +76,7 @@ class List[T <: Primitive](length: Variable[Int]) {
       }
 
       // Decrement the size of the list.
-      this.length.scope[T](this.length - 1) := Null
+      this.length.scope[T](this.length - 1) := None
       this.length -= 1
     }
   }
@@ -126,7 +126,7 @@ class List[T <: Primitive](length: Variable[Int]) {
    * @param context Parse context.
    */
   def clear()(implicit context: Context): Unit = {
-    foreach { case (i, _) => this.length.scope[T](i) := Null }
+    foreach { case (i, _) => this.length.scope[T](i) := None }
     this.length := 0
   }
 

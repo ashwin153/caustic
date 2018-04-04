@@ -47,7 +47,7 @@ case class Map[A <: String, B <: Primitive](keys: Set[A]) {
    * @param context Parse context.
    */
   def put(key: Value[A], value: Value[B])(implicit context: Context): Unit = {
-    If (value === Null) {
+    If (value === None) {
       this.keys.remove(key)
     } Else {
       this.keys.add(key)
@@ -74,7 +74,7 @@ case class Map[A <: String, B <: Primitive](keys: Set[A]) {
    * @param key Key.
    * @param context Parse context.
    */
-  def remove(key: Value[A])(implicit context: Context): Unit = put(key, Null)
+  def remove(key: Value[A])(implicit context: Context): Unit = put(key, None)
 
   /**
    * Applies the function to each key-value pair in the map.
@@ -92,7 +92,7 @@ case class Map[A <: String, B <: Primitive](keys: Set[A]) {
    * @param context Parse context.
    */
   def clear()(implicit context: Context): Unit = {
-    foreach { case (k, _) => this.keys.toList(this.keys.toList.indexOf(k)).scope[B](k) := Null }
+    foreach { case (k, _) => this.keys.toList(this.keys.toList.indexOf(k)).scope[B](k) := None }
     this.keys.clear()
   }
 

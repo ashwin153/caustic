@@ -28,7 +28,7 @@ object delete extends Poly2 {
     selector: Selector.Aux[TRepr, FieldName, FieldType],
     field: Field.Aux[FieldType, Variable[FieldType]]
   ): Case.Aux[Args[T], FieldName, Args[T]] = at[Args[T], FieldName] { (x, f) =>
-    field(x.src, f.name).set(Null)
+    field(x.src, f.name).set(None)
     x
   }
 
@@ -51,7 +51,7 @@ object delete extends Poly2 {
     evidence: FieldType <:< Reference[FieldT]
   ): Case.Aux[Args[T], FieldName, Args[T]] = at[Args[T], FieldName] { (x, f) =>
     if (x.recursive) field(x.src, f.name).delete(x.recursive)
-    x.src.pointer.set(Null)
+    x.src.pointer.set(None)
     x
   }
 

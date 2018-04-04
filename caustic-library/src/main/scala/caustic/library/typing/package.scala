@@ -8,7 +8,7 @@ import scala.language.implicitConversions
 
 package object typing {
 
-  val Null                                          : Program           = runtime.Null
+  val None                                          : Program           = runtime.Null
   val True                                          : Value[Boolean]    = Constant(true)
   val False                                         : Value[Boolean]    = Constant(false)
 
@@ -72,11 +72,11 @@ package object typing {
   }
 
   implicit class ToJsonOps[T <: Primitive](x: Value[T]) {
-    def toJson: Value[String] = branch(x <> Null, x, "null")
+    def toJson: Value[String] = branch(x <> None, x, "null")
   }
 
   implicit class ToJsonStringOps(x: Value[String]) {
-    def toJson: Value[String] = branch(x <> Null, x.quoted, "null")
+    def toJson: Value[String] = branch(x <> None, x.quoted, "null")
   }
 
 

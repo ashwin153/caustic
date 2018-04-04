@@ -1,6 +1,7 @@
 package caustic.library
 
 import caustic.library.control.Context
+
 import shapeless.{HList, LabelledGeneric}
 import shapeless.ops.hlist.LeftFolder
 import shapeless.ops.record.Keys

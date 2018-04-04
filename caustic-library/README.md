@@ -112,17 +112,19 @@ library provides __list__, __set__, and __map__ implementations. Although collec
 directly store records, they may contain references to them.
 
 ```scala
-val x = List[String](Local("x"))
-x.get(0)
-x.set(2, "hello")
-x.foreach(s => Reference[Foo](Local(s)).set('x, 0))
+val x = List[String](Remote("x"))
+x.append("hello")
+x(0) := "foo"
+x.toJson
 
 val y = Set[Int](Local("y"))
 y.add(2)
 y.contains(3)
+val sum = Local[Int]("sum")
+y.foreach(v => sum += v)
 
 val z = Map[Int, Double](Local("y"))
-z.get(2)
+z(2)
 z.put(4, 2.1)
 ```
 

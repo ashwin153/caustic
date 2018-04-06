@@ -42,6 +42,7 @@ package object math {
   def round (x: Value[Double], y: Value[Double]): Value[Double] = branch(x % y < y / 2, x - x % y, x - x % y + y)
   def sec   (x: Value[Double])                  : Value[Double] = One / cos(x)
   def sech  (x: Value[Double])                  : Value[Double] = One / cosh(x)
+  def signum(x: Value[Double])                  : Value[Int]    = branch(x === 0, 0, branch(x < 0, -1, 1))
   def sin   (x: Value[Double])                  : Value[Double] = runtime.sin(x)
   def sinh  (x: Value[Double])                  : Value[Double] = (exp(x) - exp(-x)) / Two
   def sqrt  (x: Value[Double])                  : Value[Double] = pow(x, Half)

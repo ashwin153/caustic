@@ -49,6 +49,7 @@ provides a rich math package. The following table enumerates the various support
 | ```round(x, y)```        | Closest multiple of ```y``` to ```x```.                               |
 | ```sec(x)```             | Secant of ```x```.                                                    |
 | ```sech(x)```            | Hyperbolic secant of ```x```.                                         |
+| ```signum(x)```          | Returns the sign of ```x```.                                          |
 | ```sin(x)```             | Sine of ```x```.                                                      | 
 | ```sinh(x)```            | Hyperbolic sine of ```x```.                                           |
 | ```sqrt(x)```            | Square root of ```x```.                                               | 

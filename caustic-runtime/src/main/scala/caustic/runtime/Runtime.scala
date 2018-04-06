@@ -32,6 +32,7 @@ class Runtime(database: Volume) {
     val buffer   = mutable.Map.empty[Key, Literal]
     val locals   = mutable.Map.empty[Key, Literal]
 
+    @tailrec
     def evaluate(iteration: Program): Try[Literal] = {
       // Fetch all keys that are read (for their value) and written (for their version), that have
       // not been read before (to avoid changes in value and version) to ensure that the evaluation
@@ -50,14 +51,16 @@ class Runtime(database: Volume) {
 
       // Fetch the keys, update the local snapshot, and reduce the program. If the result is a
       // literal then return, otherwise recurse on the partially evaluated program.
-      this.database.get(keys) flatMap { r =>
-        depends  ++= r.mapValues(r => r.version)
-        snapshot ++= r.mapValues(r => deserialize(r.value))
+      this.database.get(keys) match {
+        case Success(r) =>
+          depends  ++= r.mapValues(r => r.version)
+          snapshot ++= r.mapValues(r => deserialize(r.value))
 
-        reduce(List(iteration), List.empty) match {
-          case l: Literal => Success(l)
-          case o: Expression => evaluate(o)
-        }
+          reduce(List(iteration), List.empty) match {
+            case l: Literal => Success(l)
+            case o: Expression => evaluate(o)
+          }
+        case Failure(e) => Failure(e)
       }
     }
 

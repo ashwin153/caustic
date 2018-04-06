@@ -33,7 +33,7 @@ subroutines.
 | ```mul(x, y)```          | Product of ```x``` and ```y```.                                       | 
 | ```negate(x)```          | Bitwise negation of ```x```.                                          |
 | ```pow(x, y)```          | Returns ```x``` raised to the power ```y```.                          | 
-| ```prefetch(k)```        | Reads the values of the common delimited list of keys ```k```.        |
+| ```prefetch(k, s)```     | Reads keys at ```k/i``` for ```i``` in ```[0, s)```.                  |
 | ```read(k)```            | Reads the value of the key ```k```.                                   |
 | ```repeat(c, b)```       | Repeatedly executes ```b``` while ```c``` is true.                    |
 | ```rollback(r)```        | Discards all writes and returns ```r```.                              |

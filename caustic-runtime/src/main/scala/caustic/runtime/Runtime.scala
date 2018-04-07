@@ -1,6 +1,5 @@
 package caustic.runtime
 
-import caustic.runtime.Literal._
 import caustic.runtime.Runtime._
 
 import beaker.client._
@@ -54,7 +53,7 @@ class Runtime(database: Volume) {
       this.database.get(keys) match {
         case Success(r) =>
           depends  ++= r.mapValues(r => r.version)
-          snapshot ++= r.mapValues(r => deserialize(r.value))
+          snapshot ++= r.mapValues(r => Literal(r.value))
 
           reduce(List(iteration), List.empty) match {
             case l: Literal => Success(l)
@@ -88,8 +87,6 @@ class Runtime(database: Volume) {
         reduce(first :: Cons :: rest, second :: rem)
       case (Expression(Repeat, c :: b :: Nil) :: rest, rem) =>
         reduce(branch(c, cons(b, repeat(c, b)), Null) :: rest, rem)
-      case (Expression(Random, Nil) :: rest, rem) =>
-        reduce(rest, real(scala.util.Random.nextDouble()) :: rem)
       case ((e: Expression) :: rest, rem) =>
         reduce(e.operands.reverse ::: e.operator :: rest, rem)
 
@@ -102,12 +99,11 @@ class Runtime(database: Volume) {
       case (Store :: rest, k :: v :: rem) => reduce(rest, store(k, v) :: rem)
       case (Rollback :: _, (l: Literal) :: _) => throw Rollbacked(l)
       case (Rollback :: rest, x :: rem) => reduce(rest, rollback(x) :: rem)
-      case (Repeat :: rest, Flag(false) :: _ :: rem) => reduce(rest, rem)
+      case (Repeat :: rest, False :: _ :: rem) => reduce(rest, rem)
       case (Repeat :: rest, c :: b :: rem) => reduce(rest, repeat(c, b) :: rem)
-      case (Prefetch :: rest, k :: s :: rem) => reduce(rest, prefetch(k, s) :: rem)
+      case (Prefetch :: rest, k :: s :: r :: rem) => reduce(rest, prefetch(k, s, r) :: rem)
       case (Cons :: rest, f :: s :: rem) => reduce(rest, cons(f, s) :: rem)
       case (Branch :: rest, c :: p :: f :: rem) => reduce(rest, branch(c, p, f) :: rem)
-      case (Random :: rest, rem) => reduce(rest, random() :: rem)
 
       // Simplify String Expressions.
       case (Length :: rest, x :: rem) => reduce(rest, length(x) :: rem)
@@ -150,7 +146,7 @@ class Runtime(database: Volume) {
         case _ => Failure(Aborted)
       }
     } flatMap { r =>
-      this.database.cas(depends.toMap, buffer.mapValues(serialize).toMap) match {
+      this.database.cas(depends.toMap, buffer.mapValues(_.asBase64).toMap) match {
         case Success(_) => Success(r)
         case _ => Failure(Aborted)
       }
@@ -164,12 +160,12 @@ object Runtime {
   /**
    * A non-retryable failure that terminates execution and discards all writes.
    *
-   * @param result Literal return value.
+   * @param message Literal return value.
    */
-  case class Rollbacked(result: Literal) extends Exception
+  case class Rollbacked(message: Literal) extends Exception
 
   /**
-   * A retryable failure that indicates a program could not be executed.
+   * A retryable failure that indicates a program could not be transactionally executed.
    */
   case object Aborted extends Exception
 

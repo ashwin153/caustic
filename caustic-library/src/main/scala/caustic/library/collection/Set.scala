@@ -13,6 +13,12 @@ import scala.language.reflectiveCalls
 case class Set[T <: Primitive](toList: List[T]) {
 
   /**
+   *
+   * @return
+   */
+  def length: Variable[Int] = this.toList.length
+
+  /**
    * Returns the number of elements in the set.
    *
    * @return Number of elements.

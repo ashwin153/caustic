@@ -1,12 +1,13 @@
 package caustic.library.typing
 
 import caustic.library.control.Context
+import caustic.library.typing.Value._
 import caustic.runtime._
 
 /**
  * A scalar variable.
  */
-trait Variable[T <: Primitive] extends Value[T] {
+sealed trait Variable[T <: Primitive] extends Value[T] {
 
   /**
    * Returns the name of the variable.
@@ -30,34 +31,45 @@ trait Variable[T <: Primitive] extends Value[T] {
    * @return Scoped variable.
    */
   def scope[U <: Primitive](x: Value[String]): Variable[U] = this match {
-    case Local(a) => Local[U](this.key ++ "/" ++ x)
-    case Remote(a) => Remote[U](this.key ++ "/" ++ x)
+    case Variable.Local(k) => Variable.Local(k + "/" + x)
+    case Variable.Remote(k) => Variable.Remote(k + "/" + x)
   }
 
 }
 
-/**
- * A local variable.
- *
- * @param key Variable name.
- */
-case class Local[T <: Primitive](key: Value[String]) extends Variable[T] {
+object Variable {
 
-  override def get: Program = load(key)
+  /**
+   * A local variable.
+   *
+   * @param key Variable name.
+   */
+  case class Local[T <: Primitive](key: Value[String]) extends Variable[T] {
+    override def get: Program = load(key)
+    override def set(that: Value[T])(implicit context: Context): Unit = context += store(key, that)
+  }
 
-  override def set(that: Value[T])(implicit context: Context): Unit = context += store(key, that)
+  /**
+   * A remote variable.
+   *
+   * @param key Variable name.
+   */
+  case class Remote[T <: Primitive](key: Value[String]) extends Variable[T] {
+    override def get: Program = read(key)
+    override def set(that: Value[T])(implicit context: Context): Unit = context += write(key, that)
+  }
 
-}
+  // Implicit Operations.
+  implicit class AssignmentOps[X <: Primitive](x: Variable[X]) {
+    def :=[Y <: X](y: Value[Y])(implicit context: Context): Unit = x.set(y)
+  }
 
-/**
- * A remote variable.
- *
- * @param key Variable name.
- */
-case class Remote[T <: Primitive](key: Value[String]) extends Variable[T] {
-
-  override def get: Program = read(key)
-
-  override def set(that: Value[T])(implicit context: Context): Unit = context += write(key, that)
+  implicit class CompoundAssignment[X >: Int <: Double](x: Variable[X]) {
+    def +=[Y <: X](y: Value[Y])(implicit context: Context): Unit = x := (x + y)
+    def -=[Y <: X](y: Value[Y])(implicit context: Context): Unit = x := (x - y)
+    def *=[Y <: X](y: Value[Y])(implicit context: Context): Unit = x := (x * y)
+    def /=[Y <: X](y: Value[Y])(implicit context: Context): Unit = x := (x / y)
+    def %=[Y <: X](y: Value[Y])(implicit context: Context): Unit = x := (x % y)
+  }
 
 }

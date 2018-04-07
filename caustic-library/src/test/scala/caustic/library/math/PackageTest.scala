@@ -1,6 +1,7 @@
 package caustic.library.math
 
 import caustic.library.typing._
+import caustic.library.typing.Value._
 
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner

@@ -2,6 +2,8 @@ package caustic.library.collection
 
 import caustic.library.control._
 import caustic.library.typing._
+import caustic.library.typing.Value._
+import caustic.runtime.prefetch
 
 import scala.language.reflectiveCalls
 
@@ -11,6 +13,12 @@ import scala.language.reflectiveCalls
  * @param keys Keys.
  */
 case class Map[A <: String, B <: Primitive](keys: Set[A]) {
+
+  /**
+   *
+   * @return
+   */
+  def length: Variable[Int] = this.keys.length
 
   /**
    * Returns the number of entries.
@@ -83,6 +91,11 @@ case class Map[A <: String, B <: Primitive](keys: Set[A]) {
    * @param context Parse context.
    */
   def foreach[U](f: (Value[A], Value[B]) => U)(implicit context: Context): Unit = {
+    // Prefetch all key-value pairs if the map is remotely stored.
+    if (this.length.isInstanceOf[Variable.Remote[Int]])
+      context += prefetch(this.length.key, this.size, 2)
+
+    // Iterate over each key-value pair in the map.
     this.keys.foreach(k => f(k, this(k)))
   }
 
@@ -104,7 +117,7 @@ case class Map[A <: String, B <: Primitive](keys: Set[A]) {
    * @return Whether or not the maps are equal.
    */
   def ===(that: Map[A, B])(implicit context: Context): Value[Boolean] = {
-    val equals = Local[Boolean](context.label())
+    val equals = Variable.Local[Boolean](context.label())
     foreach { case (k, v) => equals := equals && v === that(k) }
     equals && this.keys === that.keys
   }
@@ -116,18 +129,18 @@ case class Map[A <: String, B <: Primitive](keys: Set[A]) {
    * @return JSON representation.
    */
   def toJson(implicit context: Context): Value[String] = {
-    val json = Local[String](context.label())
+    val json = Variable.Local[String](context.label())
     json := "{"
 
     foreach { case (k, v) =>
       If (json === "{") {
-        json := json ++ k.quoted ++ ": " ++ v.toJson
+        json := json + k.quoted + ": " + v.toJson
       } Else {
-        json := json ++ ", " ++ k.quoted ++ ": " ++ v.toJson
+        json := json + ", " + k.quoted + ": " + v.toJson
       }
     }
 
-    json ++ "}"
+    json + "}"
   }
 
 }

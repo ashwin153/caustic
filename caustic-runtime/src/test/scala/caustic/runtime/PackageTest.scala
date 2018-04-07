@@ -10,60 +10,61 @@ import org.scalatest.{FunSuite, Matchers}
 class PackageTest extends FunSuite with Matchers {
 
   test("Literals are cached") {
-    flag(true) should be theSameInstanceAs True
-    flag(false) should be theSameInstanceAs False
+    True should be theSameInstanceAs True
+    False should be theSameInstanceAs False
     text("") should be theSameInstanceAs Empty
   }
 
   test("Expressions are simplified") {
     // Math Expressions.
-    add(real(6), real(9)) shouldEqual real(15)
-    add(text("a"), text("b")) shouldEqual text("ab")
-    add(flag(true), flag(false)) shouldEqual text("truefalse")
-    add(text("a"), real(0)) shouldEqual text("a0.0")
-    add(text("a"), flag(true)) shouldEqual text("atrue")
-    add(real(3.2), flag(true)) shouldEqual text("3.2true")
-    sub(real(9), real(6)) shouldEqual real(3)
-    mul(real(2), real(3)) shouldEqual real(6)
-    div(real(5), real(2)) shouldEqual real(2.5)
-    mod(real(5), real(2)) shouldEqual real(1)
-    pow(real(5), real(2)) shouldEqual real(25)
-    log(real(math.exp(2))) shouldEqual real(2)
-    sin(real(0.0)) shouldEqual real(0)
-    cos(real(0.0)) shouldEqual real(1)
-    floor(real(1.0)) shouldEqual real(1)
-    floor(real(1.5)) shouldEqual real(1)
-    floor(real(1.4)) shouldEqual real(1)
+    add(6, 9) shouldEqual real(15)
+    add("a", "b") shouldEqual text("ab")
+    add(true, false) shouldEqual real(1)
+    add("a", 0) shouldEqual text("a0")
+    add("a", true) shouldEqual text("atrue")
+    add(3.2, true) shouldEqual real(4.2)
+    sub(9, 6) shouldEqual real(3)
+    mul(2, 3) shouldEqual real(6)
+    div(5, 2) shouldEqual real(2.5)
+    mod(5, 2) shouldEqual real(1)
+    pow(5, 2) shouldEqual real(25)
+    log(math.exp(2)) shouldEqual real(2)
+    sin(0) shouldEqual real(0)
+    cos(0) shouldEqual real(1)
+    floor(1) shouldEqual real(1)
+    floor(1.5) shouldEqual real(1)
 
     // String Expressions.
-    runtime.length(text("Hello")) shouldEqual real(5.0)
-    slice(text("Hello"), real(1), real(3)) shouldEqual text("el")
-    matches(text("a41i3"), text("[a-z1-4]+")) shouldEqual flag(true)
-    matches(text("a41i3"), text("[a-z1-4]")) shouldEqual flag(false)
-    contains(text("abc"), text("bc")) shouldEqual flag(true)
-    contains(text("abc"), text("de")) shouldEqual flag(false)
-    indexOf(text("Hello"), text("l")) shouldEqual real(2)
+    runtime.length("hello") shouldEqual real(5.0)
+    slice("hello", 1, 3) shouldEqual text("el")
+    matches("a41i3", "[a-z1-4]+") shouldEqual True
+    matches("a41i3", "[a-z1-4]") shouldEqual False
+    contains("abc", "bc") shouldEqual True
+    contains("abc", "de") shouldEqual False
+    indexOf("hello", "l") shouldEqual real(2)
 
     // Logical Expressions.
-    both(flag(false), flag(true)) shouldEqual flag(false)
-    both(flag(true), flag(true)) shouldEqual flag(true)
-    either(flag(true), flag(false)) shouldEqual flag(true)
-    either(flag(false), flag(false)) shouldEqual flag(false)
-    negate(flag(false)) shouldEqual flag(true)
-    negate(real(0)) shouldEqual flag(true)
-    negate(real(1)) shouldEqual flag(false)
-    negate(text("")) shouldEqual flag(true)
-    negate(text("foo")) shouldEqual flag(false)
-    runtime.equal(Null, Null) shouldEqual flag(true)
-    runtime.equal(Null, real(0.0)) shouldEqual flag(false)
-    runtime.equal(real(0), real(0.0)) shouldEqual flag(true)
-    runtime.equal(text("a"), text("a")) shouldEqual flag(true)
-    runtime.equal(text(""), real(0)) shouldEqual flag(false)
-    runtime.equal(flag(true), flag(false)) shouldEqual flag(false)
-    less(real(2), real(10)) shouldEqual flag(true)
-    less(real(-1), real(1)) shouldEqual flag(true)
-    less(text("a"), text("ab")) shouldEqual flag(true)
-    less(flag(false), flag(true)) shouldEqual flag(true)
+    both(False, True) shouldEqual False
+    both(True, True) shouldEqual True
+    either(True, False) shouldEqual True
+    either(False, False) shouldEqual False
+    negate(False) shouldEqual True
+    negate(0) shouldEqual True
+    negate(1) shouldEqual False
+    negate("") shouldEqual True
+    negate("foo") shouldEqual False
+    runtime.equal(Null, Null) shouldEqual True
+    runtime.equal(Null, 0) shouldEqual True
+    runtime.equal(0, 0) shouldEqual True
+    runtime.equal("a", "a") shouldEqual True
+    runtime.equal("", 0) shouldEqual False
+    runtime.equal("0", 0) shouldEqual True
+    runtime.equal("0.0", 0) shouldEqual False
+    runtime.equal(True, False) shouldEqual False
+    less(2, 10) shouldEqual True
+    less(-1, 1) shouldEqual True
+    less("a", "ab") shouldEqual True
+    less(False, True) shouldEqual True
   }
 
 }

@@ -7,4 +7,4 @@ import caustic.runtime.Program
  *
  * @param get Program representation.
  */
-case class Constant[X <: Primitive](get: Program) extends Value[X]
+case class Constant[+T <: Primitive](get: Program) extends Value[T]

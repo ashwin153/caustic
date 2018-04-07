@@ -1,6 +1,6 @@
 package caustic.library
 
-import caustic.library.control.Context
+import caustic.library.typing.Value._
 import caustic.runtime
 import caustic.runtime._
 
@@ -8,76 +8,31 @@ import scala.language.implicitConversions
 
 package object typing {
 
-  val None                                          : Program           = runtime.Null
-  val True                                          : Value[Boolean]    = Constant(true)
-  val False                                         : Value[Boolean]    = Constant(false)
+  val None: Program = runtime.Null
+  val True: Value[Boolean] = runtime.True
+  val False: Value[Boolean] = runtime.False
 
   // Implicit Conversions.
-  implicit def program(x: Value[_])                 : Program           = x.get
-  implicit def value[X <: Primitive](x: Program)    : Value[X]          = Constant[X](x)
-  implicit def int(x: scala.Int)                    : Value[Int]        = Constant(runtime.real(x))
-  implicit def double(x: scala.Double)              : Value[Double]     = Constant(runtime.real(x))
-  implicit def boolean(x: scala.Boolean)            : Value[Boolean]    = Constant(runtime.flag(x))
-  implicit def string(x: java.lang.String)          : Value[String]     = Constant(runtime.text(x))
+  implicit def program[X <: Primitive](x: Value[X]): Program = x.get
+  implicit def value[X <: Primitive](x: Program): Value[X] = Constant[X](x)
+  implicit def int(x: scala.Int): Value[Int] = Constant(x)
+  implicit def int(x: scala.Long): Value[Int] = Constant(x)
+  implicit def double(x: scala.Double): Value[Double] = Constant(x)
+  implicit def string(x: java.lang.String): Value[String] = Constant(x)
+  implicit def boolean(x: scala.Boolean): Value[Boolean] = Constant(x)
 
   // Implicit Operations.
-  implicit class TextualOps[X <: String](x: Value[X]) {
-    def ++[Y <: X](y: Value[X]): Value[String] = add(x, y)
-    def quoted: Value[String] = add("\"", add(x, "\""))
-    def contains[Y <: X](y: Value[Y]): Value[Boolean] = runtime.contains(x, y)
-    def indexOf[Y <: X](y: Value[Y]): Value[Boolean] = runtime.indexOf(x, y)
-    def length[Y <: X](): Value[Int] = runtime.length(x)
-    def matches[Y <: X](y: Value[String]): Value[Boolean] = runtime.matches(x, y)
-    def substring(l: Value[Int], h: Value[Int] = x.length()): Value[String] = slice(x, l, h)
-  }
-
-  implicit class ArithmeticOps[X <: Double](x: Value[X]) {
-    def unary_- : Value[X] = sub(math.Zero, x)
-    def +[Y <: X](y: Value[Y])(implicit evidence: Y <:< X): Value[X] = add(x, y)
-    def +[Y >: X <: String](y: Value[Y]): Value[Y] = add(x, y)
-    def -[Y <: X](y: Value[Y])(implicit evidence: Y <:< X): Value[X] = sub(x, y)
-    def -[Y >: X <: String](y: Value[Y]): Value[Y] = sub(x, y)
-    def *[Y <: X](y: Value[Y])(implicit evidence: Y <:< X): Value[X] = mul(x, y)
-    def *[Y >: X <: String](y: Value[Y]): Value[Y] = mul(x, y)
-    def /[Y <: X](y: Value[Y])(implicit evidence: Y <:< X): Value[X] = div(x, y)
-    def /[Y >: X <: String](y: Value[Y]): Value[Y] = div(x, y)
-    def %[Y <: X](y: Value[Y])(implicit evidence: Y <:< X): Value[X] = mod(x, y)
-    def %[Y >: X <: String](y: Value[Y]): Value[Y] = mod(x, y)
-  }
-
-  implicit class ComparisonOps[X <: Primitive](x: Value[X]) {
-    def <  [Y <: Primitive](y: Value[Y]): Value[Boolean] = less(x, y)
-    def ===[Y <: Primitive](y: Value[Y]): Value[Boolean] = equal(x, y)
-    def <= [Y <: Primitive](y: Value[Y]): Value[Boolean] = x < y || x === y
-    def >  [Y <: Primitive](y: Value[Y]): Value[Boolean] = !(x <= y)
-    def >= [Y <: Primitive](y: Value[Y]): Value[Boolean] = !(x < y)
-    def <> [Y <: Primitive](y: Value[Y]): Value[Boolean] = !(x === y)
-  }
-
-  implicit class LogicalOps(x: Value[Boolean]) {
-    def &&(y: Value[Boolean]): Value[Boolean] = both(x, y)
-    def ||(y: Value[Boolean]): Value[Boolean] = either(x, y)
-    def unary_! : Value[Boolean] = negate(x)
-  }
-
-  implicit class AssignmentOps[T <: Primitive](x: Variable[T]) {
-    def :=(y: Value[T])(implicit context: Context): Unit = x.set(y)
-  }
-
-  implicit class CompoundAssignmentOps[T <: Double](x: Variable[T]) {
-    def +=(y: Value[T])(implicit context: Context): Unit = x := (x + y)
-    def -=(y: Value[T])(implicit context: Context): Unit = x := (x - y)
-    def *=(y: Value[T])(implicit context: Context): Unit = x := (x * y)
-    def /=(y: Value[T])(implicit context: Context): Unit = x := (x / y)
-  }
-
-  implicit class ToJsonOps[T <: Primitive](x: Value[T]) {
-    def toJson: Value[String] = branch(x <> None, x, "null")
-  }
-
-  implicit class ToJsonStringOps(x: Value[String]) {
-    def toJson: Value[String] = branch(x <> None, x.quoted, "null")
-  }
-
+  implicit def int2addition(x: scala.Int): AdditionOps[Int] = AdditionOps(x)
+  implicit def long2addition(x: scala.Long): AdditionOps[Int] = AdditionOps(x)
+  implicit def double2addition(x: scala.Double): AdditionOps[Double] = AdditionOps(x)
+  implicit def int2arithmetic(x: scala.Int): ArithmeticOps[Int] = ArithmeticOps(x)
+  implicit def long2arithmetic(x: scala.Long): ArithmeticOps[Int] = ArithmeticOps(x)
+  implicit def double2arithmetic(x: scala.Double): ArithmeticOps[Double] = ArithmeticOps(x)
+  implicit def int2comparison(x: scala.Int): ComparisonOps[Int] = ComparisonOps(x)
+  implicit def long2comparison(x: scala.Long): ComparisonOps[Int] = ComparisonOps(x)
+  implicit def double2comparison(x: scala.Double): ComparisonOps[Double] = ComparisonOps(x)
+  implicit def string2comparison(x: java.lang.String): ComparisonOps[String] = ComparisonOps(x)
+  implicit def string2textual(x: java.lang.String): TextualOps[String] = TextualOps(x)
+  implicit def boolean2logical(x: scala.Boolean): LogicalOps[Boolean] = LogicalOps(x)
 
 }

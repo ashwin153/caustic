@@ -30,7 +30,7 @@ object json extends Poly2 {
     selector: Selector.Aux[TRepr, FieldName, FieldType],
     field: Field.Aux[FieldType, Variable[FieldType]]
   ): Case.Aux[Args[T], FieldName, Args[T]] = at[Args[T], FieldName] { (x, f) =>
-    x.copy(json = x.json ++ ", \"" ++ f.name ++ "\": " ++ field(x.src, f.name).toJson)
+    x.copy(json = x.json + ", \"" + f.name + "\": " + field(x.src, f.name).toJson)
   }
 
   implicit def casePointer[
@@ -52,7 +52,7 @@ object json extends Poly2 {
     evidence: FieldType <:< Reference[FieldT]
   ): Case.Aux[Args[T], FieldName, Args[T]] = at[Args[T], FieldName] { (x, f) =>
     val json = if (x.recursive) field(x.src, f.name).toJson() else field(x.src, f.name).key
-    x.copy(json = x.json ++ ", \"" ++ f.name ++ "\": \"" ++ json ++ "\"")
+    x.copy(json = x.json + ", \"" + f.name + "\": \"" + json + "\"")
   }
 
   implicit def caseNested[
@@ -73,7 +73,7 @@ object json extends Poly2 {
     fieldFolder: LeftFolder.Aux[FieldKeys, Args[FieldT], json.type, Args[FieldT]],
     evidence: FieldType <:!< Reference[FieldT]
   ): Case.Aux[Args[T], FieldName, Args[T]] = at[Args[T], FieldName] { (x, f) =>
-    x.copy(json = x.json ++ ", \"" ++ f.name ++ "\": " ++ field(x.src, f.name).toJson())
+    x.copy(json = x.json + ", \"" + f.name + "\": " + field(x.src, f.name).toJson())
   }
 
 }

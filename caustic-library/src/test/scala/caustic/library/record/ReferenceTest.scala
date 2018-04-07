@@ -20,7 +20,7 @@ class ReferenceTest extends FunSuite with Matchers {
   )
 
   test("References are statically typed") {
-    val foo = Reference[Foo](Local("foo"))
+    val foo = Reference[Foo](Variable.Local("foo"))
     "foo.get('a)" shouldNot compile
     "foo.get('x)" should compile
   }

@@ -27,7 +27,7 @@ case class Context(
    */
   def label(): Value[String] = {
     this.current += 1
-    string("$") ++ this.current
+    "$" + this.current
   }
 
 }

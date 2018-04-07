@@ -2,6 +2,7 @@ package caustic.library.collection
 
 import caustic.library.control._
 import caustic.library.typing._
+import caustic.library.typing.Value._
 import caustic.runtime._
 
 import scala.language.reflectiveCalls
@@ -11,7 +12,7 @@ import scala.language.reflectiveCalls
  *
  * @param length Current size.
  */
-class List[T <: Primitive](length: Variable[Int]) {
+case class List[T <: Primitive](length: Variable[Int]) {
 
   /**
    * Returns the number of values in the list.
@@ -49,8 +50,12 @@ class List[T <: Primitive](length: Variable[Int]) {
    * @param context Parse context.
    */
   def foreach[U](f: (Value[Int], Value[T]) => U)(implicit context: Context): Unit = {
-    if (this.length.isInstanceOf[Remote[Int]]) context += prefetch(this.length.key, this.length)
-    val index = Local[Int](context.label())
+    // Prefetch all items if the list is remotely stored.
+    if (this.length.isInstanceOf[Variable.Remote[Int]])
+      context += prefetch(this.length.key, this.length, 1)
+
+    // Iterate through each item in the list.
+    val index = Variable.Local[Int](context.label())
     index := 0
 
     While (index < this.length) {
@@ -100,7 +105,7 @@ class List[T <: Primitive](length: Variable[Int]) {
    * @return Index of value in list or -1.
    */
   def indexOf(value: Value[T])(implicit context: Context): Value[Int] = {
-    val index = Local[Int](context.label())
+    val index = Variable.Local[Int](context.label())
     index := -1
     foreach { case (i, v) => If (index === -1 && v === value)(index := i) }
     index
@@ -114,7 +119,7 @@ class List[T <: Primitive](length: Variable[Int]) {
    * @return Whether or not the lists contain the same values.
    */
   def ===(that: List[T])(implicit context: Context): Value[Boolean] = {
-    val equal = Local[Boolean](context.label())
+    val equal = Variable.Local[Boolean](context.label())
     equal := true
     foreach { case (i, v) => equal := equal && this(i) === v }
     this.size === that.size && equal
@@ -137,18 +142,18 @@ class List[T <: Primitive](length: Variable[Int]) {
    * @return JSON representation.
    */
   def toJson(implicit context: Context): Value[String] = {
-    val json = Local[String](context.label())
+    val json = Variable.Local[String](context.label())
     json := "["
 
     foreach { case (_, v) =>
       If (json === "[") {
-        json := json ++ v.toJson
+        json := json + v.toJson
       } Else {
-        json := json ++ ", " ++ v.toJson
+        json := json + ", " + v.toJson
       }
     }
 
-    json ++ "]"
+    json + "]"
   }
 
   /**
@@ -157,17 +162,5 @@ class List[T <: Primitive](length: Variable[Int]) {
    * @return Set.
    */
   def toSet: Set[T] = new Set(this)
-
-}
-
-object List {
-
-  /**
-   * Constructs a list backed by the specified variable.
-   *
-   * @param length Variable.
-   * @return List.
-   */
-  def apply[T <: Primitive](length: Variable[Int]): List[T] = new List(length)
 
 }

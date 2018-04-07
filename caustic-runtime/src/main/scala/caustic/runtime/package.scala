@@ -6,243 +6,383 @@ import scala.language.implicitConversions
 
 package object runtime {
 
-  // Cache Literals.
-  val True = Flag(true)
-  val False = Flag(false)
-  val Empty = Text("")
+  val True: Flag = Flag(true)
+  val False: Flag = Flag(false)
+  val Empty: Text = Text("")
 
-  implicit def flag(value: Boolean): Literal = if (value) True else False
-  implicit def real(value: Int): Literal = Real(value)
-  implicit def real(value: Double): Literal = Real(value)
-  implicit def text(value: String): Literal = if (value.isEmpty) Empty else Text(value)
+  // Implicit Conversions.
+  implicit def flag(value: Boolean): Flag = if (value) True else False
+  implicit def real(value: Int): Real = Real(value)
+  implicit def real(value: Long): Real = Real(value)
+  implicit def real(value: Float): Real = Real(value)
+  implicit def real(value: Double): Real = Real(value)
+  implicit def text(value: String): Text = if (value.isEmpty) Empty else Text(value)
 
-  // Simplify Expressions.
-  def read(k: Program): Program = k match {
-    case Null => Null
-    case Real(a) => throw Fault(s"Read undefined for key $a")
-    case Flag(a) => throw Fault(s"Read undefined for key $a")
-    case _ => Expression(Read, k :: Nil)
+  /**
+   * Returns the sum of x and y.
+   *
+   * @param x Any.
+   * @param y Any.
+   * @return Any.
+   */
+  def add(x: Program, y: Program): Program = (x, y) match {
+    case (Null, Null) => Null
+    case (Text(a), b: Literal) => a + b.asString
+    case (a: Literal, Text(b)) => a.asString + b
+    case (a: Literal, b: Literal) => a.asDouble + b.asDouble
+    case _ => Expression(Add, x :: y :: Nil)
   }
 
-  def write(k: Program, v: Program): Program = (k, v) match {
-    case (Null, _) => throw Fault(s"Write undefined for key None")
-    case (Real(a), _) => throw Fault(s"Write undefined for key $a")
-    case (Flag(a), _) => throw Fault(s"Write undefined for key $a")
-    case _ => Expression(Write, k :: v :: Nil)
+  /**
+   * Returns whether or not both x and y are satisfied.
+   *
+   * @param x Flag.
+   * @param y Flag.
+   * @return Bitwise and.
+   */
+  def both(x: Program, y: Program): Program = (x, y) match {
+    case (a: Literal, b: Literal) => a.asBoolean && b.asBoolean
+    case _ => Expression(Both, x :: y :: Nil)
   }
 
-  def load(k: Program): Program = k match {
-    case Null => Null
-    case Real(a) => throw Fault(s"Load undefined for variable $a")
-    case Flag(a) => throw Fault(s"Load undefined for variable $a")
-    case _ => Expression(Load, k :: Nil)
+  /**
+   * Returns pass if the condition is satisfied or fail otherwise.
+   *
+   * @param condition Flag.
+   * @param pass Any.
+   * @param fail Any.
+   * @return Any.
+   */
+  def branch(condition: Program, pass: Program, fail: Program): Program = condition match {
+    case a: Literal if a.asBoolean => pass
+    case _: Literal => fail
+    case _ => Expression(Branch, condition :: pass :: fail :: Nil)
   }
 
-  def store(k: Program, v: Program): Program = (k, v) match {
-    case (Null, _) => throw Fault(s"Store undefined for variable None")
-    case (Real(a), _) => throw Fault(s"Store undefined for variable $a")
-    case (Flag(a), _) => throw Fault(s"Store undefined for variable $a")
-    case _ => Expression(Store, k :: v :: Nil)
-  }
-
+  /**
+   * Performs x and then y.
+   *
+   * @param x Any.
+   * @param y Any.
+   * @return Any.
+   */
   def cons(x: Program, y: Program): Program = x match {
     case _: Literal => y
     case _ => Expression(Cons, x :: y :: Nil)
   }
 
-  def repeat(c: Program, b: Program): Program = (c, b) match {
-    case (Null, _) => throw Fault(s"Repeat undefined for condition None")
-    case (Real(a), _) => throw Fault(s"Repeat undefined for condition $a")
-    case (Text(a), _) => throw Fault(s"Repeat undefined for condition $a")
-    case (Flag(true), _) => throw Fault(s"Repeat causes infinite loop")
-    case _ => Expression(Repeat, c :: b :: Nil)
-  }
-
-  def prefetch(k: Program, s: Program): Program = (k, s) match {
-    case (Text(a), Real(b)) =>
-      (0 until b.toInt)
-        .map(i => read(add(k, add(text("/"), real(i)))))
-        .foldLeft[Program](Null)(cons)
-    case (a: Literal, _) => throw Fault(s"Prefetch undefined for key $a")
-    case (_, b: Literal) => throw Fault(s"Prefetch undefined for size $b")
-    case _ => Expression(Prefetch, k :: s :: Nil)
-  }
-
-  def branch(c: Program, p: Program, f: Program): Program = (c, p, f) match {
-    case (Flag(true), a, _) => a
-    case (Flag(false), _, b) => b
-    case (Null, _, b) => b
-    case (_: Literal, a, _) => a
-    case _ => Expression(Branch, c :: p :: f :: Nil)
-  }
-
-  def rollback(m: Program): Program = m match {
-    case _ => Expression(Rollback, m :: Nil)
-  }
-
-  def random(): Program = {
-    Expression(Random, Nil)
-  }
-
-  def add(x: Program, y: Program): Program = (x, y) match {
-    case (Null, _) => y
-    case (_, Null) => x
-    case (Real(a), Real(b)) => real(a + b)
-    case (Real(a), Flag(b)) => text(a.toString + b.toString)
-    case (Real(a), Text(b)) => text(a.toString + b)
-    case (Flag(a), Real(b)) => text(a.toString + b.toString)
-    case (Flag(a), Flag(b)) => text(a.toString + b.toString)
-    case (Flag(a), Text(b)) => text(a.toString + b)
-    case (Text(a), Real(b)) => text(a + b.toString)
-    case (Text(a), Flag(b)) => text(a + b.toString)
-    case (Text(a), Text(b)) => text(a + b)
-    case (a: Literal, b: Literal) => throw Fault(s"Add undefined for $a, $b")
-    case _ => Expression(Add, x :: y :: Nil)
-  }
-
-  def sub(x: Program, y: Program): Program = (x, y) match {
-    case (Real(a), Real(b)) => real(a - b)
-    case (a: Literal, b: Literal) => throw Fault(s"Sub undefined for $a, $b")
-    case _ => Expression(Sub, x :: y :: Nil)
-  }
-
-  def mul(x: Program, y: Program): Program = (x, y) match {
-    case (Real(a), Real(b)) => real(a * b)
-    case (a: Literal, b: Literal) => throw Fault(s"Mul undefined for $a, $b")
-    case _ => Expression(Mul, x :: y :: Nil)
-  }
-
-  def div(x: Program, y: Program): Program = (x, y) match {
-    case (Real(a), Real(0)) => throw Fault(s"Div undefined for $a, 0")
-    case (Real(a), Real(b)) => real(a / b)
-    case (a: Literal, b: Literal) => throw Fault(s"Div undefined for $a, $b")
-    case _ => Expression(Div, x :: y :: Nil)
-  }
-
-  def mod(x: Program, y: Program): Program = (x, y) match {
-    case (Real(a), Real(0)) => throw Fault(s"Mod undefined for $a, 0")
-    case (Real(a), Real(b)) => real(a % b)
-    case (a: Literal, b: Literal) => throw Fault(s"Mod undefined for $a, $b")
-    case _ => Expression(Mod, x :: y :: Nil)
-  }
-
-  def pow(x: Program, y: Program): Program = (x, y) match {
-    case (Real(a), Real(b)) => real(math.pow(a, b))
-    case (a: Literal, b: Literal) => throw Fault(s"Pow undefined for $a, $b")
-    case _ => Expression(Mul, x :: y :: Nil)
-  }
-
-  def log(x: Program): Program = x match {
-    case Real(a) => real(math.log(a))
-    case a: Literal => throw Fault(s"Log undefined for $a")
-    case _ => Expression(Log, x :: Nil)
-  }
-
-  def sin(x: Program): Program = x match {
-    case Real(a) => real(math.sin(a))
-    case a: Literal => throw Fault(s"Sin undefined for $a")
-    case _ => Expression(Sin, x :: Nil)
-  }
-
-  def cos(x: Program): Program = x match {
-    case Real(a) => real(math.cos(a))
-    case a: Literal => throw Fault(s"Cos undefined for $a")
-    case _ => Expression(Cos, x :: Nil)
-  }
-
-  def floor(x: Program): Program = x match {
-    case Real(a) => real(math.floor(a))
-    case a: Literal => throw Fault(s"Floor undefined for $a")
-    case _ => Expression(Floor, x :: Nil)
-  }
-
-  def both(x: Program, y: Program): Program = (x, y) match {
-    case (Real(a), Real(b)) => flag(a != 0 && b != 0)
-    case (Real(a), Flag(b)) => flag(a != 0 && b)
-    case (Real(a), Text(b)) => flag(a != 0 && b.nonEmpty)
-    case (Flag(a), Real(b)) => flag(a && b != 0)
-    case (Flag(a), Flag(b)) => flag(a && b)
-    case (Flag(a), Text(b)) => flag(a && b.nonEmpty)
-    case (Text(a), Real(b)) => flag(a.nonEmpty && b != 0)
-    case (Text(a), Flag(b)) => flag(a.nonEmpty && b)
-    case (Text(a), Text(b)) => flag(a.nonEmpty && b.nonEmpty)
-    case (a: Literal, b: Literal) => throw Fault(s"Both undefined for $a, $b")
-    case _ => Expression(Both, x :: y :: Nil)
-  }
-
-  def either(x: Program, y: Program): Program = (x, y) match {
-    case (Real(a), Real(b)) => flag(a != 0 || b != 0)
-    case (Real(a), Flag(b)) => flag(a != 0 || b)
-    case (Real(a), Text(b)) => flag(a != 0 || b.nonEmpty)
-    case (Flag(a), Real(b)) => flag(a || b != 0)
-    case (Flag(a), Flag(b)) => flag(a || b)
-    case (Flag(a), Text(b)) => flag(a || b.nonEmpty)
-    case (Text(a), Real(b)) => flag(a.nonEmpty || b != 0)
-    case (Text(a), Flag(b)) => flag(a.nonEmpty || b)
-    case (Text(a), Text(b)) => flag(a.nonEmpty || b.nonEmpty)
-    case (a: Literal, b: Literal) => throw Fault(s"Either undefined for $a, $b")
-    case _ => Expression(Either, x :: y :: Nil)
-  }
-
-  def negate(x: Program): Program = x match {
-    case Real(a) => flag(a == 0)
-    case Flag(a) => flag(!a)
-    case Text(a) => flag(a.isEmpty)
-    case a: Literal => throw Fault(s"Negate undefined for $a")
-    case _ => Expression(Negate, x :: Nil)
-  }
-
-  def length(x: Program): Program = x match {
-    case Flag(a) => real(a.toString.length)
-    case Real(a) => real(a.toString.length)
-    case Text(a) => real(a.length)
-    case a: Literal => throw Fault(s"Length undefined for $a")
-    case _ => Expression(Length, x :: Nil)
-  }
-
-  def slice(x: Program, l: Program, h: Program): Program = (x, l, h) match {
-    case (Text(a), Real(b), Real(c)) => text(a.substring(b.toInt, c.toInt))
-    case (a: Literal, b: Literal, c: Literal) => throw Fault(s"Slice undefined for $a, $b, $c.")
-    case _ => Expression(Slice, x :: l :: h :: Nil)
-  }
-
-  def matches(x: Program, y: Program): Program = (x, y) match {
-    case (Text(a), Text(b)) => flag(a.matches(b))
-    case (a: Literal, b: Literal) => throw Fault(s"Matches undefined for $a, $b")
-    case _ => Expression(Matches, x :: y :: Nil)
-  }
-
+  /**
+   * Returns whether or not x contains y.
+   *
+   * @param x Text.
+   * @param y Text.
+   * @return Flag.
+   */
   def contains(x: Program, y: Program): Program = (x, y) match {
-    case (Text(a), Text(b)) => flag(a.contains(b))
-    case (a: Literal, b: Literal) => throw Fault(s"Contains undefined for $a, $b")
+    case (a: Literal, b: Literal) => a.asString contains b.asString
     case _ => Expression(Contains, x :: y :: Nil)
   }
 
-  def indexOf(x: Program, y: Program): Program = (x, y) match {
-    case (Text(a), Text(b)) => real(a.indexOf(b))
-    case (a: Literal, b: Literal) => throw Fault(s"IndexOf undefined for $a, $b")
-    case _ => Expression(IndexOf, x :: y :: Nil)
+  /**
+   * Returns the cosine of x.
+   *
+   * @param x Real.
+   * @return Real.
+   */
+  def cos(x: Program): Program = x match {
+    case a: Literal => math.cos(a.asDouble)
+    case _ => Expression(Cos, x :: Nil)
   }
 
+  /**
+   * Returns the quotient of x and y.
+   *
+   * @param x Real.
+   * @param y Real.
+   * @return Real.
+   */
+  def div(x: Program, y: Program): Program = (x, y) match {
+    case (Real(a), Real(0)) => throw Fault(s"Div undefined for $a, 0")
+    case (a: Literal, b: Literal) => a.asDouble / b.asDouble
+    case _ => Expression(Div, x :: y :: Nil)
+  }
+
+  /**
+   * Returns whether or not either x or y is satisfied.
+   *
+   * @param x Flag.
+   * @param y Flag.
+   * @return Flag.
+   */
+  def either(x: Program, y: Program): Program = (x, y) match {
+    case (a: Literal, b: Literal) => a.asBoolean || b.asBoolean
+    case _ => Expression(Either, x :: y :: Nil)
+  }
+
+  /**
+   * Returns whether or not x equals y.
+   *
+   * @param x Any.
+   * @param y Any.
+   * @return Flag.
+   */
   def equal(x: Program, y: Program): Program = (x, y) match {
-    case (Null, Null) => flag(true)
-    case (Null, _: Literal) => flag(false)
-    case (_: Literal, Null) => flag(false)
-    case (Real(a), Real(b)) => flag(a == b)
-    case (Flag(a), Flag(b)) => flag(a == b)
-    case (Text(a), Text(b)) => flag(a == b)
-    case (_: Literal, _: Literal) => flag(false)
+    case (Text(a), b: Literal) => a == b.asString
+    case (a: Literal, Text(b)) => a.asString == b
+    case (Real(a), b: Literal) => a == b.asDouble
+    case (a: Literal, Real(b)) => a.asDouble == b
+    case (Flag(a), b: Literal) => a == b.asBoolean
+    case (a: Literal, Flag(b)) => a.asBoolean == b
+    case (Null, Null) => True
     case _ => Expression(Equal, x :: y :: Nil)
   }
 
+  /**
+   * Returns the largest integer less than x.
+   *
+   * @param x Real.
+   * @return Real.
+   */
+  def floor(x: Program): Program = x match {
+    case a: Literal => math.floor(a.asDouble)
+    case _ => Expression(Floor, x :: Nil)
+  }
+
+  /**
+   * Returns the index of the first occurrence of y in x.
+   *
+   * @param x Text.
+   * @param y Text.
+   * @return Real.
+   */
+  def indexOf(x: Program, y: Program): Program = (x, y) match {
+    case (a: Literal, b: Literal) => a.asString indexOf b.asString
+    case _ => Expression(IndexOf, x :: y :: Nil)
+  }
+
+  /**
+   * Returns the number of characters in x.
+   *
+   * @param x Text.
+   * @return Real.
+   */
+  def length(x: Program): Program = x match {
+    case a: Literal => a.asString.length
+    case _ => Expression(Length, x :: Nil)
+  }
+
+  /**
+   * Returns whether or not x is strictly less than y.
+   *
+   * @param x Any.
+   * @param y Any.
+   * @return Flag.
+   */
   def less(x: Program, y: Program): Program = (x, y) match {
-    case (Null, Null) => flag(false)
-    case (Null, _: Literal) => flag(true)
-    case (_: Literal, Null) => flag(false)
-    case (Real(a), Real(b)) => flag(a < b)
-    case (Flag(a), Flag(b)) => flag(a < b)
-    case (Text(a), Text(b)) => flag(a < b)
+    case (Null, Null) => False
+    case (Null, _: Literal) => True
+    case (_: Literal, Null) => False
+    case (Text(a), b: Literal) => a < b.asString
+    case (a: Literal, Text(b)) => a.asString < b
+    case (Real(a), b: Literal) => a < b.asDouble
+    case (a: Literal, Real(b)) => a.asDouble < b
+    case (Flag(a), b: Literal) => a < b.asBoolean
+    case (a: Literal, Flag(b)) => a.asBoolean < b
     case _ => Expression(Less, x :: y :: Nil)
+  }
+
+  /**
+   * Loads the value of the local variable at the specified key.
+   *
+   * @param key Text.
+   * @return Any.
+   */
+  def load(key: Program): Program = key match {
+    case a: Literal => Expression(Load, a.asString :: Nil)
+    case _ => Expression(Load, key :: Nil)
+  }
+
+  /**
+   * Returns the natural logarithm of x.
+   *
+   * @param x Real.
+   * @return Real.
+   */
+  def log(x: Program): Program = x match {
+    case a: Literal => math.log(a.asDouble)
+    case _ => Expression(Log, x :: Nil)
+  }
+
+  /**
+   * Returns whether or not x matches the regex pattern y.
+   *
+   * @param x Text.
+   * @param y Text.
+   * @return Flag.
+   */
+  def matches(x: Program, y: Program): Program = (x, y) match {
+    case (a: Literal, b: Literal) => a.asString matches b.asString
+    case _ => Expression(Matches, x :: y :: Nil)
+  }
+
+  /**
+   * Returns the remainder of x divided by y.
+   *
+   * @param x Real.
+   * @param y Real.
+   * @return Real.
+   */
+  def mod(x: Program, y: Program): Program = (x, y) match {
+    case (Real(a), Real(0)) => throw Fault(s"Mod undefined for $a, 0")
+    case (a: Literal, b: Literal) => a.asDouble % b.asDouble
+    case _ => Expression(Mod, x :: y :: Nil)
+  }
+
+  /**
+   * Returns the product of x and y.
+   *
+   * @param x Real.
+   * @param y Real.
+   * @return Real.
+   */
+  def mul(x: Program, y: Program): Program = (x, y) match {
+    case (a: Literal, b: Literal) => a.asDouble * b.asDouble
+    case _ => Expression(Mul, x :: y :: Nil)
+  }
+
+  /**
+   * Returns the bitwise negation of x.
+   *
+   * @param x Flag.
+   * @return Flag.
+   */
+  def negate(x: Program): Program = x match {
+    case a: Literal => !a.asBoolean
+    case _ => Expression(Negate, x :: Nil)
+  }
+
+  /**
+   * Returns x raised to the power y.
+   *
+   * @param x Real.
+   * @param y Real.
+   * @return Real.
+   */
+  def pow(x: Program, y: Program): Program = (x, y) match {
+    case (a: Literal, b: Literal) if a.asDouble == 0 && b.asDouble < 0 =>
+      throw Fault(s"Pow undefined for $a, $b")
+    case (a: Literal, b: Literal) => math.pow(a.asDouble, b.asDouble)
+    case _ => Expression(Mul, x :: y :: Nil)
+  }
+
+  /**
+   * Reads all keys at "prefix/i" for all i in [0, size). Used to implement prefetched collections.
+   *
+   * @param key Text.
+   * @param size Real.
+   * @param refs Real.
+   * @return Null.
+   */
+  def prefetch(key: Program, size: Program, refs: Program): Program = (key, size, refs) match {
+    case (a: Literal, b: Literal, c: Literal) =>
+      (0 until b.asInt)
+        .map(i => Function.chain(Seq.fill(c.asInt)(read _))(a.asString + "/" + i))
+        .foldLeft[Program](Null)(cons)
+    case _ => Expression(Prefetch, key :: size :: refs :: Nil)
+  }
+
+  /**
+   * Reads the value of the specified key from the underlying volume.
+   *
+   * @param key Text.
+   * @return Any.
+   */
+  def read(key: Program): Program = key match {
+    case a: Literal => Expression(Read, a.asString :: Nil)
+    case _ => Expression(Read, key :: Nil)
+  }
+
+  /**
+   * Repeatedly executes the block until the condition is not satisfied.
+   *
+   * @param condition Flag.
+   * @param block Any.
+   * @return Null.
+   */
+  def repeat(condition: Program, block: Program): Program = condition match {
+    case a: Literal if a.asBoolean => throw Fault(s"Repeat causes infinite loop.")
+    case a: Literal => Expression(Repeat, a.asBoolean :: block :: Nil)
+    case _ => Expression(Repeat, condition :: block :: Nil)
+  }
+
+  /**
+   * Discards all buffered writes and transactionally returns the message.
+   *
+   * @param message Any.
+   * @return Any.
+   */
+  def rollback(message: Program): Program = message match {
+    case _ => Expression(Rollback, message :: Nil)
+  }
+
+  /**
+   * Returns the sine of x.
+   *
+   * @param x Real.
+   * @return Real.
+   */
+  def sin(x: Program): Program = x match {
+    case a: Literal => math.sin(a.asDouble)
+    case _ => Expression(Sin, x :: Nil)
+  }
+
+  /**
+   * Returns the substring of x between [lower, higher).
+   *
+   * @param x Text.
+   * @param lower Real.
+   * @param higher Real.
+   * @return Text.
+   */
+  def slice(x: Program, lower: Program, higher: Program): Program = (x, lower, higher) match {
+    case (a: Literal, b: Literal, c: Literal) => a.asString substring (b.asInt, c.asInt)
+    case _ => Expression(Slice, x :: lower :: higher :: Nil)
+  }
+
+  /**
+   * Stores the specified value in the local variable at the specified key.
+   *
+   * @param key Text.
+   * @param value Any.
+   * @return Null.
+   */
+  def store(key: Program, value: Program): Program = (key, value) match {
+    case (a: Literal, _) => Expression(Store, a.asString :: value :: Nil)
+    case _ => Expression(Store, key :: value :: Nil)
+  }
+
+  /**
+   * Returns the difference of x and y.
+   *
+   * @param x Real.
+   * @param y Real.
+   * @return Real.
+   */
+  def sub(x: Program, y: Program): Program = (x, y) match {
+    case (a: Literal, b: Literal) => a.asDouble - b.asDouble
+    case _ => Expression(Sub, x :: y :: Nil)
+  }
+
+  /**
+   * Writes the specified value to the specified key in the underlying volume.
+   *
+   * @param key Text.
+   * @param value Any.
+   * @return Null.
+   */
+  def write(key: Program, value: Program): Program = (key, value) match {
+    case (a: Literal, _) => Expression(Write, a.asString :: value :: Nil)
+    case _ => Expression(Write, key :: value :: Nil)
   }
 
 }

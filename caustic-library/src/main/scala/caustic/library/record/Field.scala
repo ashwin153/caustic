@@ -8,7 +8,7 @@ import caustic.library.typing._
 trait Field[Type] {
   type Container
   def apply(key: Variable[String], field: Value[String]): Container
-  def apply(ref: Reference[_], field: Value[String]): Container = apply(ref.pointer, field)
+  def apply[T](ref: Reference[T], field: Value[String]): Container = apply(ref.pointer, field)
 }
 
 object Field extends LowPriorityField {

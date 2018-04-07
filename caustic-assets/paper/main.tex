@@ -240,14 +240,13 @@ permit the fields of $T$ to be statically manipulated and iterated. A current li
 objects cannot be self-referential; an object cannot have a field of its own type.
 
 \subsubsection{Math}
-The runtime natively supports just nine mathematical operations: $add$, $sub$, $mul$, $div$,
-$pow$, $log$, $floor$, $sin$, and $cos$. However, these primitive operations are sufficient to
-derive the entire Scala \href{https://www.scala-lang.org/api/2.12.1/scala/math/index.html}{math}
-library using various mathematical identities and Taylor series approximations. The $div$,
-$log$, $sin$, and $cos$ functions can actually be implemented in terms of the other primitive
-operations; however, native support for them was included in the runtime to improve performance.
-The standard library provides implementations for the functions enumerated in Table
-\ref{table:math}.
+The runtime natively supports just nine mathematical operations: $add$, $sub$, $mul$, $div$, $pow$,
+$log$, $floor$,$sin$, and $cos$. However, these primitive operations are sufficient to derive the
+entire Scala \href{https://www.scala-lang.org/api/2.12.1/scala/math/index.html}{math} library using
+various mathematical identities and Taylor series approximations. The $div$, $log$, $sin$, and $cos$
+functions can actually be implemented in terms of the other primitive operations; however, native
+support for them was included in the runtime to improve performance. The standard library provides
+implementations for the functions enumerated in Table \ref{table:math}.
 
 \subsubsection{Collections}
 The runtime has no native support for collections of key-value pairs. The standard library

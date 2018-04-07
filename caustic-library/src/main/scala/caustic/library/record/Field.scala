@@ -16,14 +16,15 @@ object Field extends LowPriorityField {
   // Scalar fields are contained in mutable variables.
   implicit def scalar[T <: Primitive]: Aux[T, Variable[T]] = new Field[T] {
     type Container = Variable[T]
-    override def apply(key: Variable[String], field: Value[String]): Variable[T] = key.scope(field)
+    override def apply(k: Variable[String], f: Value[String]): Variable[T] = k.scope(f)
   }
 
   // Pointers are dereferenced and contained in references.
   implicit def pointer[T]: Aux[Reference[T], Reference[T]] = new Field[Reference[T]] {
     override type Container = Reference[T]
-    override def apply(key: Variable[String], field: Value[String]): Reference[T] = Reference(key.scope(field))
+    override def apply(k: Variable[String], f: Value[String]): Reference[T] = Reference(k.scope(f))
   }
+
 }
 
 trait LowPriorityField {
@@ -33,7 +34,7 @@ trait LowPriorityField {
   // References are contained in references.
   implicit def nested[T]: Aux[T, Reference[T]] = new Field[T] {
     override type Container = Reference[T]
-    override def apply(key: Variable[String], field: Value[String]): Reference[T] = Reference(key.scope(field))
+    override def apply(k: Variable[String], f: Value[String]): Reference[T] = Reference(k.scope(f))
   }
 
 }

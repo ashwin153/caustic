@@ -19,6 +19,7 @@ trait Value[+T <: Primitive] {
 
 object Value {
 
+  // Implicit Operations.
   implicit class AdditionOps[X <: String](x: Value[X]) {
     def +[Y <: X](y: Value[Y])(implicit evidence: Y <:< X): Value[X] = add(x, y)
     def +[Y >: X <: Primitive](y: Value[Y]): Value[Y] = add(x, y)

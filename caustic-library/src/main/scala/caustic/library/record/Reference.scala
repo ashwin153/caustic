@@ -83,7 +83,8 @@ case class Reference[T](pointer: Variable[String]) {
     keys: Keys.Aux[Repr, KeysRepr],
     folder: LeftFolder.Aux[KeysRepr, ops.json.Args[T], ops.json.type, ops.json.Args[T]]
   ): Value[String] = {
-    "{\"key\": " + this.pointer.key.quoted + keys().foldLeft(ops.json.Args(this, "", recursive))(ops.json).json + "}"
+    val json = "{\"key\": " + this.pointer.key.quoted
+    json + keys().foldLeft(ops.json.Args(this, "", recursive))(ops.json).json + "}"
   }
 
   /**

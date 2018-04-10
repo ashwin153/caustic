@@ -2,6 +2,7 @@ package caustic.library.record
 
 import caustic.library.control.Context
 import caustic.library.typing._
+import caustic.library.typing.Value._
 
 import shapeless._
 import shapeless.ops.hlist.LeftFolder
@@ -19,7 +20,7 @@ case class Reference[T](pointer: Variable[String]) {
    *
    * @return Referenced address.
    */
-  def key: Value[String] = this.pointer.key
+  def key: Value[String] = this.pointer.get
 
   /**
    * Returns a container that stores the value of the attribute with the specified name.
@@ -71,20 +72,19 @@ case class Reference[T](pointer: Variable[String]) {
   /**
    * Serializes all attributes of the record to JSON.
    *
-   * @param recursive Recursively serialize referenced records.
    * @param context Parse context.
    * @param generic Generic representation.
    * @param keys Attribute names.
    * @param folder Attribute iterator.
    */
-  def toJson[Repr <: HList, KeysRepr <: HList](recursive: scala.Boolean = false)(
+  def asJson[Repr <: HList, KeysRepr <: HList](
     implicit context: Context,
     generic: LabelledGeneric.Aux[T, Repr],
     keys: Keys.Aux[Repr, KeysRepr],
     folder: LeftFolder.Aux[KeysRepr, ops.json.Args[T], ops.json.type, ops.json.Args[T]]
   ): Value[String] = {
-    val json = "{\"key\": " + this.pointer.key.quoted
-    json + keys().foldLeft(ops.json.Args(this, "", recursive))(ops.json).json + "}"
+    val json = string("{\"key\": ") + this.pointer.key.quoted
+    json + keys().foldLeft(ops.json.Args(this, ""))(ops.json).json + "}"
   }
 
   /**
@@ -103,5 +103,19 @@ case class Reference[T](pointer: Variable[String]) {
     keys: Keys.Aux[Repr, KeysRepr],
     folder: LeftFolder.Aux[KeysRepr, ops.equal.Args[T], ops.equal.type, ops.equal.Args[T]]
   ): Value[Boolean] = keys().foldLeft(ops.equal.Args(this, that, false))(ops.equal).equals
+
+}
+
+object Reference {
+
+  // Implicit Operations.
+  implicit class AssignmentOps[T](x: Reference[T]) {
+    def :=[Repr <: HList, KeysRepr <: HList](y: Reference[T])(
+      implicit context: Context,
+      generic: LabelledGeneric.Aux[T, Repr],
+      keys: Keys.Aux[Repr, KeysRepr],
+      folder: LeftFolder.Aux[KeysRepr, ops.move.Args[T], ops.move.type, ops.move.Args[T]]
+    ): Unit = if (x.pointer.getClass == y.pointer.getClass) x.pointer := y.pointer else y.move(x)
+  }
 
 }

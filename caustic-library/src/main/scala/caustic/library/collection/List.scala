@@ -141,15 +141,15 @@ case class List[T <: Primitive](length: Variable[Int]) {
    * @param context Parse context.
    * @return JSON representation.
    */
-  def toJson(implicit context: Context): Value[String] = {
+  def asJson(implicit context: Context): Value[String] = {
     val json = Variable.Local[String](context.label())
     json := "["
 
     foreach { case (_, v) =>
       If (json === "[") {
-        json := json + v.toJson
+        json := json + v.asJson
       } Else {
-        json := json + ", " + v.toJson
+        json := json + ", " + v.asJson
       }
     }
 
@@ -162,5 +162,24 @@ case class List[T <: Primitive](length: Variable[Int]) {
    * @return Set.
    */
   def toSet: Set[T] = new Set(this)
+
+}
+
+object List {
+
+  // Implicit Operations.
+  implicit class AssignmentOps[T <: Primitive](x: List[T]) {
+    def :=(y: List[T])(implicit context: Context): Unit = { x.clear(); x ++= y }
+    def :=(y: Set[T])(implicit context: Context): Unit = { x.clear(); x ++= y }
+  }
+
+  implicit class CompoundAssignmentOps[T <: Primitive](x: List[T]) {
+    def ++=(y: List[T])(implicit context: Context): Unit = y foreach { case (_, v) => x += _ }
+    def --=(y: List[T])(implicit context: Context): Unit = y foreach { case (_, v) => x -= _ }
+    def ++=(y: Set[T])(implicit context: Context): Unit = y.foreach(x += _)
+    def --=(y: Set[T])(implicit context: Context): Unit = y.foreach(x -= _)
+    def +=(y: Value[T])(implicit context: Context): Unit = x.append(y)
+    def -=(y: Value[T])(implicit context: Context): Unit = x.remove(y)
+  }
 
 }

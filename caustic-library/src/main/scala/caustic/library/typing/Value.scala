@@ -35,7 +35,7 @@ object Value {
     def /[Y >: X <: Double](y: Value[Y])(implicit evidence: X <:< Y): Value[Y] = div(x, y)
     def %(y: Value[Int]): Value[X] = mod(x, y)
     def %[Y >: X <: Double](y: Value[Y])(implicit evidence: X <:< Y): Value[Y] = mod(x, y)
-    def toJson: Value[String] = branch(x, x, "null")
+    def asJson: Value[String] = branch(x, x, "null")
   }
 
   implicit class TextualOps[X >: String <: Primitive](x: Value[X]) {
@@ -45,7 +45,7 @@ object Value {
     def matches(y: Value[String]): Value[Boolean] = runtime.matches(x, y)
     def quoted: Value[String] = add("\"", add(x, "\""))
     def substring(l: Value[Int], h: Value[Int] = length): Value[String] = slice(x, l, h)
-    def toJson: Value[String] = branch(x, x.quoted, "null")
+    def asJson: Value[String] = branch(x, x.quoted, "null")
   }
 
   implicit class ComparisonOps[X <: Primitive](x: Value[X]) {

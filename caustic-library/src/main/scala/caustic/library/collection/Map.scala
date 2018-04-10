@@ -3,8 +3,7 @@ package caustic.library.collection
 import caustic.library.control._
 import caustic.library.typing._
 import caustic.library.typing.Value._
-import caustic.runtime.prefetch
-
+import caustic.runtime.{Null, prefetch}
 import scala.language.reflectiveCalls
 
 /**
@@ -128,15 +127,15 @@ case class Map[A <: String, B <: Primitive](keys: Set[A]) {
    * @param context Parse context.
    * @return JSON representation.
    */
-  def toJson(implicit context: Context): Value[String] = {
+  def asJson(implicit context: Context): Value[String] = {
     val json = Variable.Local[String](context.label())
     json := "{"
 
     foreach { case (k, v) =>
       If (json === "{") {
-        json := json + k.quoted + ": " + v.toJson
+        json := json + k.quoted + ": " + v.asJson
       } Else {
-        json := json + ", " + k.quoted + ": " + v.toJson
+        json := json + ", " + k.quoted + ": " + v.asJson
       }
     }
 
@@ -154,5 +153,17 @@ object Map {
    * @return Map.
    */
   def apply[A <: String, B <: Primitive](length: Variable[Int]): Map[A, B] = new Map(Set(length))
+
+  // Implicit Operations.
+  implicit class AssignmentOps[A <: String, B <: Primitive](x: Map[A, B]) {
+    def :=(y: Map[A, B])(implicit context: Context): Unit = { x.clear(); x ++= y }
+  }
+
+  implicit class CompoundAssignmentOps[A <: String, B <: Primitive](x: Map[A, B]) {
+    def ++=(y: Map[A, B])(implicit context: Context): Unit = y.foreach(x.put)
+    def --=(y: Map[A, B])(implicit context: Context): Unit = y foreach { case (k, _) => x -= k }
+    def +=(k: Value[A], v: Value[B])(implicit context: Context): Unit = x.put(k, v)
+    def -=(k: Value[A])(implicit context: Context): Unit = x.put(k, Null)
+  }
 
 }

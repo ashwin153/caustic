@@ -10,7 +10,7 @@ import org.scalatest.{FunSuite, Matchers}
 class ReferenceTest extends FunSuite with Matchers {
 
   case class Foo(
-    x: Int,
+    x: Value[Int],
     y: Reference[Bar],
     z: Bar
   )

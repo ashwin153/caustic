@@ -16,7 +16,8 @@ name
     ;
 
 funcall
-    : (Identifier '.')? Identifier '&'? '(' (expression ',')* expression? ')' // foo(1.3, false)
+    : type '(' String ')' // &Foo("hello")
+    | Identifier '(' (expression ',')* expression? ')' // foo(1.3, false)
     ;
 
 /**
@@ -94,7 +95,7 @@ deletion
     ;
 
 definition
-    : Var Identifier Assign expression // val x = "foo"
+    : Let Identifier Assign expression // val x = "foo"
     ;
 
 assignment
@@ -131,11 +132,11 @@ block
  * object schemas that are persisted in the database and services consist of function definitions.
  */
 type
-    : Identifier Ampersand?
+    : Identifier Ampersand? // &Foo
     ;
 
 parameter
-    : Identifier ':' type // x: Foo&
+    : Identifier ':' type // x: &Foo
     ;
 
 parameters
@@ -147,20 +148,20 @@ function
     ;
 
 service
-    : Service Identifier (Extends Identifier)? '{' function* '}' // service Bar { }
+    : Service Identifier '{' function* '}' // service Bar { }
     ;
 
-record
-    : Record Identifier (Extends Identifier)? '{' parameters '}' // rec Foo { x: String }
+struct
+    : Struct Identifier '{' parameters '}' // rec Foo { x: String }
     ;
 
 declaration
-    : record
+    : struct
     | service
     ;
 
 module
-    : Identifier ('.' Identifier)* // caustic.example
+    : Module Identifier ('.' Identifier)* // module caustic.example
     ;
 
 include
@@ -168,9 +169,10 @@ include
     ;
 
 program
-    : Module module include* declaration*
+    : module include* declaration*
     ;
 
+Assert       : 'assert';
 Def          : 'def';
 Del          : 'del';
 Elif         : 'elif';
@@ -179,15 +181,15 @@ Extends      : 'extends';
 False        : 'false';
 If           : 'if';
 Import       : 'import';
+Let          : 'let';
 Module       : 'module';
+Mut          : 'mut';
 Null         : 'null';
-Record       : 'record';
-Return       : 'return';
 Rollback     : 'rollback';
 Service      : 'service';
+Struct       : 'struct';
 While        : 'while';
 True         : 'true';
-Var          : 'var';
 
 Add          : '+';
 AddAssign    : '+=';

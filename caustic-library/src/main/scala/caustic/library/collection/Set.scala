@@ -93,7 +93,7 @@ case class Set[T <: Primitive](toList: List[T]) {
    * @param context Parse context.
    * @return JSON representation.
    */
-  def toJson(implicit context: Context): Value[String] = this.toList.toJson
+  def asJson(implicit context: Context): Value[String] = this.toList.asJson
 
 }
 
@@ -106,5 +106,20 @@ object Set {
    * @return Set.
    */
   def apply[T <: Primitive](length: Variable[Int]): Set[T] = new Set(List(length))
+
+  // Implicit Operations.
+  implicit class AssignmentOps[T <: Primitive](x: Set[T]) {
+    def :=(y: List[T])(implicit context: Context): Unit = { x.clear(); x ++= y }
+    def :=(y: Set[T])(implicit context: Context): Unit = { x.clear(); x ++= y }
+  }
+
+  implicit class CompoundAssignmentOps[T <: Primitive](x: Set[T]) {
+    def ++=(y: List[T])(implicit context: Context): Unit = y foreach { case (_, v) => x += v }
+    def --=(y: List[T])(implicit context: Context): Unit = y foreach { case (_, v) => x -= v }
+    def ++=(y: Set[T])(implicit context: Context): Unit = y.foreach(x += _)
+    def --=(y: Set[T])(implicit context: Context): Unit = y.foreach(x -= _)
+    def +=(y: Value[T])(implicit context: Context): Unit = x.add(y)
+    def -=(y: Value[T])(implicit context: Context): Unit = x.remove(y)
+  }
 
 }

@@ -3,6 +3,7 @@ package ops
 
 import caustic.library.control.Context
 import caustic.library.typing._
+import caustic.library.typing.Value._
 
 import shapeless._
 import shapeless.ops.hlist.LeftFolder

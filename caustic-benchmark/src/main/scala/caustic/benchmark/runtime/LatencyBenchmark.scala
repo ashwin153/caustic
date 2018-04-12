@@ -13,7 +13,7 @@ object LatencyBenchmark extends Bench.OfflineReport {
   // Benchmark reads.
   val reads: Gen[Program] = Gen
     .exponential("size")(2, 1 << 8, 2)
-    .map(size => Seq.tabulate(size)(i => read("x")).reduce(cons))
+    .map(size => Seq.tabulate(size)(i => read(s"x$i")).reduce(cons))
 
   // Benchmark writes.
   val writes: Gen[Program] = Gen

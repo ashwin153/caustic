@@ -10,7 +10,7 @@ import scala.util.Try
 /**
  * A transactional key-value store.
  */
-trait Volume {
+trait Volume extends Serializable {
 
   /**
    * Returns the revisions of the specified keys.

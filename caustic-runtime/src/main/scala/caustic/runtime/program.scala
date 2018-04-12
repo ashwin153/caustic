@@ -37,25 +37,26 @@ object Literal {
   val charset: Charset = Charset.forName("UTF-8")
 
   /**
-   * Constructs a literal from the serialized base64 representation.
+   * Constructs a literal from the serialized binary representation.
    *
-   * @param base64 Serialized representation.
+   * @param binary Serialized representation.
    * @return Literal.
    */
-  def apply(base64: String): Literal = {
-    val bytes = new ByteArrayInputStream(Base64.getDecoder.decode(base64))
-    val stream = new ObjectInputStream(bytes)
-    stream.readObject().asInstanceOf[Literal]
+  def apply(binary: String): Literal = binary match {
+    case x if x(0) == '0' => Null
+    case x if x(0) == '1' => if (x(1) == '1') flag(true) else flag(false)
+    case x if x(0) == '2' => Real(x.substring(1).toDouble)
+    case x if x(0) == '3' => Text(x.substring(1))
   }
 
   // Implicit Operations.
   implicit class SerializationOps(x: Literal) {
 
-    def asBase64: String = {
-      val bytes = new ByteArrayOutputStream()
-      val stream = new ObjectOutputStream(bytes)
-      stream.writeObject(x)
-      Base64.getEncoder.encodeToString(bytes.toByteArray)
+    def asBinary: String = x match {
+      case Null => "0"
+      case Flag(t) => if (t) "11" else "10"
+      case Real(t) => "2" + t
+      case Text(t) => "3" + t
     }
 
     def asString: String = x match {

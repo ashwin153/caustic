@@ -13,7 +13,7 @@ import scala.util.{Failure, Success, Try}
  *
  * @param database Underlying database.
  */
-class Runtime(database: Volume) {
+class Runtime(database: Volume) extends Serializable {
 
   /**
    * Executes the program and returns the result. Programs are repeatedly partially evaluated until
@@ -50,7 +50,7 @@ class Runtime(database: Volume) {
 
       // Fetch the keys, update the local snapshot, and reduce the program. If the result is a
       // literal then return, otherwise recurse on the partially evaluated program.
-      this.database.get(keys) match {
+      this.database get keys match {
         case Success(r) =>
           depends  ++= r.mapValues(r => r.version)
           snapshot ++= r.mapValues(r => Literal(r.value))
@@ -146,7 +146,7 @@ class Runtime(database: Volume) {
         case _ => Failure(Aborted)
       }
     } flatMap { r =>
-      this.database.cas(depends.toMap, buffer.mapValues(_.asBase64).toMap) match {
+      this.database.cas(depends.toMap, buffer.mapValues(_.asBinary).toMap) match {
         case Success(_) => Success(r)
         case _ => Failure(Aborted)
       }

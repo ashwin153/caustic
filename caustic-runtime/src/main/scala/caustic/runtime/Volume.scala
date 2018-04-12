@@ -1,14 +1,13 @@
 package caustic.runtime
 
 import beaker.client._
-import beaker.common.concurrent._
 import beaker.server.protobuf._
 
 import scala.collection.mutable
 import scala.util.Try
 
 /**
- * A transactional key-value store.
+ * A transactional key-value store. Thread-safe.
  */
 trait Volume extends Serializable {
 
@@ -38,14 +37,14 @@ object Volume {
    *
    * @param underlying Underlying map.
    */
-  class Memory(underlying: mutable.Map[Key, Revision]) extends Volume with Locking {
+  class Memory(underlying: mutable.Map[Key, Revision]) extends Volume {
 
-    override def get(keys: Set[Key]): Try[Map[Key, Revision]] = shared {
+    override def get(keys: Set[Key]): Try[Map[Key, Revision]] = {
       Try(this.underlying.filterKeys(keys.contains).toMap)
     }
 
-    override def cas(depends: Map[Key, Version], changes: Map[Key, Value]): Try[Unit] = exclusive {
-      Try(this.underlying.filterKeys(depends.contains))
+    override def cas(depends: Map[Key, Version], changes: Map[Key, Value]): Try[Unit] = synchronized {
+      get(depends.keySet)
         .filter(_ forall { case (k, v) => depends(k) >= v.version })
         .map(_ => this.underlying ++= changes map { case (k, v) => k -> Revision(depends(k)+1, v) })
     }

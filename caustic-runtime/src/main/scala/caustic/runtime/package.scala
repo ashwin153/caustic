@@ -198,6 +198,7 @@ package object runtime {
    * @return Any.
    */
   def load(key: Program): Program = key match {
+    case _: Text => Expression(Load, key :: Nil)
     case a: Literal => Expression(Load, a.asString :: Nil)
     case _ => Expression(Load, key :: Nil)
   }
@@ -298,6 +299,7 @@ package object runtime {
    * @return Any.
    */
   def read(key: Program): Program = key match {
+    case _: Text => Expression(Read, key :: Nil)
     case a: Literal => Expression(Read, a.asString :: Nil)
     case _ => Expression(Read, key :: Nil)
   }
@@ -357,6 +359,7 @@ package object runtime {
    * @return Null.
    */
   def store(key: Program, value: Program): Program = (key, value) match {
+    case (_: Text, _) => Expression(Store, key :: value :: Nil)
     case (a: Literal, _) => Expression(Store, a.asString :: value :: Nil)
     case _ => Expression(Store, key :: value :: Nil)
   }
@@ -381,6 +384,7 @@ package object runtime {
    * @return Null.
    */
   def write(key: Program, value: Program): Program = (key, value) match {
+    case (_: Text, _) => Expression(Write, key :: value :: Nil)
     case (a: Literal, _) => Expression(Write, a.asString :: value :: Nil)
     case _ => Expression(Write, key :: value :: Nil)
   }

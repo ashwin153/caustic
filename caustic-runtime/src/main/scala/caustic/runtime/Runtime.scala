@@ -1,15 +1,14 @@
 package caustic.runtime
 
-import caustic.runtime.Runtime._
-
 import beaker.client._
+import caustic.runtime.Runtime._
 
 import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.util.{Failure, Success, Try}
 
 /**
- * A transactional virtual machine.
+ * A transactional virtual machine. Thread-safe.
  *
  * @param database Underlying database.
  */
@@ -50,7 +49,7 @@ class Runtime(database: Volume) extends Serializable {
 
       // Fetch the keys, update the local snapshot, and reduce the program. If the result is a
       // literal then return, otherwise recurse on the partially evaluated program.
-      this.database get keys match {
+      this.database get keys.toSet match {
         case Success(r) =>
           depends  ++= r.mapValues(r => r.version)
           snapshot ++= r.mapValues(r => Literal(r.value))
@@ -102,7 +101,12 @@ class Runtime(database: Volume) extends Serializable {
       case (Repeat :: rest, False :: _ :: rem) => reduce(rest, rem)
       case (Repeat :: rest, c :: b :: rem) => reduce(rest, repeat(c, b) :: rem)
       case (Prefetch :: rest, k :: s :: r :: rem) => reduce(rest, prefetch(k, s, r) :: rem)
+      case (Cons :: rest, (_: Literal) :: s :: rem) => reduce(s :: rest, rem)
       case (Cons :: rest, f :: s :: rem) => reduce(rest, cons(f, s) :: rem)
+      case (Branch :: rest, True :: pass :: _ :: rem) => reduce(pass :: rest, rem)
+      case (Branch :: rest, False :: _ :: fail :: rem) => reduce(fail :: rest, rem)
+      case (Branch :: rest, Null :: _ :: fail :: rem) => reduce(fail :: rest, rem)
+      case (Branch :: rest, (_: Literal) :: pass :: _ :: rem) => reduce(pass :: rest, rem)
       case (Branch :: rest, c :: p :: f :: rem) => reduce(rest, branch(c, p, f) :: rem)
 
       // Simplify String Expressions.
@@ -143,7 +147,7 @@ class Runtime(database: Volume) extends Serializable {
     evaluate(program) recoverWith { case e: Rollbacked =>
       this.database.cas(depends.toMap, Map.empty) match {
         case Success(_) => Failure(e)
-        case _ => Failure(Aborted)
+        case _ =>  Failure(Aborted)
       }
     } flatMap { r =>
       this.database.cas(depends.toMap, buffer.mapValues(_.asBinary).toMap) match {

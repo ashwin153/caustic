@@ -38,24 +38,20 @@ case class Generate(universe: Universe) extends CausticBaseVisitor[String] {
   }
 
   override def visitInclude(ctx: CausticParser.IncludeContext): String = {
-    /** Example Code Generation.
-     * import caustic.example._
-     *   => compile caustic.example
-     *   => import caustic.example._
-     */
+    // import caustic.example._
+    //   => compile caustic.example
+    //   => import caustic.example._
     super.visitInclude(ctx)
   }
 
   override def visitStruct(ctx: CausticParser.StructContext): String = {
-    /** Example Code Generation.
-     * struct Foo { x: Int, y: Bar, z: &Bar }
-     *   => case class Foo$(x: Value[Int], y: Bar, z: Reference[Bar])
-     *   => case class Foo(x: scala.Int, y: Bar, z: Pointer[Bar])
-     *   => object Foo {
-     *        implicit def asRef(x: Foo)(implicit context: Context): Reference[Foo$] = { ... }
-     *      }
-     *   => import Foo._
-     */
+    // struct Foo { x: Int, y: Bar, z: &Bar }
+    //   => case class Foo$(x: Value[Int], y: Bar, z: Reference[Bar])
+    //   => case class Foo(x: scala.Int, y: Bar, z: Pointer[Bar])
+    //   => object Foo {
+    //        implicit def asRef(x: Foo)(implicit context: Context): Reference[Foo$] = { ... }
+    //      }
+    //   => import Foo._
     val struct = ctx.Identifier().getText
     val names = ctx.parameters().parameter().asScala.map(_.Identifier().getText)
     val kinds = ctx.parameters().parameter().asScala.map(p => this.universe.kind(p.`type`()))
@@ -129,10 +125,8 @@ case class Generate(universe: Universe) extends CausticBaseVisitor[String] {
   }
 
   override def visitService(ctx: CausticParser.ServiceContext): String = {
-    /** Example Code Generation.
-     * service Foo { ... }
-     *   => case class Foo(runtime: Runtime) { ... }
-     */
+    // service Foo { ... }
+    //   => case class Foo(runtime: Runtime) { ... }
     val service = ctx.Identifier().getText
     val functions = ctx.function().asScala.map(visitFunction)
     val names = ctx.function().asScala.map(_.Identifier().getText)
@@ -146,19 +140,17 @@ case class Generate(universe: Universe) extends CausticBaseVisitor[String] {
   }
 
   override def visitFunction(ctx: CausticParser.FunctionContext): String = {
-    /** Example Code Generation.
-     * def bar(a: &Foo): &Foo
-     *   => def bar$(a: Reference[Foo$])(implicit context: Context): Reference[Foo$]
-     *   => def bar(a: Pointer[Foo]): Pointer[Foo]
-     *
-     * def bar(a: String): Foo
-     *   => def bar$(a: Value[String])(implicit context: Context): Reference[Foo$]
-     *   => def bar(a: java.lang.String): Foo
-     *
-     * def bar(a: Foo): String
-     *   => def bar$(a: Reference[Foo$])(implicit context: Context): Value[String]
-     *   => def bar(a: Foo): java.lang.String
-     */
+    // def bar(a: &Foo): &Foo
+    //   => def bar$(a: Reference[Foo$])(implicit context: Context): Reference[Foo$]
+    //   => def bar(a: Pointer[Foo]): Pointer[Foo]
+    //
+    // def bar(a: String): Foo
+    //   => def bar$(a: Value[String])(implicit context: Context): Reference[Foo$]
+    //   => def bar(a: java.lang.String): Foo
+    //
+    // def bar(a: Foo): String
+    //   => def bar$(a: Reference[Foo$])(implicit context: Context): Value[String]
+    //   => def bar(a: Foo): java.lang.String
     val function = ctx.Identifier().getText
     val names = ctx.parameters().parameter().asScala.map(_.Identifier().getText)
     val kinds = ctx.parameters().parameter().asScala.map(p => this.universe.kind(p.`type`()))

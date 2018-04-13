@@ -25,7 +25,7 @@ object Causticc {
 
     // Run the compiler on all the specified files.
     Files.walk(Paths.get(args(0))) forEach { path =>
-      if (path.toString.endsWith(".acid")) Causticc.compile(path).get
+      if (path.toString.endsWith(".acid")) Causticc(path).get
     }
   }
 
@@ -35,7 +35,7 @@ object Causticc {
    * @param source Source stream.
    * @return Generated sources.
    */
-  def compile(source: CharStream): Try[String] = {
+  def apply(source: CharStream): Try[String] = {
     // Lex and parse the program.
     val lexer = new CausticLexer(source)
     val tokens = new CommonTokenStream(lexer)
@@ -68,10 +68,10 @@ object Causticc {
    * different files. Incremental compilation can be implemented by persisting this information
    * across compiler invocations. https://stackoverflow.com/a/36960228/1447029
    */
-  lazy val compile: Path => Try[String] = new mutable.HashMap[Path, Try[String]]() {
+  lazy val apply: Path => Try[String] = new mutable.HashMap[Path, Try[String]]() {
     override def apply(path: Path): Try[String] = getOrElseUpdate(path, {
       val source = if (path.isAbsolute) path else Paths.get("").toAbsolutePath.resolve(path)
-      compile(CharStreams.fromPath(source))
+      Causticc(CharStreams.fromPath(source))
     })
   }
 
@@ -81,6 +81,6 @@ object Causticc {
    * @param source Source code.
    * @return Generated sources.
    */
-  def compile(source: String): Try[String] = compile(CharStreams.fromString(source))
+  def apply(source: String): Try[String] = Causticc(CharStreams.fromString(source))
 
 }

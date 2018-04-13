@@ -5,11 +5,22 @@ import org.scalatest.Matchers
 import org.scalatest.FunSuite
 import org.scalatest.junit.JUnitRunner
 
+import scala.reflect.runtime._
+import scala.tools.reflect.ToolBox
+
 @RunWith(classOf[JUnitRunner])
 class CompilerTest extends FunSuite with Matchers {
 
+  /**
+   * A compiler for the Scala programming language.
+   */
+  def Scalac(source: String): Any = {
+    val toolbox = currentMirror.mkToolBox()
+    toolbox.eval(toolbox.parse(source))
+  }
+
   test("Record declarations") {
-    Causticc.compile {
+    Causticc {
       s"""struct Bar {
          |  a: String
          |}
@@ -20,20 +31,20 @@ class CompilerTest extends FunSuite with Matchers {
          |  d: Bar
          |}
        """.stripMargin
-    } map Scalac.compile should be a 'success
+    } map Scalac should be a 'success
   }
 
   test("Service declarations") {
-    Causticc.compile {
+    Causticc {
       s"""service Decrement {
          |  def apply(x: Int): Int = x - 1
          |}
        """.stripMargin
-    } map Scalac.compile should be a 'success
+    } map Scalac should be a 'success
   }
 
   test("Variable definitions") {
-    Causticc.compile {
+    Causticc {
       s"""service Increment {
          |  def apply(x: Int): Int = {
          |    var y = x + 1
@@ -41,20 +52,20 @@ class CompilerTest extends FunSuite with Matchers {
          |  }
          |}
        """.stripMargin
-    } map Scalac.compile should be a 'success
+    } map Scalac should be a 'success
   }
 
   test("Conditional branching") {
-    Causticc.compile {
+    Causticc {
       s"""service AbsoluteValue {
          |  def apply(x: Int): Int = if (x < 0) -x else x
          |}
        """.stripMargin
-    } map Scalac.compile should be a 'success
+    } map Scalac should be a 'success
   }
 
   test("Loops") {
-    Causticc.compile {
+    Causticc {
       s"""service Factorial {
          |  def apply(x: Int): Int = {
          |    var factorial = 1
@@ -69,7 +80,7 @@ class CompilerTest extends FunSuite with Matchers {
          |  }
          |}
        """.stripMargin
-    } map Scalac.compile should be a 'success
+    } map Scalac should be a 'success
   }
 
 }

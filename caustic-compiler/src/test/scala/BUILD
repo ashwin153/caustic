@@ -6,6 +6,7 @@ junit_tests(
         'caustic-library/src/main/scala',
         '3rdparty/jvm:junit',
         '3rdparty/jvm:mockito',
+        '3rdparty/jvm:scala-compiler',
         '3rdparty/jvm:scalatest',
         '3rdparty/jvm:spray-json',
     ],

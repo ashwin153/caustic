@@ -172,17 +172,14 @@ program
     : module? include* declaration*
     ;
 
-Assert       : 'assert';
 Def          : 'def';
 Del          : 'del';
 Elif         : 'elif';
 Else         : 'else';
-Extends      : 'extends';
 False        : 'false';
 If           : 'if';
 Import       : 'import';
 Module       : 'module';
-Mut          : 'mut';
 Null         : 'null';
 Rollback     : 'rollback';
 Service      : 'service';

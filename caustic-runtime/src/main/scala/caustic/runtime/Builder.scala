@@ -333,7 +333,7 @@ trait Builder {
    * @return Any.
    */
   def rollback(message: Program): Program = message match {
-    case _ => Expression(Rollback, message :: Nil)
+    case _ => println("ROLLBACK"); Expression(Rollback, message :: Nil)
   }
 
   /**

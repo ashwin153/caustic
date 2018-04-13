@@ -25,8 +25,9 @@ class Runtime(database: Volume) extends Serializable {
    * @return Literal result or exception on failure.
    */
   def execute(program: Program): Try[Literal] = {
-    val depends  = mutable.Map.empty[Key, Version]
+    val versions = mutable.Map.empty[Key, Version].withDefaultValue(0L)
     val snapshot = mutable.Map.empty[Key, Literal].withDefaultValue(Null)
+    val depends  = mutable.Map.empty[Key, Version]
     val buffer   = mutable.Map.empty[Key, Literal]
     val locals   = mutable.Map.empty[Key, Literal]
 
@@ -44,14 +45,11 @@ class Runtime(database: Volume) extends Serializable {
         case (o: Expression) :: rest => rwset(o.operands ::: rest, aggregator)
       }
 
-      val keys  = rwset(List(iteration), Set.empty) -- depends.keys
-      depends ++= keys.map(_ -> 0L)
-
       // Fetch the keys, update the local snapshot, and reduce the program. If the result is a
       // literal then return, otherwise recurse on the partially evaluated program.
-      this.database get keys.toSet match {
+      this.database.get(rwset(List(iteration), Set.empty) -- versions.keys) match {
         case Success(r) =>
-          depends  ++= r.mapValues(r => r.version)
+          versions ++= r.mapValues(r => r.version)
           snapshot ++= r.mapValues(r => Literal(r.value))
 
           reduce(List(iteration), List.empty) match {
@@ -76,8 +74,10 @@ class Runtime(database: Volume) extends Serializable {
 
       // Expand Expressions.
       case (Expression(Read, Text(k) :: Nil) :: rest, rem) =>
+        depends += k -> versions(k)
         reduce(rest, buffer.getOrElse(k, snapshot(k)) :: rem)
       case (Expression(Write, Text(k) :: (v: Literal) :: Nil) :: rest, rem) =>
+        depends += k -> versions(k)
         buffer += k -> v
         reduce(rest, Null :: rem)
       case (Expression(Branch, cmp :: pass :: fail :: Nil) :: rest, rem) =>
@@ -147,7 +147,7 @@ class Runtime(database: Volume) extends Serializable {
     evaluate(program) recoverWith { case e: Rollbacked =>
       this.database.cas(depends.toMap, Map.empty) match {
         case Success(_) => Failure(e)
-        case _ =>  Failure(Aborted)
+        case _ => Failure(Aborted)
       }
     } flatMap { r =>
       this.database.cas(depends.toMap, buffer.mapValues(_.asBinary).toMap) match {

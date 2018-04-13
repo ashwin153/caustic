@@ -28,7 +28,7 @@
 		</dict>
 		<dict>
 			<key>match</key>
-			<string>\b(def|del|elif|else|extends|if|import|module|record|return|rollback|service|while|var)\b</string>
+			<string>\b(def|del|elif|else|if|import|module|rollback|service|struct|while|var)\b</string>
 			<key>name</key>
 			<string>keyword.control.caustic</string>
 		</dict>

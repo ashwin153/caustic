@@ -46,7 +46,8 @@ object Volume {
     override def cas(depends: Map[Key, Version], changes: Map[Key, Value]): Try[Unit] = synchronized {
       get(depends.keySet)
         .filter(_ forall { case (k, v) => depends(k) >= v.version })
-        .map(_ => this.underlying ++= changes map { case (k, v) => k -> Revision(depends(k)+1, v) })
+        .map(_ => changes map { case (k, v) => k -> Revision(depends(k) + 1, v) })
+        .map(this.underlying ++= _)
     }
 
   }

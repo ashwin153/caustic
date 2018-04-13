@@ -11,7 +11,7 @@ import scala.util.Random
  * implicitly changes the contention probability, the likelihood that any two concurrent
  * transactions conflict.
  */
-object ContentionBenchmark extends App {
+object ThroughputBenchmark extends App {
 
   val keys     = 10000      // Total number of keys.
   val reads    = 0.10       // Percentage of keys read in each program.

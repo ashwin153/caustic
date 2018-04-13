@@ -411,4 +411,4 @@ trait Builder {
 /**
  * A stable identifier for Java compatibility.
  */
-object Builder extends Builder
+object JBuilder extends Builder

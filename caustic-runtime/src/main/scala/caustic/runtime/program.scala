@@ -1,9 +1,8 @@
 package caustic.runtime
 
 import caustic.runtime.Runtime.Fault
+
 import java.io._
-import java.nio.charset.Charset
-import java.util.Base64
 import scala.util.Try
 
 /**
@@ -32,9 +31,6 @@ case class Real(value: Double) extends Literal
 case class Text(value: String) extends Literal
 
 object Literal {
-
-  // Default character representation.
-  val charset: Charset = Charset.forName("UTF-8")
 
   /**
    * Constructs a literal from the serialized binary representation.

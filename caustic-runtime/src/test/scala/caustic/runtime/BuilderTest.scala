@@ -7,7 +7,7 @@ import org.scalatest.junit.JUnitRunner
 import org.scalatest.{FunSuite, Matchers}
 
 @RunWith(classOf[JUnitRunner])
-class PackageTest extends FunSuite with Matchers {
+class BuilderTest extends FunSuite with Matchers {
 
   test("Literals are cached") {
     True should be theSameInstanceAs True

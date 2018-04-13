@@ -54,6 +54,14 @@ object Volume {
   object Memory {
 
     /**
+     * Constructs an empty in-memory database.
+     *
+     * @return Empty local database.
+     */
+    def empty: Volume.Memory =
+      Volume.Memory(Map.empty[Key, Revision])
+
+    /**
      * Constructs an in-memory database initialized with the specified values.
      *
      * @param initial Initial values.

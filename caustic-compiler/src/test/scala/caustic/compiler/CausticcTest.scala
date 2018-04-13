@@ -9,7 +9,7 @@ import scala.reflect.runtime._
 import scala.tools.reflect.ToolBox
 
 @RunWith(classOf[JUnitRunner])
-class CompilerTest extends FunSuite with Matchers {
+class CausticcTest extends FunSuite with Matchers {
 
   /**
    * A compiler for the Scala programming language.

@@ -5,7 +5,6 @@ import caustic.compiler.typing._
 import caustic.grammar.{CausticBaseVisitor, CausticParser}
 
 import scala.collection.JavaConverters._
-import scala.language.postfixOps
 
 /**
  * A code generator.
@@ -15,7 +14,8 @@ import scala.language.postfixOps
 case class Generate(universe: Universe) extends CausticBaseVisitor[String] {
 
   override def visitProgram(ctx: CausticParser.ProgramContext): String = {
-    s"""package ${ ctx.module().Identifier().asScala.map(_.getText) mkString "." }
+    val module = if (ctx.module() != null) s"package ${ ctx.module().getText }" else ""
+    s"""$module
        |
        |import caustic.library.collection._
        |import caustic.library.control._
@@ -61,13 +61,20 @@ case class Generate(universe: Universe) extends CausticBaseVisitor[String] {
     val kinds = ctx.parameters().parameter().asScala.map(p => this.universe.kind(p.`type`()))
     this.universe.bind(struct, Struct(struct, names.zip(kinds).toMap))
 
-    s"""case class $struct$$Repr(
+    s"""object $struct$$Repr {
+       |
+       |  implicit def asRef(x: $struct$$Repr)(
+       |    implicit context: Context
+       |  ): Reference[$struct$$Repr] = {
+       |    Reference[$struct$$Repr](Variable.Local(context.label()))
+       |  }
+       |}
+       |
+       |case class $struct$$Repr(
        |  ${ asField(ctx.parameters) }
        |)
        |
-       |case class $struct$$Internal(
-       |  ${ asArgument(ctx.parameters) }
-       |)
+       |import $struct$$Repr._
        |
        |object $struct$$Internal {
        |
@@ -81,9 +88,11 @@ case class Generate(universe: Universe) extends CausticBaseVisitor[String] {
        |
        |}
        |
-       |case class $struct(
-       |  ${ asExternal(ctx.parameters()) }
+       |case class $struct$$Internal(
+       |  ${ asArgument(ctx.parameters) }
        |)
+       |
+       |import $struct$$Internal._
        |
        |object $struct {
        |
@@ -109,8 +118,11 @@ case class Generate(universe: Universe) extends CausticBaseVisitor[String] {
        |
        |  }
        |
-       |
        |}
+       |
+       |case class $struct(
+       |  ${ asExternal(ctx.parameters()) }
+       |)
        |
        |import $struct._
      """.stripMargin
@@ -182,9 +194,10 @@ case class Generate(universe: Universe) extends CausticBaseVisitor[String] {
   }
 
   /**
+   * Generates a record field type from the specified kind.
    *
-   * @param kind
-   * @return
+   * @param kind Type.
+   * @return Field representation.
    */
   def asField(kind: Kind): String = kind match {
     case Pointer(k: Struct) => s"Reference[${ k.name }$$Repr]"
@@ -199,9 +212,10 @@ case class Generate(universe: Universe) extends CausticBaseVisitor[String] {
     ctx.parameter().asScala.map(asField) mkString ",\n"
 
   /**
+   * Generates a function argument type from the specified kind.
    *
-   * @param kind
-   * @return
+   * @param kind Type.
+   * @return Argument representation.
    */
   def asArgument(kind: Kind): String = kind match {
     case Pointer(k: Struct) => s"Reference[${ k.name }$$Repr]"
@@ -217,9 +231,10 @@ case class Generate(universe: Universe) extends CausticBaseVisitor[String] {
     ctx.parameter().asScala.map(asArgument) mkString ",\n"
 
   /**
+   * Generates an externally visible type from the specified kind.
    *
-   * @param kind
-   * @return
+   * @param kind Type.
+   * @return External representation.
    */
   def asExternal(kind: Kind): String = kind match {
     case Pointer(k: Struct) => s"${ k.name }"

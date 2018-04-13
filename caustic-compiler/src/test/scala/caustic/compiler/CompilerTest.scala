@@ -1,57 +1,75 @@
 package caustic.compiler
 
-import caustic.compiler.parsing.Generate
-import caustic.compiler.typing.Universe
-import caustic.example.{Counter, Total}
-//import caustic.example.Counter
-//import caustic.example.{Counter, Total$}
-import caustic.grammar.{CausticLexer, CausticParser}
-import caustic.runtime.{Runtime, Volume}
-import org.antlr.v4.runtime.{CharStreams, CommonTokenStream}
+import org.junit.runner.RunWith
+import org.scalatest.Matchers
 import org.scalatest.FunSuite
+import org.scalatest.junit.JUnitRunner
 
-class CompilerTest extends FunSuite {
+@RunWith(classOf[JUnitRunner])
+class CompilerTest extends FunSuite with Matchers {
 
-  /**
-   *
-   * @param source
-   * @return
-   */
-  def compile(source: String): String = {
-    val lexer = new CausticLexer(CharStreams.fromString(source))
-    val tokens = new CommonTokenStream(lexer)
-    Generate(Universe.root).visitProgram(new CausticParser(tokens).program())
+  test("Record declarations") {
+    Causticc.compile {
+      s"""struct Bar {
+         |  a: String
+         |}
+         |
+         |struct Foo {
+         |  b: Int,
+         |  c: Bar&,
+         |  d: Bar
+         |}
+       """.stripMargin
+    } map Scalac.compile should be a 'success
   }
 
-  test("Simplify") {
-    println(compile(
-      s"""module caustic.example
-         |
-         |struct Total {
-         |  count: Int
+  test("Service declarations") {
+    Causticc.compile {
+      s"""service Decrement {
+         |  def apply(x: Int): Int = x - 1
          |}
-         |
-         |service Counter {
-         |
-         |  def increment(x: Total&): Int = {
-         |    let x = 4
-         |    val x = 3
-         |
-         |    if (x.count == null) x.count = 1 else x.count += 1
-         |    x.count
-         |  }
-         |
-         |  def incrementTwice(x: Total&): Total& = {
-         |    increment(x)
-         |    increment(x)
-         |    x
-         |  }
-         |}
-      """.stripMargin
-    ))
+       """.stripMargin
+    } map Scalac.compile should be a 'success
+  }
 
-    val runtime = Runtime(Volume.Memory())
-    println(Counter(runtime).incrementTwice(Total(2)))
+  test("Variable definitions") {
+    Causticc.compile {
+      s"""service Increment {
+         |  def apply(x: Int): Int = {
+         |    var y = x + 1
+         |    y
+         |  }
+         |}
+       """.stripMargin
+    } map Scalac.compile should be a 'success
+  }
+
+  test("Conditional branching") {
+    Causticc.compile {
+      s"""service AbsoluteValue {
+         |  def apply(x: Int): Int = if (x < 0) -x else x
+         |}
+       """.stripMargin
+    } map Scalac.compile should be a 'success
+  }
+
+  test("Loops") {
+    Causticc.compile {
+      s"""service Factorial {
+         |  def apply(x: Int): Int = {
+         |    var factorial = 1
+         |    var y = x
+         |
+         |    while (y >= 2) {
+         |      factorial *= y
+         |      y -= 1
+         |    }
+         |
+         |    factorial
+         |  }
+         |}
+       """.stripMargin
+    } map Scalac.compile should be a 'success
   }
 
 }

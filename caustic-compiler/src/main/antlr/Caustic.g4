@@ -95,7 +95,7 @@ deletion
     ;
 
 definition
-    : Let Identifier Assign expression // val x = "foo"
+    : Var Identifier Assign expression // val x = "foo"
     ;
 
 assignment
@@ -169,7 +169,7 @@ include
     ;
 
 program
-    : module include* declaration*
+    : module? include* declaration*
     ;
 
 Assert       : 'assert';
@@ -181,7 +181,6 @@ Extends      : 'extends';
 False        : 'false';
 If           : 'if';
 Import       : 'import';
-Let          : 'let';
 Module       : 'module';
 Mut          : 'mut';
 Null         : 'null';
@@ -190,6 +189,7 @@ Service      : 'service';
 Struct       : 'struct';
 While        : 'while';
 True         : 'true';
+Var          : 'var';
 
 Add          : '+';
 AddAssign    : '+=';

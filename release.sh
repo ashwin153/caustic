@@ -39,7 +39,7 @@ if [[ "$response" =~ ^([yY][eE][sS]|[yY])+$ ]] ; then
     publish="./pants publish.jar --publish-jar-no-dryrun ${overrides[@]} ${targets[@]}"
   fi
 
-  if eval $publish ; then 
+  if eval "./pants test ::" && eval $publish ; then
     /usr/bin/open -a "/Applications/Google Chrome.app" \
       'http://www.pantsbuild.org/release_jvm.html#promoting-to-maven-central'
     /usr/bin/open -a "/Applications/Google Chrome.app" \

@@ -35,7 +35,6 @@ case class Simplify(universe: Universe) extends CausticBaseVisitor[Result] {
       case Pointer(k) => s"val $lhs = Reference[${ k.name }](Variable.Remote(${ rhs.value }))"
       case k: Primitive => s"val $lhs = Variable.Local[${ k.name }](context.label())"
       case k => s"val $lhs = Reference[${ k.name }](Variable.Local(context.label()))"
-
     }
 
     this.universe.bind(lhs, Variable(rhs.kind))
@@ -43,7 +42,7 @@ case class Simplify(universe: Universe) extends CausticBaseVisitor[Result] {
   }
 
   override def visitAssignment(ctx: CausticParser.AssignmentContext): Result = {
-    var rhs = visitExpression(ctx.expression())
+    val rhs = visitExpression(ctx.expression())
     val lhs = visitName(ctx.name())
 
     if (lub(lhs.kind, rhs.kind) != lhs.kind)
@@ -71,7 +70,7 @@ case class Simplify(universe: Universe) extends CausticBaseVisitor[Result] {
   override def visitLoop(ctx: CausticParser.LoopContext): Result = {
     val condition = visitExpression(ctx.expression())
     val body = Simplify(this.universe.child).visitBlock(ctx.block())
-    Result(CUnit, s"While (${ condition.value }) {\n$body\n}")
+    Result(CUnit, s"While (${ condition.value }) {\n${ body.value }\n}")
   }
 
   override def visitConditional(ctx: CausticParser.ConditionalContext): Result = {

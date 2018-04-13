@@ -26,7 +26,7 @@ jar_library(name='spray-json', jars=[
 ####################################################################################################
 # Ammonite
 jar_library(name='ammonite', jars=[
-    jar(org='com.lihaoyi', name='ammonite_2.12.1', rev='1.0.5'),
+    jar(org='com.lihaoyi', name='ammonite_2.12.3', rev='1.0.5'),
 ])
 
 # ANTLR
@@ -37,17 +37,17 @@ jar_library(name='antlr', jars=[
 
 # Scalac
 jar_library(name='scala-compiler', dependencies=[':scala-library', ':scala-reflect'], jars=[
-    jar(org='org.scala-lang', name='scala-compiler', rev='2.12.1'),
+    jar(org='org.scala-lang', name='scala-compiler', rev='2.12.3'),
 ])
 
 # Scala Library
 jar_library(name='scala-library', jars=[
-    jar(org='org.scala-lang', name='scala-library', rev='2.12.1'),
+    jar(org='org.scala-lang', name='scala-library', rev='2.12.3'),
 ])
 
 # Scala Reflection
 jar_library(name='scala-reflect', jars=[
-    jar(org='org.scala-lang', name='scala-reflect', rev='2.12.1', intransitive=True),
+    jar(org='org.scala-lang', name='scala-reflect', rev='2.12.3', intransitive=True),
 ])
 
 ####################################################################################################

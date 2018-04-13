@@ -3,7 +3,6 @@ package caustic.benchmark.runtime
 import caustic.runtime._
 
 import java.util.concurrent.atomic.AtomicInteger
-import scala.languageFeature.postfixOps
 import scala.util.Random
 
 /**

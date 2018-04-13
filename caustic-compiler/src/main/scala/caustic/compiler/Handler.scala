@@ -9,10 +9,13 @@ import scala.Console._
 /**
  * An exception handler.
  *
- * @param source Source file.
- * @param contents File contents.
+ * @param file Source file.
+ * @param source Source code.
  */
-case class Handler(source: Path, contents: Seq[String]) extends BaseErrorListener {
+case class Handler(
+  file: String,
+  source: Seq[String]
+) extends BaseErrorListener {
 
   override def syntaxError(
     recognizer: Recognizer[_, _],
@@ -29,17 +32,12 @@ case class Handler(source: Path, contents: Seq[String]) extends BaseErrorListene
     }
 
     // Convert an ANTLR RecognitionException into an Error.
+    println(exception)
     exception match {
       case null => report(Error.Unknown(message, trace))
       case _ => report(Error.Syntax(message, trace))
     }
   }
-
-  /**
-   *
-   * @return
-   */
-  def file: String = s"""${ this.source.getParent }"/"${ this.source.getFileName }"""
 
   /**
    * Reports the specified error.
@@ -51,7 +49,7 @@ case class Handler(source: Path, contents: Seq[String]) extends BaseErrorListene
     System.out.println(
       s"""$RED[E${ "%03d".format(error.code) }] ${ error.title }: $file $RESET
          |$CYAN${ "-" * 100 }$RESET
-         |$CYAN ${ "%4d".format(error.trace.line) }  |$RESET ${ this.contents(error.trace.line - 1) }
+         |$CYAN ${ "%4d".format(error.trace.line) }  |$RESET ${ this.source(error.trace.line - 1) }
          |$CYAN       |$RESET ${ " " * error.trace.columns.start }$CYAN${ "^" * error.trace.columns.size }$RESET
          |$CYAN       |$RESET ${ error.description.grouped(91).mkString(s"\n|       $CYAN|$RESET ") }
        """.stripMargin

@@ -38,14 +38,14 @@ package object control {
    */
   def If[T](condition: Value[Boolean])(success: => T)(implicit context: Context) = new {
     private val before = context.body
-    context.body = None
+    context.body = Null
     success
     private val pass = context.body
     context.body = before
-    context += branch(condition, pass, None)
+    context += branch(condition, pass, Null)
 
     def Else(failure: => T): T = {
-      context.body = None
+      context.body = Null
       val result = failure
       val fail = context.body
       context.body = before
@@ -65,7 +65,7 @@ package object control {
    */
   def While(condition: Value[Boolean])(block: => Unit)(implicit context: Context): Unit = {
     val before = context.body
-    context.body = None
+    context.body = Null
     block
     val body = context.body
     context.body = before

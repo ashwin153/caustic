@@ -8,7 +8,7 @@ import scala.language.implicitConversions
 
 package object typing {
 
-  val None: Program = runtime.Null
+  val Null: Program = runtime.Void
   val True: Value[Boolean] = runtime.True
   val False: Value[Boolean] = runtime.False
 

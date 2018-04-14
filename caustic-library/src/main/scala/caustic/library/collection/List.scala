@@ -81,7 +81,7 @@ case class List[T <: Primitive](length: Variable[Int]) {
       }
 
       // Decrement the size of the list.
-      this.length.scope[T](this.length - 1) := None
+      this.length.scope[T](this.length - 1) := Null
       this.length -= 1
     }
   }
@@ -131,7 +131,7 @@ case class List[T <: Primitive](length: Variable[Int]) {
    * @param context Parse context.
    */
   def clear()(implicit context: Context): Unit = {
-    foreach { case (i, _) => this.length.scope[T](i) := None }
+    foreach { case (i, _) => this.length.scope[T](i) := Null }
     this.length := 0
   }
 

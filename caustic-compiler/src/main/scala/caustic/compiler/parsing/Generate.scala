@@ -46,7 +46,7 @@ case class Generate(universe: Universe) extends CausticBaseVisitor[String] {
 
   override def visitStruct(ctx: CausticParser.StructContext): String = {
     // struct Foo { x: Int, y: Bar, z: &Bar }
-    //   => case class Foo$(x: Value[Int], y: Bar, z: Reference[Bar])
+    //   => case class Foo$Internal(x: Value[Int], y: Bar$Repr, z: Reference[Bar$Repr])
     //   => case class Foo(x: scala.Int, y: Bar, z: Pointer[Bar])
     //   => object Foo {
     //        implicit def asRef(x: Foo)(implicit context: Context): Reference[Foo$] = { ... }
@@ -57,20 +57,9 @@ case class Generate(universe: Universe) extends CausticBaseVisitor[String] {
     val kinds = ctx.parameters().parameter().asScala.map(p => this.universe.kind(p.`type`()))
     this.universe.bind(struct, Struct(struct, names.zip(kinds).toMap))
 
-    s"""object $struct$$Repr {
-       |
-       |  implicit def asRef(x: $struct$$Repr)(
-       |    implicit context: Context
-       |  ): Reference[$struct$$Repr] = {
-       |    Reference[$struct$$Repr](Variable.Local(context.label()))
-       |  }
-       |}
-       |
-       |case class $struct$$Repr(
+    s"""case class $struct$$Repr(
        |  ${ asField(ctx.parameters) }
        |)
-       |
-       |import $struct$$Repr._
        |
        |object $struct$$Internal {
        |
@@ -177,7 +166,7 @@ case class Generate(universe: Universe) extends CausticBaseVisitor[String] {
        |    case Text(x) => x
        |    case Real(x) => x.toString
        |    case Flag(x) => x.toString
-       |    case Null => "null"
+       |    case Void => "null"
        |  } map {
        |    _.parseJson.convertTo[${ asExternal(returns.kind) }]
        |  }
@@ -211,7 +200,7 @@ case class Generate(universe: Universe) extends CausticBaseVisitor[String] {
    */
   def asArgument(kind: Kind): String = kind match {
     case Pointer(k: Struct) => s"Reference[${ k.name }$$Repr]"
-    case k: Struct => s"${ k.name }$$Repr"
+    case k: Struct => s"${ k.name }$$Internal"
     case CUnit => "Unit"
     case k: Primitive => s"Value[${ k.name }]"
   }

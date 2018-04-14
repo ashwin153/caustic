@@ -3,14 +3,13 @@ package caustic.library.control
 import caustic.library.typing._
 import caustic.runtime._
 
-
 /**
  * A parsing context.
  *
  * @param body Current program.
  */
 case class Context(
-  private[library] var body: Program = None,
+  private[library] var body: Program = Null,
   private[library] var current: scala.Int = -1
 ) {
 

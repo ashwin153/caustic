@@ -77,7 +77,7 @@ case class Simplify(universe: Universe) extends CausticBaseVisitor[Result] {
     val conditions = ctx.expression().asScala.map(visitExpression)
     val branches = ctx.block().asScala.map(Simplify(this.universe.child).visitBlock)
     val body = conditions.zip(branches) map { case (c, b) => s"If (${ c.value }) {\n${ b.value }\n} Else {" } mkString
-    val last = if (ctx.Else() != null) branches.last else Result(CUnit, "None")
+    val last = if (ctx.Else() != null) branches.last else Result(CUnit, "Null")
     last.copy(value = s"$body\n${ last.value }\n}")
   }
 
@@ -260,7 +260,7 @@ case class Simplify(universe: Universe) extends CausticBaseVisitor[Result] {
     else if (ctx.String() != null)
       Result(CString, ctx.String().getText)
     else if (ctx.Null() != null)
-      Result(CUnit, "None")
+      Result(CUnit, "Null")
     else
       throw Error.Parse(ctx)
   }

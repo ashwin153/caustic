@@ -10,9 +10,10 @@ import org.scalatest.{FunSuite, Matchers}
 class BuilderTest extends FunSuite with Matchers {
 
   test("Literals are cached") {
-    True should be theSameInstanceAs True
-    False should be theSameInstanceAs False
-    text("") should be theSameInstanceAs Empty
+    flag(true) should be theSameInstanceAs flag(true)
+    flag(false) should be theSameInstanceAs flag(false)
+    text("") should be theSameInstanceAs text("")
+    void() should be theSameInstanceAs void()
   }
 
   test("Expressions are simplified") {
@@ -53,8 +54,8 @@ class BuilderTest extends FunSuite with Matchers {
     negate(1) shouldEqual False
     negate("") shouldEqual True
     negate("foo") shouldEqual False
-    runtime.equal(Null, Null) shouldEqual True
-    runtime.equal(Null, 0) shouldEqual True
+    runtime.equal(Void, Void) shouldEqual True
+    runtime.equal(Void, 0) shouldEqual True
     runtime.equal(0, 0) shouldEqual True
     runtime.equal("a", "a") shouldEqual True
     runtime.equal("", 0) shouldEqual False

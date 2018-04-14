@@ -31,10 +31,10 @@ class RuntimeTest extends FunSuite with MockitoSugar with ScalaFutures with Matc
     val runtime = Runtime(Volume.Memory())
 
     // Get on an unknown key returns a null value.
-    runtime.execute(read("x")) shouldBe Success(Null)
+    runtime.execute(read("x")) shouldBe Success(Void)
 
     // Get on a inserted key returns the inserted value.
-    runtime.execute(write("x", real(1))) shouldBe Success(Null)
+    runtime.execute(write("x", real(1))) shouldBe Success(Void)
     runtime.execute(read("x")) shouldBe Success(real(1))
 
     // Get on a modified key within a transaction returns the modified value.
@@ -45,7 +45,7 @@ class RuntimeTest extends FunSuite with MockitoSugar with ScalaFutures with Matc
     val runtime = Runtime(Volume.Memory())
 
     // Construct a transaction that increments a counter.
-    val inc = write("x", add(real(1), branch(caustic.equal(read("x"), Null), real(0), read("x"))))
+    val inc = write("x", add(real(1), branch(caustic.equal(read("x"), Void), real(0), read("x"))))
 
     // Concurrently execute the transaction and count the total successes.
     val tasks = Future.sequence(Seq.fill(99)(Future(runtime.execute(inc).map(_ => 1).getOrElse(0))))
@@ -89,7 +89,7 @@ class RuntimeTest extends FunSuite with MockitoSugar with ScalaFutures with Matc
     // first transaction to fail.
     val exec = Future(runtime.execute(read("x")).get)
     assert(ready.await(100, TimeUnit.MILLISECONDS))
-    runtime.execute(write("x", "foo")) shouldBe Success(Null)
+    runtime.execute(write("x", "foo")) shouldBe Success(Void)
     block.countDown()
 
     // Verify that the first transaction fails, but the second succeeds.

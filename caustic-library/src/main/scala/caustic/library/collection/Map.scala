@@ -3,7 +3,7 @@ package caustic.library.collection
 import caustic.library.control._
 import caustic.library.typing._
 import caustic.library.typing.Value._
-import caustic.runtime.{Null, prefetch}
+import caustic.runtime.{Void, prefetch}
 import scala.language.reflectiveCalls
 
 /**
@@ -54,7 +54,7 @@ case class Map[A <: String, B <: Primitive](keys: Set[A]) {
    * @param context Parse context.
    */
   def put(key: Value[A], value: Value[B])(implicit context: Context): Unit = {
-    If (value === None) {
+    If (value === Null) {
       this.keys.remove(key)
     } Else {
       this.keys.add(key)
@@ -81,7 +81,7 @@ case class Map[A <: String, B <: Primitive](keys: Set[A]) {
    * @param key Key.
    * @param context Parse context.
    */
-  def remove(key: Value[A])(implicit context: Context): Unit = put(key, None)
+  def remove(key: Value[A])(implicit context: Context): Unit = put(key, Null)
 
   /**
    * Applies the function to each key-value pair in the map.
@@ -104,7 +104,7 @@ case class Map[A <: String, B <: Primitive](keys: Set[A]) {
    * @param context Parse context.
    */
   def clear()(implicit context: Context): Unit = {
-    foreach { case (k, _) => this.keys.toList(this.keys.toList.indexOf(k)).scope[B](k) := None }
+    foreach { case (k, _) => this.keys.toList(this.keys.toList.indexOf(k)).scope[B](k) := Null }
     this.keys.clear()
   }
 
@@ -163,7 +163,7 @@ object Map {
     def ++=(y: Map[A, B])(implicit context: Context): Unit = y.foreach(x.put)
     def --=(y: Map[A, B])(implicit context: Context): Unit = y foreach { case (k, _) => x -= k }
     def +=(k: Value[A], v: Value[B])(implicit context: Context): Unit = x.put(k, v)
-    def -=(k: Value[A])(implicit context: Context): Unit = x.put(k, Null)
+    def -=(k: Value[A])(implicit context: Context): Unit = x.put(k, Void)
   }
 
 }

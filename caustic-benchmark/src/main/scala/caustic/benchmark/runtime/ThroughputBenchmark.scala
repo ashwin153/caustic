@@ -2,7 +2,6 @@ package caustic.benchmark.runtime
 
 import caustic.runtime._
 
-import java.util.concurrent.atomic.AtomicInteger
 import scala.util.Random
 
 /**
@@ -13,9 +12,9 @@ import scala.util.Random
  */
 object ThroughputBenchmark extends App {
 
-  val keys     = 10000      // Total number of keys.
-  val reads    = 0.10       // Percentage of keys read in each program.
-  val writes   = 0.05       // Percentage of keys written in each program.
+  val keys     = 1000       // Total number of keys.
+  val reads    = 0.01       // Percentage of keys read in each program.
+  val writes   = 0.00       // Percentage of keys written in each program.
   val attempts = 1000       // Number of attempts per thread.
 
   val threads  = java.lang.Runtime.getRuntime.availableProcessors()
@@ -23,20 +22,11 @@ object ThroughputBenchmark extends App {
 
   println {
     // Construct the specified number of threads and concurrent generate and execute programs.
-    val success = new AtomicInteger(0)
-    val threads = Seq.fill(this.threads)(new Thread {
-      override def run(): Unit = {
-        val results = Seq.fill(attempts)(gen).map(runtime.execute)
-        success.addAndGet(results.count(_.isSuccess))
-      }
-    })
-
-    // Return the total throughput of successfully executed programs.
+    val program = Seq.fill(this.threads)(Seq.fill(attempts)(gen))
     val current = System.nanoTime()
-    threads.foreach(_.start())
-    threads.foreach(_.join())
+    val success = program.par.map(_.map(runtime.execute).count(_.isSuccess)).sum
     val elapsed = System.nanoTime() - current
-    1E9 * success.get() / elapsed
+    1E9 * success / elapsed
   }
 
   /**

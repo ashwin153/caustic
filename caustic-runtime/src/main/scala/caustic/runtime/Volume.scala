@@ -3,7 +3,7 @@ package caustic.runtime
 import beaker.client._
 import beaker.server.protobuf._
 
-import scala.collection.mutable
+import scala.collection.concurrent
 import scala.util.Try
 
 /**
@@ -37,10 +37,10 @@ object Volume {
    *
    * @param underlying Underlying map.
    */
-  class Memory(underlying: mutable.Map[Key, Revision]) extends Volume {
+  class Memory(underlying: concurrent.Map[Key, Revision]) extends Volume {
 
-    override def get(keys: Set[Key]): Try[Map[Key, Revision]] = this.synchronized {
-      Try(this.underlying.filterKeys(keys.contains).toMap)
+    override def get(keys: Set[Key]): Try[Map[Key, Revision]] = {
+      Try(this.underlying.filterKeys(keys).toMap)
     }
 
     override def cas(depends: Map[Key, Version], changes: Map[Key, Value]): Try[Unit] = synchronized {
@@ -78,7 +78,7 @@ object Volume {
      * @return Initialized local database.
      */
     def apply(initial: Map[Key, Revision]): Volume.Memory =
-      new Volume.Memory(mutable.Map(initial.toSeq: _*))
+      new Volume.Memory(concurrent.TrieMap(initial.toSeq: _*))
 
   }
 

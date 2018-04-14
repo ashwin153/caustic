@@ -166,7 +166,7 @@ case class Generate(universe: Universe) extends CausticBaseVisitor[String] {
        |    case Text(x) => x
        |    case Real(x) => x.toString
        |    case Flag(x) => x.toString
-       |    case Void => "null"
+       |    case Null => "null"
        |  } map {
        |    _.parseJson.convertTo[${ asExternal(returns.kind) }]
        |  }

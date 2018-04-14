@@ -39,7 +39,7 @@ object Volume {
    */
   class Memory(underlying: mutable.Map[Key, Revision]) extends Volume {
 
-    override def get(keys: Set[Key]): Try[Map[Key, Revision]] = {
+    override def get(keys: Set[Key]): Try[Map[Key, Revision]] = this.synchronized {
       Try(this.underlying.filterKeys(keys.contains).toMap)
     }
 

@@ -19,7 +19,7 @@ trait Builder {
    * @return Any.
    */
   def add(x: Program, y: Program): Program = (x, y) match {
-    case (Void, Void) => Void
+    case (Null, Null) => Null
     case (Text(a), b: Literal) => a + b.asString
     case (a: Literal, Text(b)) => a.asString + b
     case (a: Literal, b: Literal) => a.asDouble + b.asDouble
@@ -134,7 +134,7 @@ trait Builder {
     case (a: Literal, Real(b)) => a.asDouble == b
     case (Flag(a), b: Literal) => a == b.asBoolean
     case (a: Literal, Flag(b)) => a.asBoolean == b
-    case (Void, Void) => True
+    case (Null, Null) => True
     case _ => Expression(Equal, x :: y :: Nil)
   }
 
@@ -180,9 +180,9 @@ trait Builder {
    * @return Flag.
    */
   def less(x: Program, y: Program): Program = (x, y) match {
-    case (Void, Void) => False
-    case (Void, _: Literal) => True
-    case (_: Literal, Void) => False
+    case (Null, Null) => False
+    case (Null, _: Literal) => True
+    case (_: Literal, Null) => False
     case (Text(a), b: Literal) => a < b.asString
     case (a: Literal, Text(b)) => a.asString < b
     case (Real(a), b: Literal) => a < b.asDouble
@@ -289,7 +289,7 @@ trait Builder {
     case (a: Literal, b: Literal, c: Literal) =>
       (0 until b.asInt)
         .map(i => Function.chain(Seq.fill(c.asInt)(read _))(a.asString + "/" + i))
-        .foldLeft[Program](Void)(cons)
+        .foldLeft[Program](Null)(cons)
     case _ => Expression(Prefetch, key :: size :: refs :: Nil)
   }
 
@@ -405,13 +405,6 @@ trait Builder {
    * @return Text.
    */
   def text(value: String): Text = if (value.isEmpty) Empty else Text(value)
-
-  /**
-   * Returns the value as a literal null.
-   *
-   * @return Void.
-   */
-  def void(): Literal = Void
 
 }
 

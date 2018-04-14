@@ -26,7 +26,7 @@ class Runtime(database: Volume) extends Serializable {
    */
   def execute(program: Program): Try[Literal] = {
     val versions = mutable.Map.empty[Key, Version].withDefaultValue(0L)
-    val snapshot = mutable.Map.empty[Key, Literal].withDefaultValue(Void)
+    val snapshot = mutable.Map.empty[Key, Literal].withDefaultValue(Null)
     val depends  = mutable.Map.empty[Key, Version]
     val buffer   = mutable.Map.empty[Key, Literal]
     val locals   = mutable.Map.empty[Key, Literal]
@@ -79,20 +79,20 @@ class Runtime(database: Volume) extends Serializable {
       case (Expression(Write, Text(k) :: (v: Literal) :: Nil) :: rest, rem) =>
         depends += k -> versions(k)
         buffer += k -> v
-        reduce(rest, Void :: rem)
+        reduce(rest, Null :: rem)
       case (Expression(Branch, cmp :: pass :: fail :: Nil) :: rest, rem) =>
         reduce(cmp :: Branch :: rest, pass :: fail :: rem)
       case (Expression(Cons, first :: second :: Nil) :: rest, rem) =>
         reduce(first :: Cons :: rest, second :: rem)
       case (Expression(Repeat, c :: b :: Nil) :: rest, rem) =>
-        reduce(branch(c, cons(b, repeat(c, b)), Void) :: rest, rem)
+        reduce(branch(c, cons(b, repeat(c, b)), Null) :: rest, rem)
       case ((e: Expression) :: rest, rem) =>
         reduce(e.operands.reverse ::: e.operator :: rest, rem)
 
       // Simplify Core Expressions.
       case (Read :: rest, k :: rem) => reduce(rest, read(k) :: rem)
       case (Write :: rest, k :: v :: rem) => reduce(rest, write(k, v) :: rem)
-      case (Load :: rest, Text(k) :: rem) => reduce(rest, locals.getOrElse(k, Void) :: rem)
+      case (Load :: rest, Text(k) :: rem) => reduce(rest, locals.getOrElse(k, Null) :: rem)
       case (Load :: rest, k :: rem) => reduce(rest, load(k) :: rem)
       case (Store :: rest, Text(k) :: (v: Literal) :: rem) => locals += k -> v; reduce(rest, v :: rem)
       case (Store :: rest, k :: v :: rem) => reduce(rest, store(k, v) :: rem)
@@ -105,7 +105,7 @@ class Runtime(database: Volume) extends Serializable {
       case (Cons :: rest, f :: s :: rem) => reduce(rest, cons(f, s) :: rem)
       case (Branch :: rest, True :: pass :: _ :: rem) => reduce(pass :: rest, rem)
       case (Branch :: rest, False :: _ :: fail :: rem) => reduce(fail :: rest, rem)
-      case (Branch :: rest, Void :: _ :: fail :: rem) => reduce(fail :: rest, rem)
+      case (Branch :: rest, Null :: _ :: fail :: rem) => reduce(fail :: rest, rem)
       case (Branch :: rest, (_: Literal) :: pass :: _ :: rem) => reduce(pass :: rest, rem)
       case (Branch :: rest, c :: p :: f :: rem) => reduce(rest, branch(c, p, f) :: rem)
 

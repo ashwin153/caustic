@@ -3,7 +3,7 @@ package ops
 
 import caustic.library.control.Context
 import caustic.library.typing._
-import caustic.library.typing.Value._
+import caustic.runtime.Null
 
 import shapeless._
 import shapeless.ops.hlist.LeftFolder
@@ -29,7 +29,7 @@ object delete extends Poly2 {
     selector: Selector.Aux[TRepr, FieldName, FieldType],
     field: Field.Aux[FieldType, Variable[FieldType]]
   ): Case.Aux[Args[T], FieldName, Args[T]] = at[Args[T], FieldName] { (x, f) =>
-    field(x.src, f.name).set(Null)
+    field(x.src, f.name) := Null
     x
   }
 
@@ -52,7 +52,7 @@ object delete extends Poly2 {
     evidence: FieldType <:< Reference[FieldT]
   ): Case.Aux[Args[T], FieldName, Args[T]] = at[Args[T], FieldName] { (x, f) =>
     if (x.recursive) field(x.src, f.name).delete(x.recursive)
-    x.src.pointer.set(Null)
+    x.src.pointer := Null
     x
   }
 

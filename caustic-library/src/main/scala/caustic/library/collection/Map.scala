@@ -3,7 +3,7 @@ package caustic.library.collection
 import caustic.library.control._
 import caustic.library.typing._
 import caustic.library.typing.Value._
-import caustic.runtime.{Void, prefetch}
+import caustic.runtime.{Null, prefetch}
 import scala.language.reflectiveCalls
 
 /**
@@ -163,7 +163,7 @@ object Map {
     def ++=(y: Map[A, B])(implicit context: Context): Unit = y.foreach(x.put)
     def --=(y: Map[A, B])(implicit context: Context): Unit = y foreach { case (k, _) => x -= k }
     def +=(k: Value[A], v: Value[B])(implicit context: Context): Unit = x.put(k, v)
-    def -=(k: Value[A])(implicit context: Context): Unit = x.put(k, Void)
+    def -=(k: Value[A])(implicit context: Context): Unit = x.put(k, Null)
   }
 
 }

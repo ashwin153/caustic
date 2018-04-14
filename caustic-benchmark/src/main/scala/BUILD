@@ -7,3 +7,14 @@ scala_library(
     ],
 )
 
+jvm_binary(
+    name='bin',
+    basename='caustic-benchmark',
+    source='caustic/benchmark/Suite.scala',
+    main='caustic.benchmark.Suite',
+    dependencies=[
+        'caustic-benchmark/src/main/scala',
+    ],
+)
+
+

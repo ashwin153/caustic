@@ -12,6 +12,7 @@ object Suite extends App {
     case "latency" => LatencyBenchmark.main(args.drop(1))
     case "throughput" => ThroughputBenchmark.main(args.drop(1))
     case "volume" => VolumeBenchmark.main(args.drop(1))
+    case "profile" => ProfileBenchmark.main(args.drop(1))
   }
 
 }

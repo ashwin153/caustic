@@ -1,25 +1,81 @@
-# Typing
-The standard library supports the following primitive types in descending order of precedence:
-```Null```, ```String```, ```Double```, ```Int```, and ```Boolean```. A __value__ is a primitive
-scalar that may be manipulated using familiar comparison and logical operators like ```<=```, and 
-```===```. Additional numeric and textual operations like ```+``` and ```substring``` are supported
-for values of the corresponding types. There are two kinds of values: __constants__ and 
-__variables__. Constants store an immutable value and variables store a mutable value either locally 
-in a buffer or remotely in the database.
+# Standard Library
+The runtime provides native support for an extremely limited subset of the operations that
+programmers typically rely on to write programs. The standard library supplements the
+functionality of the runtime by exposing a rich Scala DSL complete with static types, records,
+math, collections, and control flow.
+
+## Typing
+The runtime natively supports just four dynamic types: ```flag```, ```real```, ```text```, and 
+```null```. Dynamic versus static typing is a religious debate among programmers. Advocates of 
+dynamic typing often mistakenly believe that type inference and coercive subtyping cannot be 
+provided by a static type system. In fact, they can. Because static type systems are able to
+detect type inaccuracies at compile-time, they allow programmers to write more concise and
+correct code. The standard library provides rich static types and features
+aggressive type inference and subtype polymorphism.
+
+The standard library supports four ```Primitive``` types. In ascending order of precedence,
+they are ```Boolean```, ```Int```, ```Double```, and ```String```. A ```Value```
+represents a value of primitive type. There are two kinds of values. A ```Constant``` is an
+immutable value, and a ```Variable``` is a mutable value. Variables may be stored locally in
+memory or remotely in a database.
 
 ```scala
-val x = Local[Int]("x")
-val y = Remote[String]("y")
-
-x := 4
-x += 3
-y := "hello"
-y.indexOf("e")
+// Creates an integer local variable named x.
+val x = Variable.Local[Int]("x")
+// Creates a floating point remote variable named y.
+val y = Variable.Remote[Double]("y")
+// Assigns y to the sum of x and y.
+y := x + y
+// Assigns x to the product of x and 4.
+x *= 4
+// Does not compile, because y is not an integer.
+x := y
+// Does compile, because floor(y) is an integer.
+x := floor(y)
 ```
-      
-# Math
-In addition to the standard arithmetic operations on numeric values, the standard library also
-provides a rich math package. The following table enumerates the various supported functions.
+
+## Records
+In addition to these primitive types, the standard library also allows a ```Reference``` to be made
+to a user-defined type. References use [Shapeless][1] to materialize compiler macros that permit the 
+fields of an object to be statically manipulated and iterated. A current limitation is that objects 
+cannot be self-referential; an object cannot have a field of its own type.
+
+```scala
+// An example type declaration.
+case class Bar(
+  a: String,
+)
+
+case class Foo(
+  b: Int,
+  c: Reference[Bar],
+  d: Bar
+)
+
+// Constructs a remote reference to a Foo.
+val x = Reference[Foo](Variable.Remote("x"))
+// Returns the value of the field b.
+x.get(@<'b>@)
+// Does not compile, because z is not a field of Foo.
+x.get(@<'z>@)
+// Serializes x to a JSON string.
+x.asJson
+// Deletes all fields of x and all references.
+x.delete(recursive = true)
+// Constructs a local reference to a Foo.
+val y = Reference[Foo](Variable.Local("y"))
+// Copies x to y.
+y := x
+```
+
+## Math
+The runtime natively supports just nine mathematical operations: ```add```, ```sub```, ```mul```, 
+```div```, ```pow```, ```log```, ```floor```, ```sin```, and ```cos```. However, these primitive 
+operations are sufficient to derive the entire Scala [math][2] library using various mathematical 
+identities and approximations. The ```div```, ```log```, ```sin```, and ```cos``` functions can 
+actually be implemented in terms of the other primitive operations; however, native support for them 
+was included in the runtime to improve performance. The standard library provides implementations 
+for all functions enumerated in the following table.
 
 | Function                 | Description                                                           |
 |:-------------------------|:----------------------------------------------------------------------|
@@ -55,79 +111,55 @@ provides a rich math package. The following table enumerates the various support
 | ```sqrt(x)```            | Square root of ```x```.                                               | 
 | ```tan(x)```             | Tangent of ```x```.                                                   |
 
-# Records
-The standard library supports __references__ to records. It uses [Shapeless][1] to reflect on 
-standard Scala case classes and enable transactional accesses and modifications to their fields. 
-Fields may be primitives, nested records, or references to other records. For example, the following 
-case class definition is compatible with the standard library.
+## Collections
+The runtime has no native support for collections of key-value pairs. The standard library
+provides implementations of three fundamental data structures: ```List```, ```Set```, and ```Map```. 
+These collections are mutable and statically-typed. Collections take care of the messy details of 
+mapping structured data onto a flat namespace, and feature prefetched iteration. A current 
+limitation is that collections may only contain primitive types.
 
 ```scala
-case class Foo(
-  x: Int,
-  y: Bar,
-  z: Reference[Bar]
-)
-
-case class Bar(
-  a: Boolean,
-  b: Double,
-  c: String
-)
+// Constructs a map from string to boolean.
+val x = Map[String, Boolean](Variable.Remote("y"))
+// Puts an entry in the map.
+x += "foo" -> true
+// Serializes x to a JSON string.
+x.asJson
+// Constructs a list of integers.
+val x = List[Int](Variable.Local("x"))
+// Increments each element in the list.
+x.foreach(_ + 1)
 ```
 
-# Control Flow
-By themselves, values and their corresponding operations serve little purpose. It is only through
-compositions of these operations that non-trivial programs can be formed. The standard library uses
-an implicitly available __context__ to track the various operations performed on a value and compose
-them together into a single program. It uses [structural types][2] to provide convenient control 
-flow operations like conditional branching and loops whenever an implicit context is in scope. For 
-example, consider the following subroutine.
+## Control Flow
+The runtime natively supports control flow operations like ```branch```, ```cons```, and 
+```repeat```. However, these operations are syntactically challenging to express. The standard 
+library uses structural typing to provide support for ```If```, ```While```, ```Return```, 
+```Assert```, and ```Rollback```. The standard library uses an implicitly available parsing 
+```Context``` to track modifications made to variables, references, and collections and to detect
+when any control flow operations are called.
 
 ```scala
-def example(x: Value[Int])(implicit context: Context): Unit = {
-  // If.
-  If (x == 0) {
-    x += 1
-  }
-  
-  // If-Else.
-  If (x > 0) {
-    x -= 1
-  } Else {
-    x += 2
-  }
-  
-  // While.
-  While (x < 0) {
-    x += 1
-  }
-  
-  // Exceptions.
-  Rollback (x)
+ // If statements.
+If (x < 3) {
+  x += 3
 }
-```
 
-# Collections
-The standard library supports __collections__ of primitive values. More specifically, the standard
-library provides __list__, __set__, and __map__ implementations. Although collections cannot 
-directly store records, they may contain references to them.
+// If/Else statements
+If (y < x) {
+  y += 1
+} Else {
+  x += 1
+}
 
-```scala
-val x = List[String](Remote("x"))
-x.append("hello")
-x(0) := "foo"
-x.toJson
+// Ternary operator.
+val z = If (y === x) { y - 1 } Else { y + 1 }
 
-val y = Set[Int](Local("y"))
-y.add(2)
-y.contains(3)
-val sum = Local[Int]("sum")
-y.foreach(v => sum += v)
-
-val z = Map[Int, Double](Local("y"))
-z(2)
-z.put(4, 2.1)
-```
+// While loops.
+While (x <> y) {
+  x *= 2
+}
+```  
 
 [1]: https://github.com/milessabin/shapeless
-[2]: https://twitter.github.io/scala_school/advanced-types.html#structural
+[2]: https://www.scala-lang.org/api/2.12.1/scala/math/index.html

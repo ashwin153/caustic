@@ -7,7 +7,7 @@ import caustic.runtime._
  * and acquire a license key from EJ Technologies. Then, install the JProfiler IntelliJ plugin.
  * Optionally enable allocation monitoring for additional visibility into the system.
  */
-object ProfilingBenchmark extends App {
+object ProfileBenchmark extends App {
 
   // Construct a program and execute it on a runtime.
   val runtime = Runtime(Volume.Memory())

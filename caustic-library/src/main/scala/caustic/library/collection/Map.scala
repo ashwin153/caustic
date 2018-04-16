@@ -162,7 +162,7 @@ object Map {
   implicit class CompoundAssignmentOps[A <: String, B <: Primitive](x: Map[A, B]) {
     def ++=(y: Map[A, B])(implicit context: Context): Unit = y.foreach(x.put)
     def --=(y: Map[A, B])(implicit context: Context): Unit = y foreach { case (k, _) => x -= k }
-    def +=(k: Value[A], v: Value[B])(implicit context: Context): Unit = x.put(k, v)
+    def +=(kv: (Value[A], Value[B]))(implicit context: Context): Unit = x.put(kv._1, kv._2)
     def -=(k: Value[A])(implicit context: Context): Unit = x.put(k, Null)
   }
 

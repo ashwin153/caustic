@@ -1,9 +1,7 @@
 package caustic.compiler
 
 import org.antlr.v4.runtime._
-import org.antlr.v4.runtime.atn.ATNSimulator
 
-import java.nio.file.Path
 import scala.Console._
 
 /**

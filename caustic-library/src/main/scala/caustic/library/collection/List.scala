@@ -1,5 +1,6 @@
 package caustic.library.collection
 
+import caustic.library.Internal
 import caustic.library.control._
 import caustic.library.typing._
 import caustic.library.typing.Value._
@@ -12,7 +13,7 @@ import scala.language.reflectiveCalls
  *
  * @param length Current size.
  */
-case class List[T <: Primitive](length: Variable[Int]) {
+case class List[T <: Primitive](length: Variable[Int]) extends Internal {
 
   /**
    * Returns the number of values in the list.
@@ -130,7 +131,7 @@ case class List[T <: Primitive](length: Variable[Int]) {
    *
    * @param context Parse context.
    */
-  def clear()(implicit context: Context): Unit = {
+  def delete()(implicit context: Context): Unit = {
     foreach { case (i, _) => this.length.scope[T](i) := Null }
     this.length := 0
   }
@@ -167,10 +168,24 @@ case class List[T <: Primitive](length: Variable[Int]) {
 
 object List {
 
+  /**
+   *
+   * @param key
+   * @return
+   */
+  def Local[T <: Primitive](key: Value[String]): List[T] = List(Variable.Local(key))
+
+  /**
+   *
+   * @param key
+   * @return
+   */
+  def Remote[T <: Primitive](key: Value[String]): List[T] = List(Variable.Remote(key))
+
   // Implicit Operations.
   implicit class AssignmentOps[T <: Primitive](x: List[T]) {
-    def :=(y: List[T])(implicit context: Context): Unit = { x.clear(); x ++= y }
-    def :=(y: Set[T])(implicit context: Context): Unit = { x.clear(); x ++= y }
+    def :=(y: List[T])(implicit context: Context): Unit = { x.delete(); x ++= y }
+    def :=(y: Set[T])(implicit context: Context): Unit = { x.delete(); x ++= y }
   }
 
   implicit class CompoundAssignmentOps[T <: Primitive](x: List[T]) {

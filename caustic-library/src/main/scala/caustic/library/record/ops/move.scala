@@ -1,9 +1,9 @@
 package caustic.library.record
 package ops
 
+import caustic.library.collection.{List, Map, Set}
 import caustic.library.control.Context
 import caustic.library.typing._
-import caustic.library.typing.Value._
 
 import shapeless._
 import shapeless.ops.hlist.LeftFolder
@@ -30,7 +30,7 @@ object move extends Poly2 {
     selector: Selector.Aux[TRepr, FieldName, FieldType],
     field: Field.Aux[FieldType, Variable[FieldType]]
   ): Case.Aux[Args[T], FieldName, Args[T]] = at[Args[T], FieldName] { (x, f) =>
-    field(x.dest, f.name).set(field(x.src, f.name))
+    field(x.dest, f.name) := field(x.src, f.name)
     x
   }
 
@@ -50,7 +50,59 @@ object move extends Poly2 {
     field: Field.Aux[FieldType, Reference[FieldT]],
     evidence: FieldType <:< Reference[FieldT]
   ): Case.Aux[Args[T], FieldName, Args[T]] = at[Args[T], FieldName] { (x, f) =>
-    field(x.dest, f.name).pointer.set(field(x.src, f.name).pointer)
+    field(x.dest, f.name).pointer := field(x.src, f.name).pointer
+    x
+  }
+
+  implicit def caseList[
+    T,
+    TRepr <: HList,
+    FieldName <: Symbol,
+    FieldType,
+    FieldValue <: Primitive
+  ](
+    implicit context: Context,
+    generic: LabelledGeneric.Aux[T, TRepr],
+    selector: Selector.Aux[TRepr, FieldName, FieldType],
+    field: Field.Aux[FieldType, List[FieldValue]],
+    evidence: FieldType <:< List[FieldValue]
+  ): Case.Aux[Args[T], FieldName, Args[T]] = at[Args[T], FieldName] { (x, f) =>
+    field(x.dest, f.name) := field(x.src, f.name)
+    x
+  }
+
+  implicit def caseSet[
+    T,
+    TRepr <: HList,
+    FieldName <: Symbol,
+    FieldType,
+    FieldValue <: Primitive
+  ](
+    implicit context: Context,
+    generic: LabelledGeneric.Aux[T, TRepr],
+    selector: Selector.Aux[TRepr, FieldName, FieldType],
+    field: Field.Aux[FieldType, Set[FieldValue]],
+    evidence: FieldType <:< Set[FieldValue]
+  ): Case.Aux[Args[T], FieldName, Args[T]] = at[Args[T], FieldName] { (x, f) =>
+    field(x.dest, f.name) := field(x.src, f.name)
+    x
+  }
+
+  implicit def caseMap[
+    T,
+    TRepr <: HList,
+    FieldName <: Symbol,
+    FieldType,
+    FieldKey <: String,
+    FieldValue <: Primitive
+  ](
+    implicit context: Context,
+    generic: LabelledGeneric.Aux[T, TRepr],
+    selector: Selector.Aux[TRepr, FieldName, FieldType],
+    field: Field.Aux[FieldType, Map[FieldKey, FieldValue]],
+    evidence: FieldType <:< Map[FieldKey, FieldValue]
+  ): Case.Aux[Args[T], FieldName, Args[T]] = at[Args[T], FieldName] { (x, f) =>
+    field(x.dest, f.name) := field(x.src, f.name)
     x
   }
 

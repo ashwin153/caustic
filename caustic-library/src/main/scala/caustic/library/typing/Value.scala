@@ -39,8 +39,9 @@ object Value {
   }
 
   implicit class TextualOps[X >: String <: Primitive](x: Value[X]) {
+    def charAt(y: Value[Int]): Value[String] = x.substring(y, y + 1)
     def contains(y: Value[String]): Value[Boolean] = runtime.contains(x, y)
-    def indexOf(y: Value[String]): Value[Boolean] = runtime.indexOf(x, y)
+    def indexOf(y: Value[String]): Value[Int] = runtime.indexOf(x, y)
     def length: Value[Int] = runtime.length(x)
     def matches(y: Value[String]): Value[Boolean] = runtime.matches(x, y)
     def quoted: Value[String] = add("\"", add(x, "\""))
@@ -55,8 +56,8 @@ object Value {
     def >=[Y <: Primitive](y: Value[Y]): Value[Boolean] = !(x < y)
     def <>[Y <: Primitive](y: Value[Y]): Value[Boolean] = !(x === y)
     def ===[Y <: Primitive](y: Value[Y]): Value[Boolean] = equal(x, y)
-    def max[Y <: Primitive](y: Value[Y]): Value[Boolean] = branch(x < y, y, x)
-    def min[Y <: Primitive](y: Value[Y]): Value[Boolean] = branch(x < y, x, y)
+    def max(y: Value[X]): Value[X] = branch(x < y, y, x)
+    def min(y: Value[X]): Value[X] = branch(x < y, x, y)
   }
 
   implicit class LogicalOps[X <: Boolean](x: Value[X]) {

@@ -1,5 +1,6 @@
 package caustic.library.collection
 
+import caustic.library.Internal
 import caustic.library.control._
 import caustic.library.typing._
 
@@ -10,13 +11,7 @@ import scala.language.reflectiveCalls
  *
  * @param toList Underlying list.
  */
-case class Set[T <: Primitive](toList: List[T]) {
-
-  /**
-   *
-   * @return
-   */
-  def length: Variable[Int] = this.toList.length
+case class Set[T <: Primitive](toList: List[T]) extends Internal {
 
   /**
    * Returns the number of elements in the set.
@@ -77,7 +72,7 @@ case class Set[T <: Primitive](toList: List[T]) {
    *
    * @param context Parse context.
    */
-  def clear()(implicit context: Context): Unit = this.toList.clear()
+  def delete()(implicit context: Context): Unit = this.toList.delete()
 
   /**
    * Returns whether or not the sets contain the same elements.
@@ -100,17 +95,31 @@ case class Set[T <: Primitive](toList: List[T]) {
 object Set {
 
   /**
-   * Constructs a set backed by the specified variable.
    *
-   * @param length Variable.
-   * @return Set.
+   * @param key
+   * @tparam T
+   * @return
    */
-  def apply[T <: Primitive](length: Variable[Int]): Set[T] = new Set(List(length))
+  def apply[T <: Primitive](key: Variable[Int]): Set[T] = Set(List[T](key))
+
+  /**
+   *
+   * @param key
+   * @return
+   */
+  def Local[T <: Primitive](key: Value[String]): Set[T] = Set(List.Local[T](key))
+
+  /**
+   *
+   * @param key
+   * @return
+   */
+  def Remote[T <: Primitive](key: Value[String]): Set[T] = Set(List.Remote[T](key))
 
   // Implicit Operations.
   implicit class AssignmentOps[T <: Primitive](x: Set[T]) {
-    def :=(y: List[T])(implicit context: Context): Unit = { x.clear(); x ++= y }
-    def :=(y: Set[T])(implicit context: Context): Unit = { x.clear(); x ++= y }
+    def :=(y: List[T])(implicit context: Context): Unit = { x.delete(); x ++= y }
+    def :=(y: Set[T])(implicit context: Context): Unit = { x.delete(); x ++= y }
   }
 
   implicit class CompoundAssignmentOps[T <: Primitive](x: Set[T]) {

@@ -1,5 +1,6 @@
 package caustic.library.record
 
+import caustic.library.Internal
 import caustic.library.control.Context
 import caustic.library.typing._
 import caustic.library.typing.Value._
@@ -13,7 +14,7 @@ import shapeless.ops.record.{Keys, Selector}
  *
  * @param pointer Underlying pointer.
  */
-case class Reference[T](pointer: Variable[String]) {
+case class Reference[T](pointer: Variable[String]) extends Internal {
 
   /**
    * Returns the address of the reference.
@@ -107,6 +108,20 @@ case class Reference[T](pointer: Variable[String]) {
 }
 
 object Reference {
+
+  /**
+   *
+   * @param key
+   * @return
+   */
+  def Local[T](key: Value[String]): Reference[T] = Reference(Variable.Local(key))
+
+  /**
+   *
+   * @param key
+   * @return
+   */
+  def Remote[T](key: Value[String]): Reference[T] = Reference(Variable.Remote(key))
 
   // Implicit Operations.
   implicit class AssignmentOps[T](x: Reference[T]) {

@@ -1,10 +1,11 @@
 package caustic.library.record.ops
 
+import caustic.library.collection.{List, Map, Set}
 import caustic.library.control.Context
+import caustic.library.record.ops.equal.{Args, at}
 import caustic.library.record.{Field, Reference}
 import caustic.library.typing._
 import caustic.library.typing.Value._
-
 import shapeless._
 import shapeless.ops.hlist.LeftFolder
 import shapeless.ops.record.{Keys, Selector}
@@ -44,6 +45,55 @@ object json extends Poly2 {
     selector: Selector.Aux[TRepr, FieldName, FieldType],
     field: Field.Aux[FieldType, Variable[String]],
     evidence: String <:< FieldType <:< Primitive
+  ): Case.Aux[Args[T], FieldName, Args[T]] = at[Args[T], FieldName] { (x, f) =>
+    x.copy(json = x.json + ", \"" + f.name + "\": " + field(x.src, f.name).asJson)
+  }
+
+  implicit def caseList[
+    T,
+    TRepr <: HList,
+    FieldName <: Symbol,
+    FieldType,
+    FieldValue <: Primitive
+  ](
+    implicit context: Context,
+    generic: LabelledGeneric.Aux[T, TRepr],
+    selector: Selector.Aux[TRepr, FieldName, FieldType],
+    field: Field.Aux[FieldType, List[FieldValue]],
+    evidence: FieldType <:< List[FieldValue]
+  ): Case.Aux[Args[T], FieldName, Args[T]] = at[Args[T], FieldName] { (x, f) =>
+    x.copy(json = x.json + ", \"" + f.name + "\": " + field(x.src, f.name).asJson)
+  }
+
+  implicit def caseSet[
+    T,
+    TRepr <: HList,
+    FieldName <: Symbol,
+    FieldType,
+    FieldValue <: Primitive
+  ](
+    implicit context: Context,
+    generic: LabelledGeneric.Aux[T, TRepr],
+    selector: Selector.Aux[TRepr, FieldName, FieldType],
+    field: Field.Aux[FieldType, Set[FieldValue]],
+    evidence: FieldType <:< Set[FieldValue]
+  ): Case.Aux[Args[T], FieldName, Args[T]] = at[Args[T], FieldName] { (x, f) =>
+    x.copy(json = x.json + ", \"" + f.name + "\": " + field(x.src, f.name).asJson)
+  }
+
+  implicit def caseMap[
+    T,
+    TRepr <: HList,
+    FieldName <: Symbol,
+    FieldType,
+    FieldKey <: String,
+    FieldValue <: Primitive
+  ](
+    implicit context: Context,
+    generic: LabelledGeneric.Aux[T, TRepr],
+    selector: Selector.Aux[TRepr, FieldName, FieldType],
+    field: Field.Aux[FieldType, Map[FieldKey, FieldValue]],
+    evidence: FieldType <:< Map[FieldKey, FieldValue]
   ): Case.Aux[Args[T], FieldName, Args[T]] = at[Args[T], FieldName] { (x, f) =>
     x.copy(json = x.json + ", \"" + f.name + "\": " + field(x.src, f.name).asJson)
   }

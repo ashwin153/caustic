@@ -53,7 +53,7 @@ trait Builder {
   }
 
   /**
-   * Performs x and then y.
+   * Evaluates x and then y.
    *
    * @param x Any.
    * @param y Any.
@@ -110,6 +110,18 @@ trait Builder {
   def either(x: Program, y: Program): Program = (x, y) match {
     case (a: Literal, b: Literal) => a.asBoolean || b.asBoolean
     case _ => Expression(Either, x :: y :: Nil)
+  }
+
+  /**
+   * Evaluates x and y at the same time.
+   *
+   * @param x Any.
+   * @param y Any.
+   * @return Any.
+   */
+  def eval(x: Program, y: Program): Program = (x, y) match {
+    case (_: Literal, _: Literal) => y
+    case _ => Expression(Eval, x :: y :: Nil)
   }
 
   /**
@@ -289,7 +301,7 @@ trait Builder {
     case (a: Literal, b: Literal, c: Literal) =>
       (0 until b.asInt)
         .map(i => Function.chain(Seq.fill(c.asInt)(read _))(a.asString + "/" + i))
-        .foldLeft[Program](Null)(cons)
+        .foldLeft[Program](Null)(eval)
     case _ => Expression(Prefetch, key :: size :: refs :: Nil)
   }
 

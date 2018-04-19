@@ -1,6 +1,8 @@
 package caustic.library.record.ops
 
+import caustic.library.collection._
 import caustic.library.control.Context
+import caustic.library.record.ops.delete.{Args, at}
 import caustic.library.record.{Field, Reference}
 import caustic.library.typing._
 import caustic.library.typing.Value._
@@ -28,6 +30,55 @@ object equal extends Poly2 {
     generic: LabelledGeneric.Aux[T, TRepr],
     selector: Selector.Aux[TRepr, FieldName, FieldType],
     field: Field.Aux[FieldType, Variable[FieldType]]
+  ): Case.Aux[Args[T], FieldName, Args[T]] = at[Args[T], FieldName] { (x, f) =>
+    x.copy(equals = x.equals && field(x.a, f.name) === field(x.b, f.name))
+  }
+
+  implicit def caseList[
+    T,
+    TRepr <: HList,
+    FieldName <: Symbol,
+    FieldType,
+    FieldValue <: Primitive
+  ](
+    implicit context: Context,
+    generic: LabelledGeneric.Aux[T, TRepr],
+    selector: Selector.Aux[TRepr, FieldName, FieldType],
+    field: Field.Aux[FieldType, List[FieldValue]],
+    evidence: FieldType <:< List[FieldValue]
+  ): Case.Aux[Args[T], FieldName, Args[T]] = at[Args[T], FieldName] { (x, f) =>
+    x.copy(equals = x.equals && field(x.a, f.name) === field(x.b, f.name))
+  }
+
+  implicit def caseSet[
+    T,
+    TRepr <: HList,
+    FieldName <: Symbol,
+    FieldType,
+    FieldValue <: Primitive
+  ](
+    implicit context: Context,
+    generic: LabelledGeneric.Aux[T, TRepr],
+    selector: Selector.Aux[TRepr, FieldName, FieldType],
+    field: Field.Aux[FieldType, Set[FieldValue]],
+    evidence: FieldType <:< Set[FieldValue]
+  ): Case.Aux[Args[T], FieldName, Args[T]] = at[Args[T], FieldName] { (x, f) =>
+    x.copy(equals = x.equals && field(x.a, f.name) === field(x.b, f.name))
+  }
+
+  implicit def caseMap[
+    T,
+    TRepr <: HList,
+    FieldName <: Symbol,
+    FieldType,
+    FieldKey <: String,
+    FieldValue <: Primitive
+  ](
+    implicit context: Context,
+    generic: LabelledGeneric.Aux[T, TRepr],
+    selector: Selector.Aux[TRepr, FieldName, FieldType],
+    field: Field.Aux[FieldType, Map[FieldKey, FieldValue]],
+    evidence: FieldType <:< Map[FieldKey, FieldValue]
   ): Case.Aux[Args[T], FieldName, Args[T]] = at[Args[T], FieldName] { (x, f) =>
     x.copy(equals = x.equals && field(x.a, f.name) === field(x.b, f.name))
   }

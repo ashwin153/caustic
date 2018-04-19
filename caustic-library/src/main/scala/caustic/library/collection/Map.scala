@@ -1,9 +1,11 @@
 package caustic.library.collection
 
+import caustic.library.Internal
 import caustic.library.control._
 import caustic.library.typing._
 import caustic.library.typing.Value._
 import caustic.runtime.{Null, prefetch}
+
 import scala.language.reflectiveCalls
 
 /**
@@ -11,13 +13,7 @@ import scala.language.reflectiveCalls
  *
  * @param keys Keys.
  */
-case class Map[A <: String, B <: Primitive](keys: Set[A]) {
-
-  /**
-   *
-   * @return
-   */
-  def length: Variable[Int] = this.keys.length
+case class Map[A <: String, B <: Primitive](keys: Set[A]) extends Internal {
 
   /**
    * Returns the number of entries.
@@ -91,8 +87,8 @@ case class Map[A <: String, B <: Primitive](keys: Set[A]) {
    */
   def foreach[U](f: (Value[A], Value[B]) => U)(implicit context: Context): Unit = {
     // Prefetch all key-value pairs if the map is remotely stored.
-    if (this.length.isInstanceOf[Variable.Remote[Int]])
-      context += prefetch(this.length.key, this.size, 2)
+    if (this.keys.toList.length.isInstanceOf[Variable.Remote[Int]])
+      context += prefetch(this.keys.toList.length.key, this.size, 2)
 
     // Iterate over each key-value pair in the map.
     this.keys.foreach(k => f(k, this(k)))
@@ -103,9 +99,9 @@ case class Map[A <: String, B <: Primitive](keys: Set[A]) {
    *
    * @param context Parse context.
    */
-  def clear()(implicit context: Context): Unit = {
+  def delete()(implicit context: Context): Unit = {
     foreach { case (k, _) => this.keys.toList(this.keys.toList.indexOf(k)).scope[B](k) := Null }
-    this.keys.clear()
+    this.keys.delete()
   }
 
   /**
@@ -146,17 +142,25 @@ case class Map[A <: String, B <: Primitive](keys: Set[A]) {
 
 object Map {
 
+  def apply[A <: String, B <: Primitive](key: Variable[Int]): Map[A, B] = Map(Set[A](key))
+
   /**
-   * Constructs a map backed by the specified variable.
    *
-   * @param length Variable.
-   * @return Map.
+   * @param key
+   * @return
    */
-  def apply[A <: String, B <: Primitive](length: Variable[Int]): Map[A, B] = new Map(Set(length))
+  def Local[A <: String, B <: Primitive](key: Value[String]): Map[A, B] = Map(Set.Local[A](key))
+
+  /**
+   *
+   * @param key
+   * @return
+   */
+  def Remote[A <: String, B <: Primitive](key: Value[String]): Map[A, B] = Map(Set.Remote[A](key))
 
   // Implicit Operations.
   implicit class AssignmentOps[A <: String, B <: Primitive](x: Map[A, B]) {
-    def :=(y: Map[A, B])(implicit context: Context): Unit = { x.clear(); x ++= y }
+    def :=(y: Map[A, B])(implicit context: Context): Unit = { x.delete(); x ++= y }
   }
 
   implicit class CompoundAssignmentOps[A <: String, B <: Primitive](x: Map[A, B]) {

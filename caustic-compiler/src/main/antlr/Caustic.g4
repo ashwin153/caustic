@@ -16,8 +16,7 @@ name
     ;
 
 funcall
-    : type '(' String ')' // &Foo("hello")
-    | Identifier '(' (expression ',')* expression? ')' // foo(1.3, false)
+    : name '(' (expression ',')* expression? ')' // x.foo(1.3, false)
     ;
 
 /**
@@ -83,11 +82,11 @@ expression
  * cause side-effects (funcall).
  */
 conditional
-    : If expression block (Elif expression block)* (Else block)? // if (x) { foo() }
+    : If expression block (Elif expression block)* (Else block)? // if (x) foo() else bar()
     ;
 
 loop
-    : While expression block // while true { foo() }
+    : While expression block // while (true) { foo() }
     ;
 
 deletion
@@ -95,7 +94,7 @@ deletion
     ;
 
 definition
-    : Var Identifier Assign expression // val x = "foo"
+    : Var Identifier Assign expression // var x = "foo"
     ;
 
 assignment
@@ -132,7 +131,7 @@ block
  * object schemas that are persisted in the database and services consist of function definitions.
  */
 type
-    : Identifier Ampersand? // &Foo
+    : Identifier ('[' (Identifier ',')* Identifier ']')?
     ;
 
 parameter
@@ -238,7 +237,7 @@ Nondigit
     ;
 
 Identifier
-    : Nondigit (Nondigit | Digit)*
+    : Nondigit (Nondigit | Digit)* Ampersand?
     ;
 
 fragment

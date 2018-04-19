@@ -1,6 +1,7 @@
 package caustic.library.record
 package ops
 
+import caustic.library.collection._
 import caustic.library.control.Context
 import caustic.library.typing._
 import caustic.runtime.Null
@@ -30,6 +31,58 @@ object delete extends Poly2 {
     field: Field.Aux[FieldType, Variable[FieldType]]
   ): Case.Aux[Args[T], FieldName, Args[T]] = at[Args[T], FieldName] { (x, f) =>
     field(x.src, f.name) := Null
+    x
+  }
+
+  implicit def caseList[
+    T,
+    TRepr <: HList,
+    FieldName <: Symbol,
+    FieldType,
+    FieldValue <: Primitive
+  ](
+    implicit context: Context,
+    generic: LabelledGeneric.Aux[T, TRepr],
+    selector: Selector.Aux[TRepr, FieldName, FieldType],
+    field: Field.Aux[FieldType, List[FieldValue]],
+    evidence: FieldType <:< List[FieldValue]
+  ): Case.Aux[Args[T], FieldName, Args[T]] = at[Args[T], FieldName] { (x, f) =>
+    field(x.src, f.name).delete()
+    x
+  }
+
+  implicit def caseSet[
+    T,
+    TRepr <: HList,
+    FieldName <: Symbol,
+    FieldType,
+    FieldValue <: Primitive
+  ](
+    implicit context: Context,
+    generic: LabelledGeneric.Aux[T, TRepr],
+    selector: Selector.Aux[TRepr, FieldName, FieldType],
+    field: Field.Aux[FieldType, Set[FieldValue]],
+    evidence: FieldType <:< Set[FieldValue]
+  ): Case.Aux[Args[T], FieldName, Args[T]] = at[Args[T], FieldName] { (x, f) =>
+    field(x.src, f.name).delete()
+    x
+  }
+
+  implicit def caseMap[
+    T,
+    TRepr <: HList,
+    FieldName <: Symbol,
+    FieldType,
+    FieldKey <: String,
+    FieldValue <: Primitive
+  ](
+    implicit context: Context,
+    generic: LabelledGeneric.Aux[T, TRepr],
+    selector: Selector.Aux[TRepr, FieldName, FieldType],
+    field: Field.Aux[FieldType, Map[FieldKey, FieldValue]],
+    evidence: FieldType <:< Map[FieldKey, FieldValue]
+  ): Case.Aux[Args[T], FieldName, Args[T]] = at[Args[T], FieldName] { (x, f) =>
+    field(x.src, f.name).delete()
     x
   }
 

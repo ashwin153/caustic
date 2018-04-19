@@ -82,6 +82,8 @@ class Runtime(database: Volume) extends Serializable {
         reduce(rest, Null :: rem)
       case (Expression(Branch, cmp :: pass :: fail :: Nil) :: rest, rem) =>
         reduce(cmp :: Branch :: rest, pass :: fail :: rem)
+      case (Expression(Eval, first :: second :: Nil) :: rest, rem) =>
+        reduce(second :: first :: Eval :: rest, rem)
       case (Expression(Cons, first :: second :: Nil) :: rest, rem) =>
         reduce(first :: Cons :: rest, second :: rem)
       case (Expression(Repeat, c :: b :: Nil) :: rest, rem) =>
@@ -101,6 +103,8 @@ class Runtime(database: Volume) extends Serializable {
       case (Repeat :: rest, False :: _ :: rem) => reduce(rest, rem)
       case (Repeat :: rest, c :: b :: rem) => reduce(rest, repeat(c, b) :: rem)
       case (Prefetch :: rest, k :: s :: r :: rem) => reduce(rest, prefetch(k, s, r) :: rem)
+      case (Eval :: rest, (_: Literal) :: (s: Literal) :: rem) => reduce(s :: rest, rem)
+      case (Eval :: rest, f :: s :: rem) => reduce(rest, eval(f, s) :: rem)
       case (Cons :: rest, (_: Literal) :: s :: rem) => reduce(s :: rest, rem)
       case (Cons :: rest, f :: s :: rem) => reduce(rest, cons(f, s) :: rem)
       case (Branch :: rest, True :: pass :: _ :: rem) => reduce(pass :: rest, rem)

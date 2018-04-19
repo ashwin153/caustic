@@ -1,26 +1,21 @@
-package caustic.compiler
-package parsing
+package caustic.compiler.gen
 
-import caustic.compiler.typing._
-import caustic.grammar._
+import caustic.compiler.Error
+import caustic.compiler.reflect._
+import caustic.grammar.{CausticBaseVisitor, CausticParser}
 
 import scala.collection.JavaConverters._
-import scala.language.postfixOps
 
-/**
- * An expression simplifier and type inferencer.
- *
- * @param universe Type universe.
- */
-case class Simplify(universe: Universe) extends CausticBaseVisitor[Result] {
+case class GenBlock(universe: Universe) extends CausticBaseVisitor[Result] {
 
   override def visitBlock(ctx: CausticParser.BlockContext): Result = {
     val statements = ctx.statement().asScala.map(visitStatement)
     statements.reduceLeft((a, b) => b.copy(value = s"${a.value}\n${b.value}"))
   }
 
-  override def visitStatement(ctx: CausticParser.StatementContext): Result =
+  override def visitStatement(ctx: CausticParser.StatementContext): Result = {
     visitChildren(ctx)
+  }
 
   override def visitRollback(ctx: CausticParser.RollbackContext): Result = {
     val message = visitExpression(ctx.expression())
@@ -31,54 +26,76 @@ case class Simplify(universe: Universe) extends CausticBaseVisitor[Result] {
     val rhs = visitExpression(ctx.expression())
     val lhs = ctx.Identifier().getText
 
-    val definition = rhs.kind match {
-      case Pointer(k) => s"val $lhs = Reference[${ k.name }](Variable.Remote(${ rhs.value }))"
-      case k: Primitive => s"val $lhs = Variable.Local[${ k.name }](context.label())"
-      case k => s"val $lhs = Reference[${ k.name }](Variable.Local(context.label()))"
-    }
-
-    this.universe.bind(lhs, Variable(rhs.kind))
-    Result(CUnit, s"$definition\n$lhs := ${ rhs.value }")
+    // Construct a variable definition and bind it to the universe.
+    Result(CUnit, rhs match {
+      case Result(of: Primitive, value) =>
+        this.universe.bind(lhs, Variable(of))
+        s"val $lhs = Variable.Local[$of](context.label())\n$lhs := $value"
+      case Result(of: Struct, value) =>
+        this.universe.bind(lhs, Variable(of))
+        s"val $lhs = $value"
+      case Result(any, _) =>
+        throw Error.Type(s"Unable to define variable of type $any.", Error.Trace(ctx.expression()))
+    })
   }
 
   override def visitAssignment(ctx: CausticParser.AssignmentContext): Result = {
     val rhs = visitExpression(ctx.expression())
     val lhs = visitName(ctx.name())
 
-    if (lub(lhs.kind, rhs.kind) != lhs.kind)
-      throw Error.Type(s"Expected ${ lhs.kind.name }, but was ${ rhs.kind.name }", Error.Trace(ctx))
+    if (lub(lhs.of, rhs.of) != lhs.of)
+      throw Error.Type(s"Expected ${ lhs.of }, but was ${ rhs.of }.", Error.Trace(ctx))
     else if (ctx.Assign() != null)
-      Result(lhs.kind, s"${ lhs.value } := ${ rhs.value }")
+      Result(lhs.of, s"${ lhs.value } := ${ rhs.value }")
     else if (ctx.AddAssign() != null)
-      Result(lhs.kind, s"${ lhs.value } += ${ rhs.value }")
+      Result(lhs.of, s"${ lhs.value } += ${ rhs.value }")
     else if (ctx.SubAssign() != null)
-      Result(lhs.kind, s"${ lhs.value } -= ${ rhs.value }")
+      Result(lhs.of, s"${ lhs.value } -= ${ rhs.value }")
     else if (ctx.MulAssign() != null)
-      Result(lhs.kind, s"${ lhs.value } *= ${ rhs.value }")
+      Result(lhs.of, s"${ lhs.value } *= ${ rhs.value }")
     else if (ctx.DivAssign() != null)
-      Result(lhs.kind, s"${ lhs.value } /= ${ rhs.value }")
+      Result(lhs.of, s"${ lhs.value } /= ${ rhs.value }")
     else if (ctx.ModAssign() != null)
-      Result(lhs.kind, s"${ lhs.value } %= ${ rhs.value }")
+      Result(lhs.of, s"${ lhs.value } %= ${ rhs.value }")
     else
       throw Error.Parse(ctx)
   }
 
   override def visitDeletion(ctx: CausticParser.DeletionContext): Result = {
-    Result(CUnit, s"${ visitName(ctx.name()).value }.delete()")
+    visitName(ctx.name()) match {
+      case Result(Pointer(_: Primitive), v) => Result(CUnit, s"$v := Null")
+      case Result(Pointer(_), v) => Result(CUnit, s"$v.delete()")
+      case Result(_: Primitive, v) => Result(CUnit, s"$v := Null")
+      case Result(_, v) => Result(CUnit, s"$v.delete()")
+    }
   }
 
   override def visitLoop(ctx: CausticParser.LoopContext): Result = {
     val condition = visitExpression(ctx.expression())
-    val body = Simplify(this.universe.child).visitBlock(ctx.block())
-    Result(CUnit, s"While (${ condition.value }) {\n${ body.value }\n}")
+    val body = GenBlock(this.universe.child).visitBlock(ctx.block())
+
+    if (condition.of != CBoolean)
+      throw Error.Type(s"Found ${ condition.of }, but expected Boolean.", Error.Trace(ctx.expression()))
+    else
+      Result(CUnit, s"While (${ condition.value }) {\n${ body.value }\n}")
   }
 
   override def visitConditional(ctx: CausticParser.ConditionalContext): Result = {
-    val conditions = ctx.expression().asScala.map(visitExpression)
-    val branches = ctx.block().asScala.map(Simplify(this.universe.child).visitBlock)
-    val body = conditions.zip(branches) map { case (c, b) => s"If (${ c.value }) {\n${ b.value }\n} Else {" } mkString
+    val branches = ctx.block().asScala.map(GenBlock(this.universe.child).visitBlock)
     val last = if (ctx.Else() != null) branches.last else Result(CUnit, "Null")
-    last.copy(value = s"$body\n${ last.value }\n}")
+    val conditions = ctx.expression().asScala map { cmp =>
+      val result = visitExpression(cmp)
+      if (result.of != CBoolean)
+        throw Error.Type(s"Found ${ result.of }, but expected Boolean.", Error.Trace(cmp))
+      else
+        result.value
+    }
+
+    Result(last.of, conditions.zip(branches)
+      .map { case (c, b) => s"If ($c) {\n${ b.value }\n} Else {" }
+      .mkString
+      .concat(last.value)
+      .concat("\n}" * conditions.size))
   }
 
   override def visitExpression(ctx: CausticParser.ExpressionContext): Result =
@@ -92,7 +109,13 @@ case class Simplify(universe: Universe) extends CausticBaseVisitor[Result] {
       // Handle equality expressions.
       val lhs = visitLogicalOrExpression(ctx.logicalOrExpression())
       val rhs = visitLogicalAndExpression(ctx.logicalAndExpression())
-      Result(CBoolean, s"${ lhs.value } || ${ rhs.value }")
+
+      if (!isSubtype(lhs.of, CBoolean))
+        throw Error.Type(s"Found type ${ lhs.of }, but expected Boolean.", Error.Trace(ctx.logicalOrExpression()))
+      else if (!isSubtype(rhs.of, CBoolean))
+        throw Error.Type(s"Found type ${ rhs.of }, but expected Boolean.", Error.Trace(ctx.logicalAndExpression()))
+      else
+        Result(lub(lhs.of, rhs.of), s"${ lhs.value } || ${ rhs.value }")
     }
   }
 
@@ -104,7 +127,13 @@ case class Simplify(universe: Universe) extends CausticBaseVisitor[Result] {
       // Handle equality expressions.
       val lhs = visitLogicalAndExpression(ctx.logicalAndExpression())
       val rhs = visitEqualityExpression(ctx.equalityExpression())
-      Result(CBoolean, s"${ lhs.value } && ${ rhs.value }")
+
+      if (!isSubtype(lhs.of, CBoolean))
+        throw Error.Type(s"Found type ${ lhs.of }, but expected Boolean.", Error.Trace(ctx.logicalAndExpression()))
+      else if (!isSubtype(rhs.of, CBoolean))
+        throw Error.Type(s"Found type ${ rhs.of }, but expected Boolean.", Error.Trace(ctx.equalityExpression()))
+      else
+        Result(CBoolean, s"${ lhs.value } && ${ rhs.value }")
     }
   }
 
@@ -135,7 +164,7 @@ case class Simplify(universe: Universe) extends CausticBaseVisitor[Result] {
       val lhs = visitRelationalExpression(ctx.relationalExpression())
       val rhs = visitAdditiveExpression(ctx.additiveExpression())
 
-      if (ctx.LessThan() != null)
+     if (ctx.LessThan() != null)
         Result(CBoolean, s"${ lhs.value } < ${ rhs.value }")
       else if (ctx.LessEqual() != null)
         Result(CBoolean, s"${ lhs.value } <= ${ rhs.value }")
@@ -157,12 +186,12 @@ case class Simplify(universe: Universe) extends CausticBaseVisitor[Result] {
       val lhs = visitAdditiveExpression(ctx.additiveExpression())
       val rhs = visitMultiplicativeExpression(ctx.multiplicativeExpression())
 
-      if (ctx.Add() != null)
-        Result(lub(CInt, lhs.kind, rhs.kind), s"${ lhs.value } + ${ rhs.value }")
-      else if (ctx.Sub() != null)
-        Result(lub(CInt, lhs.kind, rhs.kind), s"${ lhs.value } - ${ rhs.value }")
+      if (ctx.Add() != null && isSubtype(lhs.of, CString) && isSubtype(rhs.of, CString))
+        Result(lub(lhs.of, rhs.of), s"${ lhs.value } + ${ rhs.value }")
+      else if (ctx.Sub() != null && isNumeric(lhs.of) && isNumeric(rhs.of))
+        Result(lub(lhs.of, rhs.of), s"${ lhs.value } - ${ rhs.value }")
       else
-        throw Error.Parse(ctx)
+        throw Error.Type(s"Unexpected type ${ lub(lhs.of, rhs.of) }.", Error.Trace(ctx))
     }
   }
 
@@ -175,12 +204,18 @@ case class Simplify(universe: Universe) extends CausticBaseVisitor[Result] {
       val lhs = visitMultiplicativeExpression(ctx.multiplicativeExpression())
       val rhs = visitPrefixExpression(ctx.prefixExpression())
 
-      if (ctx.Mul() != null)
-        Result(lub(CInt, lhs.kind, rhs.kind), s"${ lhs.value } * ${ rhs.value }")
-      else if (ctx.Div() != null)
-        Result(lub(CInt, lhs.kind, rhs.kind), s"${ lhs.value } / ${ rhs.value }")
+      if (!isNumeric(lhs.of))
+        throw Error.Type(s"Found type ${ lhs.of }, but expected numeric.", Error.Trace(ctx.multiplicativeExpression()))
+      else if (!isNumeric(rhs.of))
+        throw Error.Type(s"Found type ${ rhs.of }, but expected numeric.", Error.Trace(ctx.prefixExpression()))
+      else if (ctx.Mul() != null)
+        Result(lub(lhs.of, rhs.of), s"${ lhs.value } * ${ rhs.value }")
+      else if (ctx.Div() != null && lub(lhs.of, rhs.of) == CDouble)
+        Result(CDouble, s"${ lhs.value } / ${ rhs.value }")
+      else if (ctx.Div() != null && lub(lhs.of, rhs.of) == CInt)
+        Result(CInt, s"floor(${ lhs.value } / ${ rhs.value })")
       else if (ctx.Mod() != null)
-        Result(lub(CInt, lhs.kind, rhs.kind), s"${ lhs.value } % ${ rhs.value }")
+        Result(lub(lhs.of, rhs.of), s"${ lhs.value } % ${ rhs.value }")
       else
         throw Error.Parse(ctx)
     }
@@ -188,7 +223,6 @@ case class Simplify(universe: Universe) extends CausticBaseVisitor[Result] {
 
   override def visitPrefixExpression(ctx: CausticParser.PrefixExpressionContext): Result = {
     val rhs = visitPrimaryExpression(ctx.primaryExpression())
-
     if (ctx.Add() != null)
       rhs
     else if (ctx.Sub() != null)
@@ -212,39 +246,45 @@ case class Simplify(universe: Universe) extends CausticBaseVisitor[Result] {
       throw Error.Parse(ctx)
   }
 
-  override def visitName(ctx: CausticParser.NameContext): Result = {
-    val names = ctx.Identifier().asScala.map(_.getText)
-    this.universe.find(names.head) match {
-      case Some(Variable(k)) =>
-        names.drop(1).foldLeft(Result(k, names.head)) {
-          case (Result(Pointer(Struct(_, r)), v), f) if r.contains(f) =>
-            // Concatenate dot-delimited fields.
-            Result(r(f), s"$v.get('$f)")
-          case (Result(Struct(_, r), v), f) if r.contains(f) =>
-            // Concatenate dot-delimited fields.
-            Result(r(f), s"$v.get('$f)")
-          case (Result(t, _), f) =>
-            // Verify that every field is a member of the parent struct.
-            throw Error.Type(s"${ t.name } does not have field $f.", Error.Trace(ctx))
-        }
-      case _ =>
-        // Verify that the initial field is a variable.
-        throw Error.Syntax(s"${ names.head } is not a variable defined in scope.", Error.Trace(ctx))
+  override def visitFuncall(ctx: CausticParser.FuncallContext): Result = {
+    val arguments = ctx.expression().asScala.map(visitExpression)
+
+    visitName(ctx.name()) match {
+      case Result(Function(_, args, returns), function) if args == arguments.map(_.of) =>
+        Result(returns, s"$function(${ arguments.map(_.value).mkString(", ") })")
+      case Result(any, _) =>
+        throw Error.Type(s"$any is not a function", Error.Trace(ctx.name()))
     }
   }
 
-  override def visitFuncall(ctx: CausticParser.FuncallContext): Result = {
-    if (ctx.`type`() == null || ctx.`type`().Ampersand() == null) {
-      val name = ctx.Identifier().getText
-      val args = ctx.expression().asScala.map(visitExpression).map(_.value).mkString(", ")
+  override def visitName(ctx: CausticParser.NameContext): Result = {
+    val names = ctx.Identifier().asScala.map(_.getText)
 
-      this.universe.find(name) match {
-        case Some(Function(_, r)) => Result(r.kind, s"$name$$Internal($args)")
-        case _ => throw Error.Syntax(s"$name is not a function.", Error.Trace(ctx))
-      }
-    } else {
-      val kind = this.universe.kind(ctx.`type`())
-      Result(kind, s"""Reference[${ kind.name }$$Repr](Variable.Remote("${ ctx.String().getText }"))""")
+    this.universe.find(names.head) match {
+      case Some(service: Service) if names.size == 2 && service.functions.contains(names(1)) =>
+        Result(service.functions(names(1)), s"${ names.head }.${ service.functions(names(1)).name }")
+      case Some(variable: Variable) =>
+        names.drop(1).foldLeft(Result(variable.of, names.head)) {
+          case (Result(Pointer(struct: Struct), value), field) if struct.fields.contains(field) =>
+            Result(struct.fields(field), s"$value.get('$field)")
+          case (Result(defined: Defined, value), field) if defined.fields.contains(field) =>
+            Result(defined.fields(field), s"$value.get('$field)")
+          case (Result(builtIn: BuiltIn, value), field) if builtIn.fields.contains(field) =>
+            Result(builtIn.fields(field), s"$value.$field")
+          case (Result(any, _), field) =>
+            throw Error.Type(s"$field is not a member of $any.", Error.Trace(ctx))
+        }
+      case Some(function: Function) if names.size == 1 =>
+        Result(function, function.name)
+      case Some(_: Pointer) | Some(_: Struct) if names.size == 1 =>
+        this.universe.find(s"${ names.head }$$Constructor") match {
+          case Some(function: Function) => Result(function, function.name)
+          case _ => throw Error.Type(s"Cannot find constructor for ${ names.head }.", Error.Trace(ctx))
+        }
+      case Some(any) =>
+        throw Error.Type(s"$any is not a valid name.", Error.Trace(ctx))
+      case _ =>
+        throw Error.Type(s"Unknown binding ${ names.mkString }.", Error.Trace(ctx))
     }
   }
 

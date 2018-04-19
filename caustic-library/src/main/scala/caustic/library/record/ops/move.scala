@@ -1,7 +1,7 @@
 package caustic.library.record
 package ops
 
-import caustic.library.collection.{List, Map, Set}
+import caustic.library.collection._
 import caustic.library.control.Context
 import caustic.library.typing._
 

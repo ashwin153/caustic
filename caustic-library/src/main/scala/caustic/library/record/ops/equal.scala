@@ -2,7 +2,6 @@ package caustic.library.record.ops
 
 import caustic.library.collection._
 import caustic.library.control.Context
-import caustic.library.record.ops.delete.{Args, at}
 import caustic.library.record.{Field, Reference}
 import caustic.library.typing._
 import caustic.library.typing.Value._

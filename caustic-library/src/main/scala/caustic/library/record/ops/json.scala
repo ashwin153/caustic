@@ -2,10 +2,10 @@ package caustic.library.record.ops
 
 import caustic.library.collection.{List, Map, Set}
 import caustic.library.control.Context
-import caustic.library.record.ops.equal.{Args, at}
 import caustic.library.record.{Field, Reference}
 import caustic.library.typing._
 import caustic.library.typing.Value._
+
 import shapeless._
 import shapeless.ops.hlist.LeftFolder
 import shapeless.ops.record.{Keys, Selector}

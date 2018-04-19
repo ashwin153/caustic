@@ -78,6 +78,9 @@ case class GenExternal(universe: Universe) extends CausticBaseVisitor[String] {
     this.universe.find(ctx.getText.replaceAll("\\s", "")) match {
       case Some(_: Pointer) => s"Pointer[${ ctx.getText.dropRight(1)}]"
       case Some(_: Defined) => s"${ ctx.getText }"
+      case Some(CList(x)) => s"scala.List[$x]"
+      case Some(CSet(x)) => s"scala.collection.Set[$x]"
+      case Some(CMap(k, v)) => s"scala.collection.Map[$k, $v]"
       case Some(CString) => "java.lang.String"
       case Some(CDouble) => "scala.Double"
       case Some(CInt) => "scala.Int"

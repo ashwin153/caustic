@@ -298,7 +298,7 @@ case class GenBlock(universe: Universe) extends CausticBaseVisitor[Result] {
     else if (ctx.Number() != null)
       Result(CInt, ctx.Number().getText)
     else if (ctx.String() != null)
-      Result(CString, ctx.String().getText)
+      Result(CString, s"string(${ ctx.String().getText })")
     else if (ctx.Null() != null)
       Result(CUnit, "Null")
     else

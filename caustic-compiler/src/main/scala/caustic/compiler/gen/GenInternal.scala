@@ -58,6 +58,9 @@ case class GenInternal(universe: Universe) extends CausticBaseVisitor[String] {
     this.universe.find(ctx.getText.replaceAll("\\s", "")) match {
       case Some(_: Pointer) => s"Reference[${ ctx.getText.dropRight(1) }$$Repr]"
       case Some(_: Defined) => s"Reference[${ ctx.getText }$$Repr]"
+      case Some(CList(x)) => s"List[$x]"
+      case Some(CSet(x)) => s"Set[$x]"
+      case Some(CMap(k, v)) => s"Map[$k, $v]"
       case Some(CString) => "Value[String]"
       case Some(CDouble) => "Value[Double]"
       case Some(CInt) => "Value[Int]"

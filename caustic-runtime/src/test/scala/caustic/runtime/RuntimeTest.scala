@@ -34,21 +34,21 @@ class RuntimeTest extends FunSuite with MockitoSugar with ScalaFutures with Matc
     runtime.execute(read("x")) shouldBe Success(Null)
 
     // Get on a inserted key returns the inserted value.
-    runtime.execute(write("x", real(1))) shouldBe Success(Null)
-    runtime.execute(read("x")) shouldBe Success(real(1))
+    runtime.execute(write("x", 1)) shouldBe Success(Null)
+    runtime.execute(read("x")) shouldBe Success(1)
 
     // Get on a modified key within a transaction returns the modified value.
-    runtime.execute(cons(write("x", real(2)), read("x"))) shouldBe Success(real(2))
+    runtime.execute(cons(write("x", 2), read("x"))) shouldBe Success(2)
   }
 
   test("Execute is thread-safe.") {
     val runtime = Runtime(Volume.Memory())
 
     // Construct a transaction that increments a counter.
-    val inc = write("x", add(real(1), branch(caustic.equal(read("x"), Null), real(0), read("x"))))
+    val inc = write("x", add(1, branch(caustic.equal(read("x"), Null), 0, read("x"))))
 
     // Concurrently execute the transaction and count the total successes.
-    val tasks = Future.sequence(Seq.fill(2500)(Future(runtime.execute(inc).map(_ => 1).getOrElse(0))))
+    val tasks = Future.sequence(Seq.fill(10000)(Future(runtime.execute(inc).map(_ => 1).getOrElse(0))))
     val total = Await.result(tasks, 30 seconds).sum
 
     // Verify that the number of increments matches the number of successful transactions.
@@ -61,10 +61,10 @@ class RuntimeTest extends FunSuite with MockitoSugar with ScalaFutures with Matc
     // Verifies that local variables are correctly updated.
     runtime execute {
       cons(
-        store("i", real(0)),
-        cons(repeat(less(load("i"), real(3)), store("i", add(load("i"), real(1)))), load("i"))
+        store("i", 0),
+        cons(repeat(less(load("i"), 3), store("i", add(load("i"), 1))), load("i"))
       )
-    } shouldBe Success(real(3))
+    } shouldBe Success(3)
   }
 
   test("Execute detects conflicts.") {

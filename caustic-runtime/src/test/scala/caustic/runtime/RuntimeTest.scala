@@ -48,7 +48,7 @@ class RuntimeTest extends FunSuite with MockitoSugar with ScalaFutures with Matc
     val inc = write("x", add(real(1), branch(caustic.equal(read("x"), Null), real(0), read("x"))))
 
     // Concurrently execute the transaction and count the total successes.
-    val tasks = Future.sequence(Seq.fill(99)(Future(runtime.execute(inc).map(_ => 1).getOrElse(0))))
+    val tasks = Future.sequence(Seq.fill(2500)(Future(runtime.execute(inc).map(_ => 1).getOrElse(0))))
     val total = Await.result(tasks, 30 seconds).sum
 
     // Verify that the number of increments matches the number of successful transactions.

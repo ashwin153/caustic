@@ -1,7 +1,7 @@
 package caustic.library
 
 import caustic.library.typing._
-import caustic.runtime.Runtime.{Aborted, Fault, Rollbacked}
+import caustic.runtime.Runtime._
 import caustic.runtime._
 import scala.util.Try
 

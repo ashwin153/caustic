@@ -57,7 +57,7 @@ case class GenExternal(universe: Universe) extends CausticBaseVisitor[String] {
        |  ${ visitParameters(ctx.parameters()) }
        |): Try[$returns] = {
        |  this.runtime execute { implicit context: Context =>
-       |   ${ if (returns == "Unit") call else s"Return($call.asJson)" }
+       |   ${ if (returns == "scala.Unit") call else s"Return($call.asJson)" }
        |  } map {
        |    case Text(x) => x
        |    case Real(x) => x.toString

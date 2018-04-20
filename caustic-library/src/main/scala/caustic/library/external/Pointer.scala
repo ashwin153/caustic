@@ -1,6 +1,7 @@
 package caustic.library.external
 
 import spray.json._
+import spray.json.DefaultJsonProtocol._
 
 /**
  *

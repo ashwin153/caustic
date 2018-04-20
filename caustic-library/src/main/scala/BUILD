@@ -4,6 +4,7 @@ scala_library(
     dependencies=[
         'caustic-runtime/src/main/scala',
         '3rdparty/jvm:shapeless',
+        '3rdparty/jvm:spray-json',
     ],
     provides=artifact(
         org='com.madavan',

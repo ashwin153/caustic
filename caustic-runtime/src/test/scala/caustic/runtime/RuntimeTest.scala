@@ -35,10 +35,10 @@ class RuntimeTest extends FunSuite with MockitoSugar with ScalaFutures with Matc
 
     // Get on a inserted key returns the inserted value.
     runtime.execute(write("x", 1)) shouldBe Success(Null)
-    runtime.execute(read("x")) shouldBe Success(1)
+    runtime.execute(read("x")) shouldBe Success(real(1))
 
     // Get on a modified key within a transaction returns the modified value.
-    runtime.execute(cons(write("x", 2), read("x"))) shouldBe Success(2)
+    runtime.execute(cons(write("x", 2), read("x"))) shouldBe Success(real(2))
   }
 
   test("Execute is thread-safe.") {
@@ -64,7 +64,7 @@ class RuntimeTest extends FunSuite with MockitoSugar with ScalaFutures with Matc
         store("i", 0),
         cons(repeat(less(load("i"), 3), store("i", add(load("i"), 1))), load("i"))
       )
-    } shouldBe Success(3)
+    } shouldBe Success(real(3))
   }
 
   test("Execute detects conflicts.") {

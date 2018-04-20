@@ -57,6 +57,7 @@ python:
   - '2.7'
 
 script: |
+  ./pants clean-all
   ./pants compile ::
   ./pants test ::
 

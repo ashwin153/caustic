@@ -1,8 +1,8 @@
 package caustic.library
 
 import caustic.library.control.Context
+import caustic.library.external.Converter
 import caustic.library.typing._
-
 import scala.language.implicitConversions
 
 package object collection {

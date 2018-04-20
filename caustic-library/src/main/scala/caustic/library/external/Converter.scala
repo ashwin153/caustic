@@ -1,4 +1,6 @@
-package caustic.library.typing
+package caustic.library.external
+
+import caustic.library.typing.{Boolean, Double, Int, Primitive, String, Value}
 
 /**
  *

@@ -50,19 +50,21 @@ case class GenExternal(universe: Universe) extends CausticBaseVisitor[String] {
   override def visitFunction(ctx: CausticParser.FunctionContext): String = {
     val name = ctx.Identifier().getText
     val args = ctx.parameters().parameter().asScala.map(_.Identifier().getText)
+    val call = s"$name$$Internal(${ args.mkString(", ") })"
+    val returns = visitType(ctx.`type`())
 
     s"""def $name(
        |  ${ visitParameters(ctx.parameters()) }
-       |): Try[${ visitType(ctx.`type`()) }] = {
+       |): Try[$returns] = {
        |  this.runtime execute { implicit context: Context =>
-       |    Return($name$$Internal(${ args.mkString(", ") }).asJson)
+       |   ${ if (returns == "Unit") call else s"Return($call.asJson)" }
        |  } map {
        |    case Text(x) => x
        |    case Real(x) => x.toString
        |    case Flag(x) => x.toString
        |    case Null => "null"
        |  } map {
-       |    _.parseJson.convertTo[${ visitType(ctx.`type`()) }]
+       |    _.parseJson.convertTo[$returns]
        |  }
        |}
      """.stripMargin

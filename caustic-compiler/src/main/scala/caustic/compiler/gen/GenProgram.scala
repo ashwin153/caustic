@@ -12,6 +12,7 @@ case class GenProgram(universe: Universe) extends CausticBaseVisitor[String] {
        |
        |import caustic.library.collection._
        |import caustic.library.control._
+       |import caustic.library.external._
        |import caustic.library.record._
        |import caustic.library.typing._
        |import caustic.library.typing.Value._
@@ -23,20 +24,6 @@ case class GenProgram(universe: Universe) extends CausticBaseVisitor[String] {
        |import scala.language.implicitConversions
        |import scala.language.reflectiveCalls
        |import scala.util.Try
-       |
-       |object Caustic$$Implicits {
-       |
-       |  type Pointer[T] = java.lang.String
-       |
-       |  implicit def reference[T, U](x: Pointer[T]): Reference[U] = Reference.Remote(x)
-       |  implicit def primitive[T <: Primitive](x: Pointer[Primitive]): Variable[T] = Variable.Remote(x)
-       |  implicit def list[T <: Primitive](x: Pointer[List[T]]): List[T] = List.Remote(x)
-       |  implicit def set[T <: Primitive](x: Pointer[Set[T]]): Set[T] = Set.Remote(x)
-       |  implicit def map[A <: String, B <: Primitive](x: Pointer[Map[A, B]]): Map[A, B] = Map.Remote(x)
-       |
-       |}
-       |
-       |import Caustic$$Implicits._
        |
        |${ ctx.include().asScala.map(visitInclude) mkString "\n" }
        |

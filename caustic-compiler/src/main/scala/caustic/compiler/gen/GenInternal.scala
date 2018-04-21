@@ -12,7 +12,9 @@ case class GenInternal(universe: Universe) extends CausticBaseVisitor[String] {
     val name = ctx.Identifier().getText
 
     s"""object $name {
+       |
        |  ${ ctx.function().asScala.map(GenInternal(this.universe.child).visitFunction).mkString("\n") }
+       |
        |}
        |
        |import $name._

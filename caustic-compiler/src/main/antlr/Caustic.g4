@@ -3,6 +3,11 @@ grammar Caustic;
 /**
  * All terminal symbols in the grammar.
  */
+comment
+    : BlockComment
+    | LineComment
+    ;
+
 constant
     : True // true
     | False // false
@@ -119,6 +124,7 @@ statement
     | rollback
     | funcall
     | expression
+    | comment
     ;
 
 block
@@ -143,15 +149,15 @@ parameters
     ;
 
 function
-    : Def Identifier '(' parameters ')' ':' type '=' block // def foo(): Unit = 3
+    : comment? Def Identifier '(' parameters ')' ':' type '=' block // def foo(): Unit = 3
     ;
 
 service
-    : Service Identifier '{' function* '}' // service Bar { }
+    : comment? Service Identifier '{' function* '}' // service Bar { }
     ;
 
 struct
-    : Struct Identifier '{' parameters '}' // rec Foo { x: String }
+    : comment? Struct Identifier '{' parameters '}' // rec Foo { x: String }
     ;
 
 declaration
@@ -260,12 +266,10 @@ String
 
 BlockComment
     : '/*' .*? '*/'
-    -> skip
     ;
 
 LineComment
     : '//' ~[\r\n]*
-    -> skip
     ;
 
 Whitespace

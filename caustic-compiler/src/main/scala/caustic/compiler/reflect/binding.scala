@@ -66,7 +66,7 @@ case object CString extends Primitive {
 // List
 case class CList(value: Primitive) extends Collection {
   override def toString: String = s"List[$value]"
-  override val fields: Map[String, Type] = Map(
+  override def fields: Map[String, Type] = Map(
     "contains"    -> CFunction("contains", List(value), CBoolean),
     "get"         -> CFunction("apply", List(CInt), value),
     "find"        -> CFunction("find", List(value), CInt),
@@ -80,7 +80,7 @@ case class CList(value: Primitive) extends Collection {
 // Set
 case class CSet(value: Primitive) extends Collection {
   override def toString: String = s"Set[$value]"
-  override val fields: Map[String, Type] = Map(
+  override def fields: Map[String, Type] = Map(
     "add"         -> CFunction("add", List(value), CUnit),
     "contains"    -> CFunction("contains", List(value), CBoolean),
     "diff"        -> CFunction("diff", List(CSet(value)), CSet(value)),
@@ -94,7 +94,7 @@ case class CSet(value: Primitive) extends Collection {
 // Map
 case class CMap(key: Primitive, value: Primitive) extends Collection {
   override def toString: String = s"Map[$key, $value]"
-  override val fields: Map[String, Type] = Map(
+  override def fields: Map[String, Type] = Map(
     "get"         -> CFunction("apply", List(CInt), value),
     "exists"      -> CFunction("exists", List(key), CBoolean),
     "find"        -> CFunction("find", List(value), CInt),

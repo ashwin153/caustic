@@ -1,8 +1,7 @@
-package caustic.library.record
+package caustic.library
+package typing
+package record
 
-import caustic.library.Internal
-import caustic.library.control.Context
-import caustic.library.typing._
 import caustic.library.typing.Value._
 
 import shapeless._
@@ -71,24 +70,6 @@ case class Reference[T](pointer: Variable[String]) extends Internal {
   ): Unit = keys().foldLeft(ops.move.Args(this, destination))(ops.move)
 
   /**
-   * Serializes all attributes of the record to JSON.
-   *
-   * @param context Parse context.
-   * @param generic Generic representation.
-   * @param keys Attribute names.
-   * @param folder Attribute iterator.
-   */
-  def asJson[Repr <: HList, KeysRepr <: HList](
-    implicit context: Context,
-    generic: LabelledGeneric.Aux[T, Repr],
-    keys: Keys.Aux[Repr, KeysRepr],
-    folder: LeftFolder.Aux[KeysRepr, ops.json.Args[T], ops.json.type, ops.json.Args[T]]
-  ): Value[String] = {
-    val json = string("{\"key\": ") + this.pointer.key.quoted
-    json + keys().foldLeft(ops.json.Args(this, ""))(ops.json).json + "}"
-  }
-
-  /**
    * Returns whether or not the references are equal.
    *
    * @param that Another reference.
@@ -104,6 +85,24 @@ case class Reference[T](pointer: Variable[String]) extends Internal {
     keys: Keys.Aux[Repr, KeysRepr],
     folder: LeftFolder.Aux[KeysRepr, ops.equal.Args[T], ops.equal.type, ops.equal.Args[T]]
   ): Value[Boolean] = keys().foldLeft(ops.equal.Args(this, that, false))(ops.equal).equals
+
+  /**
+   * Serializes all attributes of the record to JSON.
+   *
+   * @param context Parse context.
+   * @param generic Generic representation.
+   * @param keys Attribute names.
+   * @param folder Attribute iterator.
+   */
+  def asJson[Repr <: HList, KeysRepr <: HList](
+    implicit context: Context,
+    generic: LabelledGeneric.Aux[T, Repr],
+    keys: Keys.Aux[Repr, KeysRepr],
+    folder: LeftFolder.Aux[KeysRepr, ops.json.Args[T], ops.json.type, ops.json.Args[T]]
+  ): Value[String] = {
+    val json = convert("{\"key\": ") + this.pointer.key.quoted
+    json + keys().foldLeft(ops.json.Args(this, ""))(ops.json).json + "}"
+  }
 
 }
 
@@ -125,6 +124,7 @@ object Reference {
 
   // Implicit Operations.
   implicit class AssignmentOps[T](x: Reference[T]) {
+    def :=[U](y: Pointer[U])(implicit context: Context): Unit = x.pointer.set(y.key)
     def :=[Repr <: HList, KeysRepr <: HList](y: Reference[T])(
       implicit context: Context,
       generic: LabelledGeneric.Aux[T, Repr],

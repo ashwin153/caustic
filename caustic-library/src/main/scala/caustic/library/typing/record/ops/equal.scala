@@ -1,41 +1,41 @@
-package caustic.library.record
+package caustic.library.typing
+package record
 package ops
 
-import caustic.library.collection._
-import caustic.library.control.Context
-import caustic.library.typing._
+import caustic.library.Context
+import caustic.library.typing.collection._
+import caustic.library.typing.Value._
 
 import shapeless._
 import shapeless.ops.hlist.LeftFolder
 import shapeless.ops.record.{Keys, Selector}
 
-object move extends Poly2 {
+object equal extends Poly2 {
 
-  /**
-   * A move argument.
+   /**
+   * An equal argument.
    *
-   * @param src Source record.
-   * @param dest Destination record.
+   * @param a A reference.
+   * @param b Another reference.
    */
-  case class Args[T](src: Reference[T], dest: Reference[T])
+  case class Args[T](a: Reference[T], b: Reference[T], equals: Value[Boolean])
 
-  implicit def caseScalar[
-    T,
+  implicit def caseValue[T,
     TRepr <: HList,
     FieldName <: Symbol,
-    FieldType <: Primitive
+    FieldType,
+    FieldT <: Primitive
   ](
     implicit context: Context,
     generic: LabelledGeneric.Aux[T, TRepr],
     selector: Selector.Aux[TRepr, FieldName, FieldType],
-    field: Field.Aux[FieldType, Variable[FieldType]]
+    field: Field.Aux[FieldType, Variable[FieldT]],
+    evidence: FieldType <:< Value[FieldT]
   ): Case.Aux[Args[T], FieldName, Args[T]] = at[Args[T], FieldName] { (x, f) =>
-    field(x.dest, f.name) := field(x.src, f.name)
-    x
+    x.copy(equals = x.equals && field(x.a, f.name) === field(x.b, f.name))
   }
 
-
-  implicit def casePointer[
+  implicit def caseReference[
     T,
     TRepr <: HList,
     FieldName <: Symbol,
@@ -48,10 +48,33 @@ object move extends Poly2 {
     generic: LabelledGeneric.Aux[T, TRepr],
     selector: Selector.Aux[TRepr, FieldName, FieldType],
     field: Field.Aux[FieldType, Reference[FieldT]],
+    fieldGeneric: LabelledGeneric.Aux[FieldT, FieldRepr],
+    fieldKeys: Keys.Aux[FieldRepr, FieldKeys],
+    fieldFolder: LeftFolder.Aux[FieldKeys, Args[FieldT], equal.type, Args[FieldT]],
     evidence: FieldType <:< Reference[FieldT]
   ): Case.Aux[Args[T], FieldName, Args[T]] = at[Args[T], FieldName] { (x, f) =>
-    field(x.dest, f.name).pointer := field(x.src, f.name).pointer
-    x
+    x.copy(equals = x.equals && field(x.a, f.name).pointer === field(x.b, f.name).pointer)
+  }
+
+  implicit def caseRecord[
+    T,
+    TRepr <: HList,
+    FieldName <: Symbol,
+    FieldType,
+    FieldT,
+    FieldRepr <: HList,
+    FieldKeys <: HList
+  ](
+    implicit context: Context,
+    generic: LabelledGeneric.Aux[T, TRepr],
+    selector: Selector.Aux[TRepr, FieldName, FieldType],
+    field: Field.Aux[FieldType, Reference[FieldT]],
+    fieldGeneric: LabelledGeneric.Aux[FieldT, FieldRepr],
+    fieldKeys: Keys.Aux[FieldRepr, FieldKeys],
+    fieldFolder: LeftFolder.Aux[FieldKeys, Args[FieldT], equal.type, Args[FieldT]],
+    evidence: FieldType <:!< Reference[FieldT]
+  ): Case.Aux[Args[T], FieldName, Args[T]] = at[Args[T], FieldName] { (x, f) =>
+    x.copy(equals = x.equals && field(x.a, f.name) === field(x.b, f.name))
   }
 
   implicit def caseList[
@@ -67,8 +90,7 @@ object move extends Poly2 {
     field: Field.Aux[FieldType, List[FieldValue]],
     evidence: FieldType <:< List[FieldValue]
   ): Case.Aux[Args[T], FieldName, Args[T]] = at[Args[T], FieldName] { (x, f) =>
-    field(x.dest, f.name) := field(x.src, f.name)
-    x
+    x.copy(equals = x.equals && field(x.a, f.name) === field(x.b, f.name))
   }
 
   implicit def caseSet[
@@ -84,8 +106,7 @@ object move extends Poly2 {
     field: Field.Aux[FieldType, Set[FieldValue]],
     evidence: FieldType <:< Set[FieldValue]
   ): Case.Aux[Args[T], FieldName, Args[T]] = at[Args[T], FieldName] { (x, f) =>
-    field(x.dest, f.name) := field(x.src, f.name)
-    x
+    x.copy(equals = x.equals && field(x.a, f.name) === field(x.b, f.name))
   }
 
   implicit def caseMap[
@@ -102,30 +123,7 @@ object move extends Poly2 {
     field: Field.Aux[FieldType, Map[FieldKey, FieldValue]],
     evidence: FieldType <:< Map[FieldKey, FieldValue]
   ): Case.Aux[Args[T], FieldName, Args[T]] = at[Args[T], FieldName] { (x, f) =>
-    field(x.dest, f.name) := field(x.src, f.name)
-    x
-  }
-
-  implicit def caseNested[
-    T,
-    TRepr <: HList,
-    FieldName <: Symbol,
-    FieldType,
-    FieldT,
-    FieldRepr <: HList,
-    FieldKeys <: HList
-  ](
-    implicit context: Context,
-    generic: LabelledGeneric.Aux[T, TRepr],
-    selector: Selector.Aux[TRepr, FieldName, FieldType],
-    field: Field.Aux[FieldType, Reference[FieldT]],
-    fieldGeneric: LabelledGeneric.Aux[FieldT, FieldRepr],
-    fieldKeys: Keys.Aux[FieldRepr, FieldKeys],
-    fieldFolder: LeftFolder.Aux[FieldKeys, Args[FieldT], move.type, Args[FieldT]],
-    evidence: FieldType <:!< Reference[FieldT]
-  ): Case.Aux[Args[T], FieldName, Args[T]] = at[Args[T], FieldName] { (x, f) =>
-    field(x.src, f.name).move(field(x.dest, f.name))
-    x
+    x.copy(equals = x.equals && field(x.a, f.name) === field(x.b, f.name))
   }
 
 }

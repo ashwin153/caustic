@@ -3,10 +3,12 @@ package caustic.library
 import caustic.library.typing._
 import caustic.runtime.Runtime._
 import caustic.runtime._
+
 import scala.util.Try
 
 package object control {
 
+  // Implicit Operations.
   implicit class RuntimeOps(x: Runtime) {
 
     /**
@@ -18,13 +20,22 @@ package object control {
      * @throws Fault If the program is illegally constructed.
      * @return Literal result or exception on failure.
      */
-    def execute[U](f: Context => U): Try[Literal] = {
+    def evaluate[U](f: Context => U): Try[Literal] = {
       val context = Context()
       f(context)
       x.execute(context.body)
     }
 
   }
+
+  /**
+   * Asserts that the specified value is true or rollsback otherwise. Useful for testing.
+   *
+   * @param x Value to assert.
+   * @param context Parse context.
+   */
+  def Assert(x: Value[Boolean])(implicit context: Context): Unit =
+    If (!x) { Rollback(s"Assertion Failure: ${x.get} evaluates to false") }
 
   /**
    * Branches on the value of the specified condition. An Else clause may be optionally specified.
@@ -55,6 +66,26 @@ package object control {
   }
 
   /**
+   * Adds the value to the parse context. Return does not break execution.
+   *
+   * @param result Value to return.
+   * @param context Parse context.
+   */
+  def Return[T <: Primitive](result: Value[T])(implicit context: Context): Unit =
+    context += result
+
+  /**
+   * Rollsback the transaction and returns the specified result. All modifications made by a program
+   * are discarded on rollback, and program execution terminates. Rollbacked programs are guaranteed
+   * to see a consistent snapshot of the database.
+   *
+   * @param result Return value.
+   * @param context Parsing context.
+   */
+  def Rollback[T <: Primitive](result: Value[T])(implicit context: Context): Unit =
+    context += rollback(result)
+
+  /**
    * Performs the block while the condition is satisfied. Because loops are evaluated one iteration
    * at a time by the runtime, it is important to prefetch keys before entering the body of the
    * loop. Otherwise, each iteration of the loop will require a separate read on the database.
@@ -71,34 +102,5 @@ package object control {
     context.body = before
     context += repeat(condition, body)
   }
-
-  /**
-   * Rollsback the transaction and returns the specified result. All modifications made by a program
-   * are discarded on rollback, and program execution terminates. Rollbacked programs are guaranteed
-   * to see a consistent snapshot of the database.
-   *
-   * @param result Return value.
-   * @param context Parsing context.
-   */
-  def Rollback[T <: Primitive](result: Value[T])(implicit context: Context): Unit =
-    context += rollback(result)
-
-  /**
-   * Adds the value to the parse context. Return does not break execution.
-   *
-   * @param result Value to return.
-   * @param context Parse context.
-   */
-  def Return[T <: Primitive](result: Value[T])(implicit context: Context): Unit =
-    context += result
-
-  /**
-   * Asserts that the specified value is true or rollsback otherwise. Useful for testing.
-   *
-   * @param x Value to assert.
-   * @param context Parse context.
-   */
-  def Assert(x: Value[Boolean])(implicit context: Context): Unit =
-    If (!x) { Rollback(s"Assertion Failure: ${x.get} evaluates to false") }
 
 }

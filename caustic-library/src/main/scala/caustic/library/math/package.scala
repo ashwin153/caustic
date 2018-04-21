@@ -2,6 +2,7 @@ package caustic.library
 
 import caustic.library.typing._
 import caustic.library.typing.Value._
+
 import caustic.runtime
 import caustic.runtime._
 

@@ -8,17 +8,35 @@ import scala.collection.JavaConverters._
 
 case class GenInternal(universe: Universe) extends CausticBaseVisitor[String] {
 
+  override def visitService(ctx: CausticParser.ServiceContext): String = {
+    val name = ctx.Identifier().getText
+
+    s"""object $name {
+       |  ${ ctx.function().asScala.map(GenInternal(this.universe.child).visitFunction).mkString("\n") }
+       |}
+       |
+       |import $name._
+     """.stripMargin
+  }
+
   override def visitStruct(ctx: CausticParser.StructContext): String = {
     val name = ctx.Identifier().getText
-    val fields = ctx.parameters().parameter().asScala.map(_.Identifier().getText)
+    val params = ctx.parameters().parameter().asScala.map(_.Identifier().getText)
+    val fields = GenParameters(this.universe).visitParameters(ctx.parameters())
+    val struct = Defined(fields)
+
+    this.universe.bind(name, struct)
+    this.universe.bind(s"$name$$Constructor", Function(s"$name$$Internal", fields.values.toList, struct))
+    this.universe.bind(s"$name&", Pointer(struct))
+    this.universe.bind(s"$name&$$Constructor", Function(s"Reference.Remote[$name$$Internal]", List(CString), Pointer(struct)))
 
     s"""object $name$$Internal {
        |
-       |  implicit def asRef(x: $name$$Internal)(
+       |  implicit def reference(x: $name$$Internal)(
        |    implicit context: Context
-       |  ): Reference[$name$$Repr] = {
-       |    val ref = Reference[$name$$Repr](Variable.Local(context.label()))
-       |    ${ fields.map(f => s"ref.get('$f) := x.$f") mkString "\n    " }
+       |  ): Reference[$name$$Internal] = {
+       |    val ref = Reference.Local[$name$$Internal](context.label())
+       |    ${ params.map(f => s"ref.get('$f) := x.$f") mkString "\n    " }
        |    ref
        |  }
        |
@@ -37,6 +55,8 @@ case class GenInternal(universe: Universe) extends CausticBaseVisitor[String] {
     val args = GenParameters(this.universe).visitParameters(ctx.parameters())
     val body = this.universe.child
     args foreach { case (n, t) => body.bind(n, Variable(t)) }
+    val returns = GenType(this.universe).visitType(ctx.`type`())
+    this.universe.bind(name, Function(s"$name$$Internal", args.values.toList, returns))
 
     s"""def $name$$Internal(
        |  ${ visitParameters(ctx.parameters()) }
@@ -56,8 +76,8 @@ case class GenInternal(universe: Universe) extends CausticBaseVisitor[String] {
 
   override def visitType(ctx: CausticParser.TypeContext): String =
     this.universe.find(ctx.getText.replaceAll("\\s", "")) match {
-      case Some(_: Pointer) => s"Reference[${ ctx.getText.dropRight(1) }$$Repr]"
-      case Some(_: Defined) => s"Reference[${ ctx.getText }$$Repr]"
+      case Some(_: Pointer) => s"Reference[${ ctx.getText.dropRight(1) }$$Internal]"
+      case Some(_: Defined) => s"Reference[${ ctx.getText }$$Internal]"
       case Some(CList(x)) => s"List[$x]"
       case Some(CSet(x)) => s"Set[$x]"
       case Some(CMap(k, v)) => s"Map[$k, $v]"

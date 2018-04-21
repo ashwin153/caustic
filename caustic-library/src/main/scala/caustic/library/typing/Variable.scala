@@ -1,6 +1,6 @@
-package caustic.library.typing
+package caustic.library
+package typing
 
-import caustic.library.control.Context
 import caustic.library.typing.Value._
 import caustic.runtime._
 

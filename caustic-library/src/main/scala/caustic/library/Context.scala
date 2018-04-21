@@ -1,4 +1,4 @@
-package caustic.library.control
+package caustic.library
 
 import caustic.library.typing._
 import caustic.runtime._

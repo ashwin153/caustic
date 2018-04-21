@@ -55,7 +55,7 @@ object Causticc {
 
     Try {
       // Run code generation and return the result.
-      val gen = GenProgram(Universe.root)
+      val gen = Gen(Universe.root)
       val out = gen.visitProgram(parser.program())
       out
     } recoverWith { case e: Error =>

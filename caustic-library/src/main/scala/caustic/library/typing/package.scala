@@ -1,25 +1,25 @@
 package caustic.library
 
-import caustic.library.collection._
-import caustic.library.record._
 import caustic.library.typing.Value._
-import caustic.runtime
+import caustic.library.typing.collection.{List, Map, Set}
+import caustic.library.typing.record.Reference
 import caustic.runtime._
 import scala.language.implicitConversions
 
 package object typing {
 
-  val True: Value[Boolean] = runtime.True
-  val False: Value[Boolean] = runtime.False
+  val True: Value[Boolean] = caustic.runtime.True
+  val False: Value[Boolean] = caustic.runtime.False
 
   // Implicit Conversions.
   implicit def program[X <: Primitive](x: Value[X]): Program = x.get
   implicit def value[X <: Primitive](x: Program): Value[X] = Constant[X](x)
-  implicit def int(x: scala.Int): Value[Int] = Constant(x)
-  implicit def int(x: scala.Long): Value[Int] = Constant(x)
-  implicit def double(x: scala.Double): Value[Double] = Constant(x)
-  implicit def string(x: java.lang.String): Value[String] = Constant(x)
-  implicit def boolean(x: scala.Boolean): Value[Boolean] = Constant(x)
+  implicit def convert[S, C](x: S)(implicit conversion: Conversion[S, C]): C = conversion(x)
+  implicit def reference[T, U](x: Pointer[T]): Reference[U] = Reference.Remote(x.key)
+  implicit def variable[T <: Primitive](x: Pointer[T]): Variable[T] = Variable.Remote(x.key)
+  implicit def list[T <: Primitive](x: Pointer[List[T]]): List[T] = List.Remote(x.key)
+  implicit def set[T <: Primitive](x: Pointer[Set[T]]): Set[T] = Set.Remote(x.key)
+  implicit def map[K <: String, V <: Primitive](x: Pointer[Map[K, V]]): Map[K, V] = Map.Remote(x.key)
 
   // Implicit Operations.
   implicit def int2addition(x: scala.Int): AdditionOps[Int] = AdditionOps(x)

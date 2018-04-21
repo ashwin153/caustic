@@ -1,7 +1,6 @@
-package caustic.library.record
+package caustic.library.typing.record
 
-import caustic.library.typing._
-
+import caustic.library.typing.{Value, _}
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.{FunSuite, Matchers}

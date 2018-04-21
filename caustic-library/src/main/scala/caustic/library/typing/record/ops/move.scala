@@ -1,52 +1,58 @@
-package caustic.library.record.ops
+package caustic.library.typing
+package record
+package ops
 
-import caustic.library.collection.{List, Map, Set}
-import caustic.library.control.Context
-import caustic.library.record.{Field, Reference}
-import caustic.library.typing._
-import caustic.library.typing.Value._
+import caustic.library.Context
+import caustic.library.typing.collection._
 
 import shapeless._
 import shapeless.ops.hlist.LeftFolder
 import shapeless.ops.record.{Keys, Selector}
 
-object json extends Poly2 {
+object move extends Poly2 {
 
   /**
-   * A JSON serializer argument.
+   * A move argument.
    *
-   * @param src Source reference.
-   * @param json JSON string.
+   * @param src Source record.
+   * @param dest Destination record.
    */
-  case class Args[T](src: Reference[T], json: Value[String])
+  case class Args[T](src: Reference[T], dest: Reference[T])
 
-  implicit def caseScalar[
+  implicit def caseValue[
     T,
     TRepr <: HList,
     FieldName <: Symbol,
-    FieldType <: Double
+    FieldType,
+    FieldT <: Primitive
   ](
     implicit context: Context,
     generic: LabelledGeneric.Aux[T, TRepr],
     selector: Selector.Aux[TRepr, FieldName, FieldType],
-    field: Field.Aux[FieldType, Variable[FieldType]]
+    field: Field.Aux[FieldType, Variable[FieldT]],
+    evidence: FieldType <:< Value[FieldT]
   ): Case.Aux[Args[T], FieldName, Args[T]] = at[Args[T], FieldName] { (x, f) =>
-    x.copy(json = x.json + ", \"" + f.name + "\": " + field(x.src, f.name).asJson)
+    field(x.dest, f.name) := field(x.src, f.name)
+    x
   }
 
-  implicit def caseString[
+  implicit def caseReference[
     T,
     TRepr <: HList,
     FieldName <: Symbol,
-    FieldType
+    FieldType,
+    FieldT,
+    FieldRepr <: HList,
+    FieldKeys <: HList
   ](
     implicit context: Context,
     generic: LabelledGeneric.Aux[T, TRepr],
     selector: Selector.Aux[TRepr, FieldName, FieldType],
-    field: Field.Aux[FieldType, Variable[String]],
-    evidence: String <:< FieldType <:< Primitive
+    field: Field.Aux[FieldType, Reference[FieldT]],
+    evidence: FieldType <:< Reference[FieldT]
   ): Case.Aux[Args[T], FieldName, Args[T]] = at[Args[T], FieldName] { (x, f) =>
-    x.copy(json = x.json + ", \"" + f.name + "\": " + field(x.src, f.name).asJson)
+    field(x.dest, f.name).pointer := field(x.src, f.name).pointer
+    x
   }
 
   implicit def caseList[
@@ -62,7 +68,8 @@ object json extends Poly2 {
     field: Field.Aux[FieldType, List[FieldValue]],
     evidence: FieldType <:< List[FieldValue]
   ): Case.Aux[Args[T], FieldName, Args[T]] = at[Args[T], FieldName] { (x, f) =>
-    x.copy(json = x.json + ", \"" + f.name + "\": " + field(x.src, f.name).asJson)
+    field(x.dest, f.name) := field(x.src, f.name)
+    x
   }
 
   implicit def caseSet[
@@ -78,7 +85,8 @@ object json extends Poly2 {
     field: Field.Aux[FieldType, Set[FieldValue]],
     evidence: FieldType <:< Set[FieldValue]
   ): Case.Aux[Args[T], FieldName, Args[T]] = at[Args[T], FieldName] { (x, f) =>
-    x.copy(json = x.json + ", \"" + f.name + "\": " + field(x.src, f.name).asJson)
+    field(x.dest, f.name) := field(x.src, f.name)
+    x
   }
 
   implicit def caseMap[
@@ -95,10 +103,11 @@ object json extends Poly2 {
     field: Field.Aux[FieldType, Map[FieldKey, FieldValue]],
     evidence: FieldType <:< Map[FieldKey, FieldValue]
   ): Case.Aux[Args[T], FieldName, Args[T]] = at[Args[T], FieldName] { (x, f) =>
-    x.copy(json = x.json + ", \"" + f.name + "\": " + field(x.src, f.name).asJson)
+    field(x.dest, f.name) := field(x.src, f.name)
+    x
   }
 
-  implicit def casePointer[
+  implicit def caseRecord[
     T,
     TRepr <: HList,
     FieldName <: Symbol,
@@ -113,31 +122,11 @@ object json extends Poly2 {
     field: Field.Aux[FieldType, Reference[FieldT]],
     fieldGeneric: LabelledGeneric.Aux[FieldT, FieldRepr],
     fieldKeys: Keys.Aux[FieldRepr, FieldKeys],
-    fieldFolder: LeftFolder.Aux[FieldKeys, Args[FieldT], json.type, Args[FieldT]],
-    evidence: FieldType <:< Reference[FieldT]
-  ): Case.Aux[Args[T], FieldName, Args[T]] = at[Args[T], FieldName] { (x, f) =>
-    x.copy(json = x.json + ", \"" + f.name + "\": \"" + field(x.src, f.name).key + "\"")
-  }
-
-  implicit def caseNested[
-    T,
-    TRepr <: HList,
-    FieldName <: Symbol,
-    FieldType,
-    FieldT,
-    FieldRepr <: HList,
-    FieldKeys <: HList
-  ](
-    implicit context: Context,
-    generic: LabelledGeneric.Aux[T, TRepr],
-    selector: Selector.Aux[TRepr, FieldName, FieldType],
-    field: Field.Aux[FieldType, Reference[FieldT]],
-    fieldGeneric: LabelledGeneric.Aux[FieldT, FieldRepr],
-    fieldKeys: Keys.Aux[FieldRepr, FieldKeys],
-    fieldFolder: LeftFolder.Aux[FieldKeys, Args[FieldT], json.type, Args[FieldT]],
+    fieldFolder: LeftFolder.Aux[FieldKeys, Args[FieldT], move.type, Args[FieldT]],
     evidence: FieldType <:!< Reference[FieldT]
   ): Case.Aux[Args[T], FieldName, Args[T]] = at[Args[T], FieldName] { (x, f) =>
-    x.copy(json = x.json + ", \"" + f.name + "\": " + field(x.src, f.name).asJson)
+    field(x.src, f.name).move(field(x.dest, f.name))
+    x
   }
 
 }

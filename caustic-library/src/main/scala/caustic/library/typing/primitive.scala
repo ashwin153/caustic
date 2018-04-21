@@ -1,7 +1,5 @@
 package caustic.library.typing
 
-import caustic.library.Internal
-
 /**
  * A scalar type.
  */

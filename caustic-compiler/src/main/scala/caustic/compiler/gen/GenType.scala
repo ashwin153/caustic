@@ -4,7 +4,10 @@ import caustic.compiler.Error
 import caustic.compiler.reflect._
 import caustic.grammar.{CausticBaseVisitor, CausticParser}
 
-case class GenType(universe: Universe) extends CausticBaseVisitor[Value] {
+case class GenType(universe: Universe) extends CausticBaseVisitor[Type] {
+
+  override def visitBlock(ctx: CausticParser.BlockContext): Type =
+    GenBlock(this.universe).visitBlock(ctx).of
 
   override def visitType(ctx: CausticParser.TypeContext): Value =
     this.universe.find(ctx.getText.replaceAll("\\s", "")) match {

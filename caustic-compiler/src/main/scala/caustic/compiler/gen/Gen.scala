@@ -1,20 +1,24 @@
 package caustic.compiler.gen
 
 import caustic.compiler.reflect._
-import caustic.grammar.{CausticBaseVisitor, CausticParser}
+import caustic.grammar._
 
 import scala.collection.JavaConverters._
 
-case class GenProgram(universe: Universe) extends CausticBaseVisitor[String] {
+/**
+ *
+ * @param universe
+ */
+case class Gen(universe: Universe) extends CausticBaseVisitor[String] {
 
   override def visitProgram(ctx: CausticParser.ProgramContext): String = {
-    s"""${ if (ctx.module() != null) s"package ${ ctx.module().getText }" else "" }
+    s"""${ if (ctx.module() != null) s"package ${ ctx.module().Identifier().asScala.mkString(".") }" else ""  }
        |
-       |import caustic.library.collection._
+       |import caustic.library._
        |import caustic.library.control._
-       |import caustic.library.external._
-       |import caustic.library.record._
        |import caustic.library.typing._
+       |import caustic.library.typing.collection._
+       |import caustic.library.typing.record._
        |import caustic.library.typing.Value._
        |import caustic.runtime._
        |
@@ -35,9 +39,13 @@ case class GenProgram(universe: Universe) extends CausticBaseVisitor[String] {
     s"${ ctx.getText }._"
 
   override def visitStruct(ctx: CausticParser.StructContext): String =
-    GenStruct(this.universe).visitStruct(ctx)
+    s"""${ GenInternal(this.universe).visitStruct(ctx) }
+       |${ GenExternal(this.universe).visitStruct(ctx) }
+     """.stripMargin
 
   override def visitService(ctx: CausticParser.ServiceContext): String =
-    GenService(this.universe).visitService(ctx)
+    s"""${ GenInternal(this.universe).visitService(ctx) }
+       |${ GenExternal(this.universe).visitService(ctx) }
+     """.stripMargin
 
 }

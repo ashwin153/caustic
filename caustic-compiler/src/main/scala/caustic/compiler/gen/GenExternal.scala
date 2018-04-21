@@ -8,6 +8,15 @@ import scala.collection.JavaConverters._
 
 case class GenExternal(universe: Universe) extends CausticBaseVisitor[String] {
 
+  override def visitService(ctx: CausticParser.ServiceContext): String = {
+    val name = ctx.Identifier().getText
+
+    s"""case class $name(runtime: Runtime) {
+       |  ${ ctx.function().asScala.map(GenExternal(this.universe).visitFunction).mkString("\n") }
+       |}
+     """.stripMargin
+  }
+
   override def visitStruct(ctx: CausticParser.StructContext): String = {
     val name = ctx.Identifier().getText
     val fields = ctx.parameters().parameter().asScala.map(_.Identifier().getText)
@@ -15,8 +24,8 @@ case class GenExternal(universe: Universe) extends CausticBaseVisitor[String] {
 
     s"""object $name {
        |
-       |  implicit def asRef(x: $name)(implicit context: Context): Reference[$name$$Repr] = {
-       |    val ref = Reference[$name$$Repr](Variable.Local(context.label()))
+       |  implicit def reference(x: $name)(implicit context: Context): Reference[$name$$Internal] = {
+       |    val ref = Reference.Local[$name$$Internal](context.label())
        |    ${ fields.map(f => s"ref.get('$f) := x.$f") mkString "\n    " }
        |    ref
        |  }
@@ -51,20 +60,24 @@ case class GenExternal(universe: Universe) extends CausticBaseVisitor[String] {
     val name = ctx.Identifier().getText
     val args = ctx.parameters().parameter().asScala.map(_.Identifier().getText)
     val call = s"$name$$Internal(${ args.mkString(", ") })"
-    val returns = visitType(ctx.`type`())
+    val body = GenType(this.universe).visitType(ctx.`type`()) match {
+      case Pointer(_) => s"Return($call.key.asJson)"
+      case CUnit => call
+      case _ => s"Return($call.asJson)"
+    }
 
-    s"""def $name(
+      s"""def $name(
        |  ${ visitParameters(ctx.parameters()) }
-       |): Try[$returns] = {
-       |  this.runtime execute { implicit context: Context =>
-       |   ${ if (returns == "scala.Unit") call else s"Return($call.asJson)" }
+       |): Try[${ visitType(ctx.`type`()) }] = {
+       |  this.runtime evaluate { implicit context =>
+       |   $body
        |  } map {
        |    case Text(x) => x
        |    case Real(x) => x.toString
        |    case Flag(x) => x.toString
        |    case Null => "null"
        |  } map {
-       |    _.parseJson.convertTo[$returns]
+       |    _.parseJson.convertTo[${ visitType(ctx.`type`()) }]
        |  }
        |}
      """.stripMargin

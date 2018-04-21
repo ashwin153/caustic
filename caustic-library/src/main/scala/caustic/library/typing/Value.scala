@@ -6,7 +6,7 @@ import caustic.runtime._
 /**
  * A scalar value.
  */
-trait Value[+T <: Primitive] {
+trait Value[+T <: Primitive] extends Internal {
 
   /**
    * Returns the value as a program.
@@ -20,7 +20,7 @@ trait Value[+T <: Primitive] {
 object Value {
 
   // Implicit Operations.
-  implicit class AdditionOps[X <: String](x: Value[X]) {
+  implicit class AdditionOps[X <: Primitive](x: Value[X]) {
     def +[Y <: X](y: Value[Y])(implicit evidence: Y <:< X): Value[X] = add(x, y)
     def +[Y >: X <: Primitive](y: Value[Y]): Value[Y] = add(x, y)
   }

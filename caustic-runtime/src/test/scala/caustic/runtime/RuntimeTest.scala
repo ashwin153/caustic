@@ -1,7 +1,7 @@
 package caustic.runtime
 
 import caustic.{runtime => caustic}
-
+import java.util.concurrent.atomic.AtomicInteger
 import org.junit.runner.RunWith
 import org.mockito.Mockito._
 import org.mockito.internal.stubbing.answers.CallsRealMethods
@@ -11,7 +11,6 @@ import org.scalatest.junit.JUnitRunner
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.time._
-
 import java.util.concurrent.{CountDownLatch, TimeUnit}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Await, Future}
@@ -48,11 +47,16 @@ class RuntimeTest extends FunSuite with MockitoSugar with ScalaFutures with Matc
     val inc = write("x", add(1, branch(caustic.equal(read("x"), Null), 0, read("x"))))
 
     // Concurrently execute the transaction and count the total successes.
-    val tasks = Future.sequence(Seq.fill(10000)(Future(runtime.execute(inc).map(_ => 1).getOrElse(0))))
-    val total = Await.result(tasks, 30 seconds).sum
+    val total = new AtomicInteger(0)
+    val tasks = Seq.fill(8)(new Thread {
+      override def run(): Unit =
+        Seq.fill(10000)(runtime.execute(inc).foreach(_ => total.getAndIncrement()))
+    })
 
     // Verify that the number of increments matches the number of successful transactions.
-    runtime.execute(read("x")) shouldBe Success(real(total))
+    tasks.foreach(_.start())
+    tasks.foreach(_.join())
+    runtime.execute(read("x")) shouldBe Success(real(total.get()))
   }
 
   test("Execute maintains mutable state.") {

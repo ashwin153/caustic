@@ -15,6 +15,7 @@ package object typing {
   implicit def program[X <: Primitive](x: Value[X]): Program = x.get
   implicit def value[X <: Primitive](x: Program): Value[X] = Constant[X](x)
   implicit def convert[S, C](x: S)(implicit conversion: Conversion[S, C]): C = conversion(x)
+  implicit def pointer[T](x: java.lang.String): Pointer[T] = Pointer(x)
   implicit def reference[T, U](x: Pointer[T]): Reference[U] = Reference.Remote(x.key)
   implicit def variable[T <: Primitive](x: Pointer[T]): Variable[T] = Variable.Remote(x.key)
   implicit def list[T <: Primitive](x: Pointer[List[T]]): List[T] = List.Remote(x.key)

@@ -2,6 +2,7 @@ package caustic.compiler.gen
 
 import caustic.compiler.Error
 import caustic.compiler.reflect._
+import caustic.compiler.util._
 import caustic.grammar.{CausticBaseVisitor, CausticParser}
 
 import scala.collection.JavaConverters._
@@ -11,14 +12,13 @@ case class GenInternal(universe: Universe) extends CausticBaseVisitor[String] {
   override def visitService(ctx: CausticParser.ServiceContext): String = {
     val name = ctx.Identifier().getText
 
-    s"""object $name {
+    i"""object $name {
        |
        |  ${ ctx.function().asScala.map(GenInternal(this.universe.child).visitFunction).mkString("\n") }
-       |
        |}
        |
        |import $name._
-     """.stripMargin
+     """
   }
 
   override def visitStruct(ctx: CausticParser.StructContext): String = {
@@ -32,7 +32,7 @@ case class GenInternal(universe: Universe) extends CausticBaseVisitor[String] {
     this.universe.bind(s"$name&", Pointer(struct))
     this.universe.bind(s"$name&$$Constructor", Function(s"Reference.Remote[$name$$Internal]", List(CString), Pointer(struct)))
 
-    s"""object $name$$Internal {
+    i"""object $name$$Internal {
        |
        |  implicit def reference(x: $name$$Internal)(
        |    implicit context: Context
@@ -49,7 +49,7 @@ case class GenInternal(universe: Universe) extends CausticBaseVisitor[String] {
        |case class $name$$Internal(
        |  ${ visitParameters(ctx.parameters()) }
        |)
-     """.stripMargin
+     """
   }
 
   override def visitFunction(ctx: CausticParser.FunctionContext): String = {
@@ -60,18 +60,18 @@ case class GenInternal(universe: Universe) extends CausticBaseVisitor[String] {
     val returns = GenType(this.universe).visitType(ctx.`type`())
     this.universe.bind(name, Function(s"$name$$Internal", args.values.toList, returns))
 
-    s"""def $name$$Internal(
+    i"""def $name$$Internal(
        |  ${ visitParameters(ctx.parameters()) }
        |)(
        |  implicit context: Context
        |): ${ visitType(ctx.`type`()) } = {
        |  ${ GenBlock(body).visitBlock(ctx.block()).value }
        |}
-     """.stripMargin
+     """
   }
 
   override def visitParameters(ctx: CausticParser.ParametersContext): String =
-    ctx.parameter().asScala.map(visitParameter).mkString(",\n  ")
+    ctx.parameter().asScala.map(visitParameter).mkString(",\n")
 
   override def visitParameter(ctx: CausticParser.ParameterContext): String =
     s"${ ctx.Identifier().getText }: ${ visitType(ctx.`type`()) }"

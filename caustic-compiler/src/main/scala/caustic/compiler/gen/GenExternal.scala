@@ -2,22 +2,26 @@ package caustic.compiler.gen
 
 import caustic.compiler.Error
 import caustic.compiler.reflect._
-import caustic.grammar.{CausticBaseVisitor, CausticParser}
+import caustic.compiler.util._
+import caustic.grammar._
 
 import scala.collection.JavaConverters._
 
+/**
+ *
+ * @param universe
+ */
 case class GenExternal(universe: Universe) extends CausticBaseVisitor[String] {
 
   override def visitService(ctx: CausticParser.ServiceContext): String = {
     val name = ctx.Identifier().getText
 
-    s"""${ if (ctx.comment() != null) ctx.comment().getText else "" }
+    i"""${ if (ctx.comment() != null) GenComment.visitComment(ctx.comment()) else "" }
        |case class $name(runtime: Runtime) {
        |
        |  ${ ctx.function().asScala.map(GenExternal(this.universe).visitFunction).mkString("\n") }
-       |
        |}
-     """.stripMargin
+     """
   }
 
   override def visitStruct(ctx: CausticParser.StructContext): String = {
@@ -25,7 +29,7 @@ case class GenExternal(universe: Universe) extends CausticBaseVisitor[String] {
     val fields = ctx.parameters().parameter().asScala.map(_.Identifier().getText)
     val types = ctx.parameters().parameter().asScala.map(_.`type`()).map(visitType)
 
-    s"""object $name {
+    i"""object $name {
        |
        |  implicit def reference(x: $name)(implicit context: Context): Reference[$name$$Internal] = {
        |    val ref = Reference.Local[$name$$Internal](context.label())
@@ -53,11 +57,11 @@ case class GenExternal(universe: Universe) extends CausticBaseVisitor[String] {
        |
        |import $name._
        |
-       |${ if (ctx.comment() != null) ctx.comment().getText else "" }
+       |${ if (ctx.comment() != null) GenComment.visitComment(ctx.comment()) else "" }
        |case class $name(
        |  ${ visitParameters(ctx.parameters()) }
        |)
-     """.stripMargin
+     """
   }
 
   override def visitFunction(ctx: CausticParser.FunctionContext): String = {
@@ -70,7 +74,7 @@ case class GenExternal(universe: Universe) extends CausticBaseVisitor[String] {
       case _ => s"Return($call.asJson)"
     }
 
-    s"""${ if (ctx.comment() != null) ctx.comment().getText else "" }
+    i"""${ if (ctx.comment() != null) GenComment.visitComment(ctx.comment()) else "" }
        |def $name(
        |  ${ visitParameters(ctx.parameters()) }
        |): Try[${ visitType(ctx.`type`()) }] = {
@@ -85,11 +89,11 @@ case class GenExternal(universe: Universe) extends CausticBaseVisitor[String] {
        |    _.parseJson.convertTo[${ visitType(ctx.`type`()) }]
        |  }
        |}
-     """.stripMargin
+     """
   }
 
   override def visitParameters(ctx: CausticParser.ParametersContext): String =
-    ctx.parameter().asScala.map(visitParameter).mkString(",\n  ")
+    ctx.parameter().asScala.map(visitParameter).mkString(",\n")
 
   override def visitParameter(ctx: CausticParser.ParameterContext): String =
     s"${ ctx.Identifier().getText }: ${ visitType(ctx.`type`()) }"

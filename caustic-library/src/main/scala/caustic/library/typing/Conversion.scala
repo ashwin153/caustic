@@ -2,7 +2,6 @@ package caustic.library.typing
 
 import caustic.library.Context
 import caustic.library.typing.collection._
-import caustic.library.typing.record._
 
 /**
  *

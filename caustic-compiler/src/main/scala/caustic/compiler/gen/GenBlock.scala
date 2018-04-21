@@ -6,15 +6,25 @@ import caustic.grammar.{CausticBaseVisitor, CausticParser}
 
 import scala.collection.JavaConverters._
 
+/**
+ *
+ * @param universe
+ */
 case class GenBlock(universe: Universe) extends CausticBaseVisitor[Result] {
 
   override def visitBlock(ctx: CausticParser.BlockContext): Result = {
+    // Determine the result of the block.
     val statements = ctx.statement().asScala.map(visitStatement)
-    statements.reduceLeft((a, b) => b.copy(value = s"${a.value}\n${b.value}"))
-  }
+    val result = statements.foldLeft(Result(CUnit, ""))((a, b) => b.copy(value = s"${ a.value }\n${ b.value }"))
 
-  override def visitStatement(ctx: CausticParser.StatementContext): Result = {
-    visitChildren(ctx)
+    // Align the result of the block.
+    val lines = result.value.split("\n")
+    result.copy(value = (1 to lines.size)
+      .map(i => lines.take(i - 1).mkString.count(_ == '{') - lines.take(i).mkString.count(_ == '}'))
+      .zipWithIndex
+      .map { case (x, i) => " " * (2 * x) + lines(i) }
+      .mkString("\n")
+      .trim)
   }
 
   override def visitRollback(ctx: CausticParser.RollbackContext): Result = {
@@ -92,7 +102,7 @@ case class GenBlock(universe: Universe) extends CausticBaseVisitor[Result] {
     }
 
     Result(last.of, conditions.zip(branches)
-      .map { case (c, b) => s"If ($c) {\n${ b.value }\n} Else {" }
+      .map { case (c, b) => s"If ($c) {\n${ b.value }\n} Else {\n" }
       .mkString
       .concat(last.value)
       .concat("\n}" * conditions.size))

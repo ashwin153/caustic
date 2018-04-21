@@ -13,7 +13,7 @@ import shapeless.ops.record._
 object json extends Poly2 {
 
   /**
-   * A JSON serializer argument.
+   * A json serializer argument.
    *
    * @param src Source reference.
    * @param json JSON string.

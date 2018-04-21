@@ -1,12 +1,17 @@
 package caustic.compiler.gen
 
-import caustic.compiler.Error
+import caustic.compiler.error._
 import caustic.compiler.reflect._
 import caustic.compiler.util._
-import caustic.grammar.{CausticBaseVisitor, CausticParser}
+import caustic.grammar._
 
 import scala.collection.JavaConverters._
 
+/**
+ * Generates internal Scala definitions from declarations. Preserves indentation.
+ *
+ * @param universe Type universe.
+ */
 case class GenInternal(universe: Universe) extends CausticBaseVisitor[String] {
 
   override def visitService(ctx: CausticParser.ServiceContext): String = {
@@ -25,12 +30,12 @@ case class GenInternal(universe: Universe) extends CausticBaseVisitor[String] {
     val name = ctx.Identifier().getText
     val params = ctx.parameters().parameter().asScala.map(_.Identifier().getText)
     val fields = GenParameters(this.universe).visitParameters(ctx.parameters())
-    val struct = Defined(fields)
+    val struct = CStruct(fields)
 
     this.universe.bind(name, struct)
-    this.universe.bind(s"$name$$Constructor", Function(s"$name$$Internal", fields.values.toList, struct))
-    this.universe.bind(s"$name&", Pointer(struct))
-    this.universe.bind(s"$name&$$Constructor", Function(s"Reference.Remote[$name$$Internal]", List(CString), Pointer(struct)))
+    this.universe.bind(s"$name$$Constructor", CFunction(s"$name$$Internal", fields.values.toList, struct))
+    this.universe.bind(s"$name&", CPointer(struct))
+    this.universe.bind(s"$name&$$Constructor", CFunction(s"Reference.Remote[$name$$Internal]", List(CString), CPointer(struct)))
 
     i"""object $name$$Internal {
        |
@@ -56,9 +61,9 @@ case class GenInternal(universe: Universe) extends CausticBaseVisitor[String] {
     val name = ctx.Identifier().getText
     val args = GenParameters(this.universe).visitParameters(ctx.parameters())
     val body = this.universe.child
-    args foreach { case (n, t) => body.bind(n, Variable(t)) }
+    args foreach { case (n, t) => body.bind(n, CVariable(t)) }
     val returns = GenType(this.universe).visitType(ctx.`type`())
-    this.universe.bind(name, Function(s"$name$$Internal", args.values.toList, returns))
+    this.universe.bind(name, CFunction(s"$name$$Internal", args.values.toList, returns))
 
     i"""def $name$$Internal(
        |  ${ visitParameters(ctx.parameters()) }
@@ -78,8 +83,8 @@ case class GenInternal(universe: Universe) extends CausticBaseVisitor[String] {
 
   override def visitType(ctx: CausticParser.TypeContext): String =
     this.universe.find(ctx.getText.replaceAll("\\s", "")) match {
-      case Some(_: Pointer) => s"Reference[${ ctx.getText.dropRight(1) }$$Internal]"
-      case Some(_: Defined) => s"Reference[${ ctx.getText }$$Internal]"
+      case Some(_: CPointer) => s"Reference[${ ctx.getText.dropRight(1) }$$Internal]"
+      case Some(_: CStruct) => s"Reference[${ ctx.getText }$$Internal]"
       case Some(CList(x)) => s"List[$x]"
       case Some(CSet(x)) => s"Set[$x]"
       case Some(CMap(k, v)) => s"Map[$k, $v]"
@@ -88,8 +93,8 @@ case class GenInternal(universe: Universe) extends CausticBaseVisitor[String] {
       case Some(CInt) => "Value[Int]"
       case Some(CBoolean) => "Value[Boolean]"
       case Some(CUnit) => "Unit"
-      case Some(any) => throw Error.Type(s"Field cannot be of type $any.", Error.Trace(ctx))
-      case None => throw Error.Type(s"Unknown type ${ ctx.getText }.", Error.Trace(ctx))
+      case Some(any) => throw Error.Type(s"Field cannot be of type $any.", Trace(ctx))
+      case None => throw Error.Type(s"Unknown type ${ ctx.getText }.", Trace(ctx))
     }
 
 }

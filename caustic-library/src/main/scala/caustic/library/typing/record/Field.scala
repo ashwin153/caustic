@@ -6,8 +6,7 @@ import caustic.library.typing.collection._
 import shapeless._
 
 /**
- *
- * @tparam Type
+ * An attribute extractor.
  */
 trait Field[Type] {
   type Container

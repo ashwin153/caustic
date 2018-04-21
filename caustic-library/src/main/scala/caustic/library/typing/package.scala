@@ -1,9 +1,10 @@
 package caustic.library
 
 import caustic.library.typing.Value._
-import caustic.library.typing.collection.{List, Map, Set}
+import caustic.library.typing.collection._
 import caustic.library.typing.record.Reference
 import caustic.runtime._
+
 import scala.language.implicitConversions
 
 package object typing {

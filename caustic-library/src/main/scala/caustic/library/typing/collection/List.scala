@@ -75,24 +75,26 @@ class List[T <: Primitive](length: Variable[Int]) extends Collection[Int, T] {
 object List {
 
   /**
+   * Returns a list backed by the specified variable.
    *
-   * @param key
-   * @tparam T
-   * @return
+   * @param key Underlying variable.
+   * @return Initialized list.
    */
   def apply[T <: Primitive](key: Variable[Int]): List[T] = new List[T](key)
 
   /**
+   * Returns a list backed by the specified local variable.
    *
-   * @param key
-   * @return
+   * @param key Local variable.
+   * @return Local list.
    */
   def Local[T <: Primitive](key: Value[String]): List[T] = List(Variable.Local(key))
 
   /**
+   * Returns a list backed by the specified remote variable.
    *
-   * @param key
-   * @return
+   * @param key Remote variable.
+   * @return Remote list.
    */
   def Remote[T <: Primitive](key: Value[String]): List[T] = List(Variable.Remote(key))
 

@@ -5,7 +5,7 @@ grammar Caustic;
  */
 comment
     : BlockComment
-    | LineComment
+    | LineComment+
     ;
 
 constant

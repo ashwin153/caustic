@@ -1,12 +1,11 @@
 package caustic.compiler
 
+import caustic.compiler.error.{Error, Handler}
 import caustic.compiler.gen._
 import caustic.compiler.reflect._
 import caustic.grammar.{CausticLexer, CausticParser}
-
 import org.antlr.v4.runtime._
 import org.antlr.v4.runtime.misc.Interval
-
 import java.io.FileOutputStream
 import java.nio.file.{Files, Path, Paths}
 import scala.util.{Failure, Try}
@@ -18,13 +17,11 @@ import scala.collection.mutable
 object Causticc {
 
   def main(args: Array[String]): Unit = {
-    // Print usage information.
     if (args.length < 1 || args.length > 2) {
-      println("Usage: causticc <source> [config]")
+      println("Usage: causticc <sources>")
       System.exit(1)
     }
 
-    // Run the compiler on all the specified files.
     Files.walk(Paths.get(args(0))).filter(_.toString.endsWith(".acid")) forEach { path =>
       val output = new FileOutputStream(path.toString.replaceFirst(".acid$", ".scala"))
       output.write(Causticc(path).get.getBytes("UTF-8"))
@@ -66,6 +63,14 @@ object Causticc {
   }
 
   /**
+   * Compiles the specified source code and returns the generated sources.
+   *
+   * @param source Source code.
+   * @return Generated sources.
+   */
+  def apply(source: String): Try[String] = Causticc(CharStreams.fromString(source))
+
+  /**
    * Compiles the specified source file and returns the generated sources. Compilation is memoized;
    * therefore, the same path will never be recompiled twice, even if it is imported in multiple
    * different files. Incremental compilation can be implemented by persisting this information
@@ -77,13 +82,5 @@ object Causticc {
       Causticc(CharStreams.fromPath(source))
     })
   }
-
-  /**
-   * Compiles the specified source code and returns the generated sources.
-   *
-   * @param source Source code.
-   * @return Generated sources.
-   */
-  def apply(source: String): Try[String] = Causticc(CharStreams.fromString(source))
 
 }

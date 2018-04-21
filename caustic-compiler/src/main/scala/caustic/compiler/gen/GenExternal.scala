@@ -1,6 +1,6 @@
 package caustic.compiler.gen
 
-import caustic.compiler.Error
+import caustic.compiler.error._
 import caustic.compiler.reflect._
 import caustic.compiler.util._
 import caustic.grammar._
@@ -8,8 +8,9 @@ import caustic.grammar._
 import scala.collection.JavaConverters._
 
 /**
+ * Generates external Scala definitions from declaration. Preserves indentation and documentation.
  *
- * @param universe
+ * @param universe Type universe.
  */
 case class GenExternal(universe: Universe) extends CausticBaseVisitor[String] {
 
@@ -31,6 +32,7 @@ case class GenExternal(universe: Universe) extends CausticBaseVisitor[String] {
 
     i"""object $name {
        |
+       |  // Implicit Conversions.
        |  implicit def reference(x: $name)(implicit context: Context): Reference[$name$$Internal] = {
        |    val ref = Reference.Local[$name$$Internal](context.label())
        |    ${ fields.map(f => s"ref.get('$f) := x.$f") mkString "\n    " }
@@ -69,7 +71,7 @@ case class GenExternal(universe: Universe) extends CausticBaseVisitor[String] {
     val args = ctx.parameters().parameter().asScala.map(_.Identifier().getText)
     val call = s"$name$$Internal(${ args.mkString(", ") })"
     val body = GenType(this.universe).visitType(ctx.`type`()) match {
-      case Pointer(_) => s"Return($call.key.asJson)"
+      case CPointer(_) => s"Return($call.key.asJson)"
       case CUnit => call
       case _ => s"Return($call.asJson)"
     }
@@ -100,8 +102,8 @@ case class GenExternal(universe: Universe) extends CausticBaseVisitor[String] {
 
   override def visitType(ctx: CausticParser.TypeContext): String =
     this.universe.find(ctx.getText.replaceAll("\\s", "")) match {
-      case Some(_: Pointer) => s"Pointer[${ ctx.getText.dropRight(1)}]"
-      case Some(_: Defined) => s"${ ctx.getText }"
+      case Some(_: CPointer) => s"Pointer[${ ctx.getText.dropRight(1)}]"
+      case Some(_: CStruct) => s"${ ctx.getText }"
       case Some(CList(x)) => s"scala.List[$x]"
       case Some(CSet(x)) => s"scala.collection.Set[$x]"
       case Some(CMap(k, v)) => s"scala.collection.Map[$k, $v]"
@@ -110,8 +112,8 @@ case class GenExternal(universe: Universe) extends CausticBaseVisitor[String] {
       case Some(CInt) => "scala.Int"
       case Some(CBoolean) => "scala.Boolean"
       case Some(CUnit) => "scala.Unit"
-      case Some(any) => throw Error.Type(s"Field cannot be of type $any.", Error.Trace(ctx))
-      case None => throw Error.Type(s"Unknown type ${ ctx.getText }.", Error.Trace(ctx))
+      case Some(any) => throw Error.Type(s"Field cannot be of type $any.", Trace(ctx))
+      case None => throw Error.Type(s"Unknown type ${ ctx.getText }.", Trace(ctx))
     }
 
 }

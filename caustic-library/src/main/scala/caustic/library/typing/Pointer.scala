@@ -4,8 +4,9 @@ import spray.json._
 import DefaultJsonProtocol._
 
 /**
+ * A pointer to an object stored at the specified location.
  *
- * @param key
+ * @param key Location.
  */
 case class Pointer[T](key: java.lang.String)
 

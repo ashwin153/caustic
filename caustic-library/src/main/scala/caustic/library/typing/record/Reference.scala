@@ -109,16 +109,18 @@ case class Reference[T](pointer: Variable[String]) extends Internal {
 object Reference {
 
   /**
+   * Returns a reference to the specified local variable.
    *
-   * @param key
+   * @param key Local variable.
    * @return
    */
   def Local[T](key: Value[String]): Reference[T] = Reference(Variable.Local(key))
 
   /**
+   * Returns a reference to the specified remote variable.
    *
-   * @param key
-   * @return
+   * @param key Remote variable.
+   * @return Remote reference.
    */
   def Remote[T](key: Value[String]): Reference[T] = Reference(Variable.Remote(key))
 

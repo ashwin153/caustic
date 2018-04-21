@@ -1,7 +1,7 @@
-package caustic.compiler
+package caustic.compiler.error
 
 import org.antlr.v4.runtime.misc.ParseCancellationException
-import org.antlr.v4.runtime.{ParserRuleContext, Token}
+import org.antlr.v4.runtime.ParserRuleContext
 
 /**
  * A compiler exception.
@@ -34,50 +34,11 @@ sealed trait Error extends ParseCancellationException {
    *
    * @return Error location.
    */
-  def trace: Error.Trace
+  def trace: Trace
 
 }
 
 object Error {
-
-  /**
-   * A source location.
-   *
-   * @param line Line number.
-   * @param columns Range of offending columns.
-   */
-  case class Trace(line: Int, columns: Range)
-
-  object Trace {
-
-    /**
-     * Constructs a trace from the specified ANTLR token.
-     *
-     * @param token ANTLR token.
-     * @return Source location.
-     */
-    def apply(token: Token): Trace = {
-      val length = token.getStopIndex - token.getStartIndex
-      val initial = token.getCharPositionInLine
-      Trace(token.getLine, initial to initial + length)
-    }
-
-    /**
-     * Constructs a trace from the specified ANTLR rule.
-     *
-     * @param rule ANTLR rule.
-     * @return Source location.
-     */
-    def apply(rule: ParserRuleContext): Trace = {
-      if (rule.start.getLine != rule.stop.getLine) {
-        Trace(rule.stop)
-      } else {
-        val length = rule.stop.getStopIndex - rule.start.getStartIndex
-        val initial = rule.start.getCharPositionInLine
-        Trace(rule.start.getLine, initial to initial + length)
-      }
-    }
-  }
 
   /**
    * An error indicated unknown failure.
@@ -85,7 +46,7 @@ object Error {
    * @param description Detailed summary.
    * @param trace Source location.
    */
-  case class Unknown(description: String, trace: Error.Trace) extends Error {
+  case class Unknown(description: String, trace: Trace) extends Error {
     override val code: Int = 0
     override val title: String = "Unknown Error"
   }
@@ -96,7 +57,7 @@ object Error {
    * @param description Detailed summary.
    * @param trace Source location.
    */
-  case class Syntax(description: String, trace: Error.Trace) extends Error {
+  case class Syntax(description: String, trace: Trace) extends Error {
     override val code: Int = 1
     override val title: String = "Syntax Error"
   }
@@ -107,7 +68,7 @@ object Error {
    * @param description Detailed summary.
    * @param trace Source location.
    */
-  case class Type(description: String, trace: Error.Trace) extends Error {
+  case class Type(description: String, trace: Trace) extends Error {
     override val code: Int = 2
     override val title: String = "Type Error"
   }
@@ -121,7 +82,7 @@ object Error {
     override val code: Int = 3
     override val title: String = "Parse Error"
     override val description: String = s"Unable to parse ${ context.getText }"
-    override val trace: Trace = Error.Trace(context)
+    override val trace: Trace = Trace(context)
   }
 
 }

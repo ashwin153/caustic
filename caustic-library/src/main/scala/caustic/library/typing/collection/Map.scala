@@ -11,12 +11,12 @@ import scala.language.reflectiveCalls
 /**
  * A mutable collection of key-value pairs.
  *
- * @param length
+ * @param length Current size.
  */
 class Map[K <: String, V <: Primitive](length: Variable[Int]) extends Collection[K, V] {
 
   /**
-   *
+   * Returns the set of keys in the map.
    */
   val keys: Set[K] = new Set(length)
 
@@ -64,23 +64,26 @@ class Map[K <: String, V <: Primitive](length: Variable[Int]) extends Collection
 object Map {
 
   /**
+   * Returns a map backed by the specified variable.
    *
-   * @param key
-   * @return
+   * @param key Underlying variable.
+   * @return Initialized map.
    */
   def apply[K <: String, V <: Primitive](key: Variable[Int]): Map[K, V] = new Map(key)
 
   /**
+   * Returns a map backed by the specified local variable.
    *
-   * @param key
-   * @return
+   * @param key Local variable.
+   * @return Local map.
    */
   def Local[K <: String, V <: Primitive](key: Value[String]): Map[K, V] = Map(Variable.Local(key))
 
   /**
+   * Returns a map backed by the specified remote variable.
    *
-   * @param key
-   * @return
+   * @param key Remote variable.
+   * @return Remote map.
    */
   def Remote[K <: String, V <: Primitive](key: Value[String]): Map[K, V] = Map(Variable.Remote(key))
 

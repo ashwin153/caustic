@@ -11,9 +11,9 @@ package object reflect {
    */
   def lub(x: Type, y: Type): Type = (x, y) match {
     case (a, b) if a == b                  => x
-    case (_: Function, _) | (_, _: Function) => CUnit
-    case (_: Pointer , _) | (_, _: Pointer ) => CUnit
-    case (_: Defined  , _) | (_, _: Defined  ) => CUnit
+    case (_: CFunction, _) | (_, _: CFunction) => CUnit
+    case (_: CPointer , _) | (_, _: CPointer ) => CUnit
+    case (_: CStruct  , _) | (_, _: CStruct  ) => CUnit
     case (CUnit      , _) | (_, CUnit      ) => CUnit
     case (CString    , _) | (_, CString    ) => CString
     case (CDouble    , _) | (_, CDouble    ) => CDouble
@@ -32,9 +32,9 @@ package object reflect {
     case (a, b) if a == b                    => x
     case (_: CSet    , _) | (_, _: CSet    ) => CUnit
     case (_: CMap    , _) | (_, _: CMap    ) => CUnit
-    case (_: Function, _) | (_, _: Function) => CUnit
-    case (_: Pointer , _) | (_, _: Pointer ) => CUnit
-    case (_: Defined  , _) | (_, _: Defined  ) => CUnit
+    case (_: CFunction, _) | (_, _: CFunction) => CUnit
+    case (_: CPointer , _) | (_, _: CPointer ) => CUnit
+    case (_: CStruct  , _) | (_, _: CStruct  ) => CUnit
     case (CBoolean   , _) | (_, CBoolean   ) => CBoolean
     case (CInt       , _) | (_, CInt       ) => CInt
     case (CDouble    , _) | (_, CDouble    ) => CDouble

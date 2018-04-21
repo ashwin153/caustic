@@ -4,14 +4,15 @@ import caustic.library.Context
 import caustic.library.typing.collection._
 
 /**
- *
+ * A conversion from Scala to Caustic.
  */
 trait Conversion[-Scala, +Caustic] {
 
   /**
+   * Applies the conversion to the specified value.
    *
-   * @param x
-   * @return
+   * @param x Scala value.
+   * @return Caustic value.
    */
   def apply(x: Scala): Caustic
 

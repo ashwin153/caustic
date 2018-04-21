@@ -1,13 +1,18 @@
 package caustic.compiler.gen
 
 import caustic.compiler.reflect._
-import caustic.grammar.{CausticBaseVisitor, CausticParser}
+import caustic.grammar._
 
 import scala.collection.JavaConverters._
 
-case class GenParameters(universe: Universe) extends CausticBaseVisitor[Map[String, Value]] {
+/**
+ * Generates statically-typed symbol tables from parameters.
+ *
+ * @param universe Type universe.
+ */
+case class GenParameters(universe: Universe) extends CausticBaseVisitor[Map[String, Simple]] {
 
-  override def visitParameters(ctx: CausticParser.ParametersContext): Map[String, Value] = {
+  override def visitParameters(ctx: CausticParser.ParametersContext): Map[String, Simple] = {
     ctx.parameter().asScala
       .map(p => p.Identifier().getText -> p.`type`())
       .toMap

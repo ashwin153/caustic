@@ -1,113 +1,121 @@
 package caustic.compiler.reflect
 
 /**
- * A compiler binding.
+ * A compiler binding. Bindings store static type information that the compiler uses to perform type
+ * inference. Caustic has a relatively simple static type system. A type is a binding that may
+ * be the [[Result]] of an expression. A [[Simple]] type may be passed to or returned by a
+ * function or be used as a field of a struct. A [[Record]] type may have fields. A [[BuiltIn]] type
+ * is a compiler provided record and may represent either a [[Primitive]] value or a [[Collection]]
+ * of values. Programs may define four kinds of bindings. A [[CVariable]] binds a name to a type. A
+ * [[CStruct]] binds a name to a collection of fields. A [[CFunction]] binds a name to a list of
+ * arguments and a return type all of [[Simple]] type. A [[CService]] binds a name to a collection
+ * of functions.
  */
 sealed trait Binding
-case class Service(functions: Map[String, Function]) extends Binding
-case class Variable(of: Value) extends Binding
-
-/**
- * A type definition.
- */
 sealed trait Type extends Binding
-case class Function(name: String, args: List[Value], returns: Value) extends Type
-
-/**
- * A value type.
- */
-sealed trait Value extends Type
-case class Pointer(to: Struct) extends Value
-
-/**
- * A non-pointer type.
- */
-sealed trait Struct extends Value {
-
-  /**
-   *
-   * @return
-   */
-  def fields: Map[String, Type]
-
-}
-
-case class Defined(fields: Map[String, Value]) extends Struct
-sealed trait BuiltIn extends Struct
+sealed trait Simple extends Type
+sealed trait Record extends Simple { def fields: Map[String, Type] }
+sealed trait BuiltIn extends Record
 sealed trait Primitive extends BuiltIn
 sealed trait Collection extends BuiltIn
 
-// Built-In Types.
+// Null
 case object CUnit extends Primitive {
   override def toString: String = "Unit"
   override val fields: Map[String, Type] = Map.empty
 }
 
+// Boolean
 case object CBoolean extends Primitive {
   override def toString: String = "Boolean"
   override val fields: Map[String, Type] = Map.empty
 }
 
+// Int
 case object CInt extends Primitive {
   override def toString: String = "Int"
   override val fields: Map[String, Type] = Map(
-    "max"         -> Function("max", List(CInt), CInt),
-    "min"         -> Function("min", List(CInt), CInt)
+    "max"         -> CFunction("max", List(CInt), CInt),
+    "min"         -> CFunction("min", List(CInt), CInt)
   )
 }
 
+// Double
 case object CDouble extends Primitive {
   override def toString: String = "Double"
   override val fields: Map[String, Type] = Map(
-    "max"         -> Function("max", List(CDouble), CDouble),
-    "min"         -> Function("min", List(CDouble), CDouble)
+    "max"         -> CFunction("max", List(CDouble), CDouble),
+    "min"         -> CFunction("min", List(CDouble), CDouble)
   )
 }
 
+// String
 case object CString extends Primitive {
   override def toString: String = "String"
   override val fields: Map[String, Type] = Map(
-    "charAt"      -> Function("charAt", List(CInt), CString),
-    "contains"    -> Function("contains", List(CString), CBoolean),
-    "indexOf"     -> Function("indexOf", List(CString), CInt),
+    "charAt"      -> CFunction("charAt", List(CInt), CString),
+    "contains"    -> CFunction("contains", List(CString), CBoolean),
+    "indexOf"     -> CFunction("indexOf", List(CString), CInt),
     "length"      -> CInt,
-    "matches"     -> Function("matches", List(CString), CBoolean),
+    "matches"     -> CFunction("matches", List(CString), CBoolean),
     "quoted"      -> CString,
-    "substring"   -> Function("substring", List(CInt, CInt), CString)
+    "substring"   -> CFunction("substring", List(CInt, CInt), CString)
   )
 }
 
+// List
 case class CList(value: Primitive) extends Collection {
   override def toString: String = s"List[$value]"
   override val fields: Map[String, Type] = Map(
-    "append"      -> Function("append", List(value), CUnit),
-    "apply"       -> Function("apply", List(CInt), value),
-    "contains"    -> Function("contains", List(value), CBoolean),
-    "indexOf"     -> Function("indexOf", List(value), CInt),
-    "remove"      -> Function("remove", List(value), CUnit),
+    "contains"    -> CFunction("contains", List(value), CBoolean),
+    "get"         -> CFunction("apply", List(CInt), value),
+    "find"        -> CFunction("find", List(value), CInt),
+    "indexOf"     -> CFunction("indexOf", List(value), CInt),
+    "remove"      -> CFunction("remove", List(value), CUnit),
+    "set"         -> CFunction("set", List(CInt, value), CUnit),
     "size"        -> CInt
   )
 }
 
+// Set
 case class CSet(value: Primitive) extends Collection {
   override def toString: String = s"Set[$value]"
   override val fields: Map[String, Type] = Map(
-    "add"         -> Function("add", List(value), CUnit),
-    "contains"    -> Function("contains", List(value), CBoolean),
-    "indexOf"     -> Function("indexOf", List(value), CInt),
-    "remove"      -> Function("remove", List(value), CUnit),
+    "add"         -> CFunction("add", List(value), CUnit),
+    "contains"    -> CFunction("contains", List(value), CBoolean),
+    "diff"        -> CFunction("diff", List(CSet(value)), CSet(value)),
+    "intersect"   -> CFunction("intersect", List(CSet(value)), CSet(value)),
+    "remove"      -> CFunction("remove", List(value), CUnit),
+    "size"        -> CInt,
+    "union"       -> CFunction("union", List(CSet(value)), CSet(value))
+  )
+}
+
+// Map
+case class CMap(key: Primitive, value: Primitive) extends Collection {
+  override def toString: String = s"Map[$key, $value]"
+  override val fields: Map[String, Type] = Map(
+    "get"         -> CFunction("apply", List(CInt), value),
+    "exists"      -> CFunction("exists", List(key), CBoolean),
+    "find"        -> CFunction("find", List(value), CInt),
+    "keys"        -> CSet(key),
+    "remove"      -> CFunction("remove", List(value), CUnit),
+    "set"         -> CFunction("set", List(key, value), CUnit),
     "size"        -> CInt
   )
 }
 
-case class CMap(key: Primitive, value: Primitive) extends Collection {
-  override def toString: String = s"Map[$key, $value]"
-  override val fields: Map[String, Type] = Map(
-    "apply"       -> Function("apply", List(key), value),
-    "contains"    -> Function("contains", List(key), CBoolean),
-    "put"         -> Function("indexOf", List(key, value), CInt),
-    "putIfAbsent" -> Function("remove", List(key, value), CUnit),
-    "remove"      -> Function("remove", List(key), CUnit),
-    "size"        -> CInt
-  )
-}
+// struct
+case class CStruct(fields: Map[String, Simple]) extends Record
+
+// &
+case class CPointer(to: Record) extends Simple
+
+// var
+case class CVariable(of: Simple) extends Binding
+
+// def
+case class CFunction(name: String, args: List[Simple], returns: Simple) extends Type
+
+// service
+case class CService(functions: Map[String, CFunction]) extends Binding

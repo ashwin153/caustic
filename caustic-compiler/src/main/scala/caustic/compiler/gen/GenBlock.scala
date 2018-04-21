@@ -1,14 +1,16 @@
 package caustic.compiler.gen
 
-import caustic.compiler.Error
+import caustic.compiler.error._
 import caustic.compiler.reflect._
-import caustic.grammar.{CausticBaseVisitor, CausticParser}
+import caustic.grammar._
 
 import scala.collection.JavaConverters._
 
 /**
+ * Generates a statically typed [[Result]] from a block. Performs static type inference to determine
+ * and validate the types of the various statements in the block.
  *
- * @param universe
+ * @param universe Type universe.
  */
 case class GenBlock(universe: Universe) extends CausticBaseVisitor[Result] {
 
@@ -17,7 +19,7 @@ case class GenBlock(universe: Universe) extends CausticBaseVisitor[Result] {
     val statements = ctx.statement().asScala.map(visitStatement)
     val result = statements.foldLeft(Result(CUnit, ""))((a, b) => b.copy(value = s"${ a.value }\n${ b.value }"))
 
-    // Align the result of the block.
+    // Indent the result of the block.
     val lines = result.value.split("\n")
     result.copy(value = (1 to lines.size)
       .map(i => lines.take(i - 1).mkString.count(_ == '{') - lines.take(i).mkString.count(_ == '}'))
@@ -39,13 +41,13 @@ case class GenBlock(universe: Universe) extends CausticBaseVisitor[Result] {
     // Construct a variable definition and bind it to the universe.
     Result(CUnit, rhs match {
       case Result(of: Primitive, value) =>
-        this.universe.bind(lhs, Variable(of))
+        this.universe.bind(lhs, CVariable(of))
         s"val $lhs = Variable.Local[$of](context.label())\n$lhs := $value"
-      case Result(of: Struct, value) =>
-        this.universe.bind(lhs, Variable(of))
+      case Result(of: Record, value) =>
+        this.universe.bind(lhs, CVariable(of))
         s"val $lhs = $value"
       case Result(any, _) =>
-        throw Error.Type(s"Unable to define variable of type $any.", Error.Trace(ctx.expression()))
+        throw Error.Type(s"Unable to define variable of type $any.", Trace(ctx.expression()))
     })
   }
 
@@ -54,7 +56,7 @@ case class GenBlock(universe: Universe) extends CausticBaseVisitor[Result] {
     val lhs = visitName(ctx.name())
 
     if (lub(lhs.of, rhs.of) != lhs.of)
-      throw Error.Type(s"Expected ${ lhs.of }, but was ${ rhs.of }.", Error.Trace(ctx))
+      throw Error.Type(s"Expected ${ lhs.of }, but was ${ rhs.of }.", Trace(ctx))
     else if (ctx.Assign() != null)
       Result(lhs.of, s"${ lhs.value } := ${ rhs.value }")
     else if (ctx.AddAssign() != null)
@@ -73,8 +75,8 @@ case class GenBlock(universe: Universe) extends CausticBaseVisitor[Result] {
 
   override def visitDeletion(ctx: CausticParser.DeletionContext): Result = {
     visitName(ctx.name()) match {
-      case Result(Pointer(_: Primitive), v) => Result(CUnit, s"$v := Null")
-      case Result(Pointer(_), v) => Result(CUnit, s"$v.delete()")
+      case Result(CPointer(_: Primitive), v) => Result(CUnit, s"$v := Null")
+      case Result(CPointer(_), v) => Result(CUnit, s"$v.delete()")
       case Result(_: Primitive, v) => Result(CUnit, s"$v := Null")
       case Result(_, v) => Result(CUnit, s"$v.delete()")
     }
@@ -85,7 +87,7 @@ case class GenBlock(universe: Universe) extends CausticBaseVisitor[Result] {
     val body = GenBlock(this.universe.child).visitBlock(ctx.block())
 
     if (condition.of != CBoolean)
-      throw Error.Type(s"Found ${ condition.of }, but expected Boolean.", Error.Trace(ctx.expression()))
+      throw Error.Type(s"Found ${ condition.of }, but expected Boolean.", Trace(ctx.expression()))
     else
       Result(CUnit, s"While (${ condition.value }) {\n${ body.value }\n}")
   }
@@ -96,7 +98,7 @@ case class GenBlock(universe: Universe) extends CausticBaseVisitor[Result] {
     val conditions = ctx.expression().asScala map { cmp =>
       val result = visitExpression(cmp)
       if (result.of != CBoolean)
-        throw Error.Type(s"Found ${ result.of }, but expected Boolean.", Error.Trace(cmp))
+        throw Error.Type(s"Found ${ result.of }, but expected Boolean.", Trace(cmp))
       else
         result.value
     }
@@ -121,9 +123,9 @@ case class GenBlock(universe: Universe) extends CausticBaseVisitor[Result] {
       val rhs = visitLogicalAndExpression(ctx.logicalAndExpression())
 
       if (!isSubtype(lhs.of, CBoolean))
-        throw Error.Type(s"Found type ${ lhs.of }, but expected Boolean.", Error.Trace(ctx.logicalOrExpression()))
+        throw Error.Type(s"Found type ${ lhs.of }, but expected Boolean.", Trace(ctx.logicalOrExpression()))
       else if (!isSubtype(rhs.of, CBoolean))
-        throw Error.Type(s"Found type ${ rhs.of }, but expected Boolean.", Error.Trace(ctx.logicalAndExpression()))
+        throw Error.Type(s"Found type ${ rhs.of }, but expected Boolean.", Trace(ctx.logicalAndExpression()))
       else
         Result(lub(lhs.of, rhs.of), s"${ lhs.value } || ${ rhs.value }")
     }
@@ -139,9 +141,9 @@ case class GenBlock(universe: Universe) extends CausticBaseVisitor[Result] {
       val rhs = visitEqualityExpression(ctx.equalityExpression())
 
       if (!isSubtype(lhs.of, CBoolean))
-        throw Error.Type(s"Found type ${ lhs.of }, but expected Boolean.", Error.Trace(ctx.logicalAndExpression()))
+        throw Error.Type(s"Found type ${ lhs.of }, but expected Boolean.", Trace(ctx.logicalAndExpression()))
       else if (!isSubtype(rhs.of, CBoolean))
-        throw Error.Type(s"Found type ${ rhs.of }, but expected Boolean.", Error.Trace(ctx.equalityExpression()))
+        throw Error.Type(s"Found type ${ rhs.of }, but expected Boolean.", Trace(ctx.equalityExpression()))
       else
         Result(CBoolean, s"${ lhs.value } && ${ rhs.value }")
     }
@@ -201,7 +203,7 @@ case class GenBlock(universe: Universe) extends CausticBaseVisitor[Result] {
       else if (ctx.Sub() != null && isNumeric(lhs.of) && isNumeric(rhs.of))
         Result(lub(lhs.of, rhs.of), s"${ lhs.value } - ${ rhs.value }")
       else
-        throw Error.Type(s"Unexpected type ${ lub(lhs.of, rhs.of) }.", Error.Trace(ctx))
+        throw Error.Type(s"Unexpected type ${ lub(lhs.of, rhs.of) }.", Trace(ctx))
     }
   }
 
@@ -215,9 +217,9 @@ case class GenBlock(universe: Universe) extends CausticBaseVisitor[Result] {
       val rhs = visitPrefixExpression(ctx.prefixExpression())
 
       if (!isNumeric(lhs.of))
-        throw Error.Type(s"Found type ${ lhs.of }, but expected numeric.", Error.Trace(ctx.multiplicativeExpression()))
+        throw Error.Type(s"Found type ${ lhs.of }, but expected numeric.", Trace(ctx.multiplicativeExpression()))
       else if (!isNumeric(rhs.of))
-        throw Error.Type(s"Found type ${ rhs.of }, but expected numeric.", Error.Trace(ctx.prefixExpression()))
+        throw Error.Type(s"Found type ${ rhs.of }, but expected numeric.", Trace(ctx.prefixExpression()))
       else if (ctx.Mul() != null)
         Result(lub(lhs.of, rhs.of), s"${ lhs.value } * ${ rhs.value }")
       else if (ctx.Div() != null && lub(lhs.of, rhs.of) == CDouble)
@@ -260,10 +262,10 @@ case class GenBlock(universe: Universe) extends CausticBaseVisitor[Result] {
     val arguments = ctx.expression().asScala.map(visitExpression)
 
     visitName(ctx.name()) match {
-      case Result(Function(_, args, returns), function) if args == arguments.map(_.of) =>
+      case Result(CFunction(_, args, returns), function) if args == arguments.map(_.of) =>
         Result(returns, s"$function(${ arguments.map(_.value).mkString(", ") })")
       case Result(any, _) =>
-        throw Error.Type(s"$any is not a function", Error.Trace(ctx.name()))
+        throw Error.Type(s"$any is not a function", Trace(ctx.name()))
     }
   }
 
@@ -271,30 +273,30 @@ case class GenBlock(universe: Universe) extends CausticBaseVisitor[Result] {
     val names = ctx.Identifier().asScala.map(_.getText)
 
     this.universe.find(names.head) match {
-      case Some(service: Service) if names.size == 2 && service.functions.contains(names(1)) =>
+      case Some(service: CService) if names.size == 2 && service.functions.contains(names(1)) =>
         Result(service.functions(names(1)), s"${ names.head }.${ service.functions(names(1)).name }")
-      case Some(variable: Variable) =>
+      case Some(variable: CVariable) =>
         names.drop(1).foldLeft(Result(variable.of, names.head)) {
-          case (Result(Pointer(struct: Struct), value), field) if struct.fields.contains(field) =>
+          case (Result(CPointer(struct: Record), value), field) if struct.fields.contains(field) =>
             Result(struct.fields(field), s"$value.get('$field)")
-          case (Result(defined: Defined, value), field) if defined.fields.contains(field) =>
+          case (Result(defined: CStruct, value), field) if defined.fields.contains(field) =>
             Result(defined.fields(field), s"$value.get('$field)")
           case (Result(builtIn: BuiltIn, value), field) if builtIn.fields.contains(field) =>
             Result(builtIn.fields(field), s"$value.$field")
           case (Result(any, _), field) =>
-            throw Error.Type(s"$field is not a member of $any.", Error.Trace(ctx))
+            throw Error.Type(s"$field is not a member of $any.", Trace(ctx))
         }
-      case Some(function: Function) if names.size == 1 =>
+      case Some(function: CFunction) if names.size == 1 =>
         Result(function, function.name)
-      case Some(_: Pointer) | Some(_: Struct) if names.size == 1 =>
+      case Some(_: CPointer) | Some(_: Record) if names.size == 1 =>
         this.universe.find(s"${ names.head }$$Constructor") match {
-          case Some(function: Function) => Result(function, function.name)
-          case _ => throw Error.Type(s"Cannot find constructor for ${ names.head }.", Error.Trace(ctx))
+          case Some(function: CFunction) => Result(function, function.name)
+          case _ => throw Error.Type(s"Cannot find constructor for ${ names.head }.", Trace(ctx))
         }
       case Some(any) =>
-        throw Error.Type(s"$any is not a valid name.", Error.Trace(ctx))
+        throw Error.Type(s"$any is not a valid name.", Trace(ctx))
       case _ =>
-        throw Error.Type(s"Unknown binding ${ names.mkString }.", Error.Trace(ctx))
+        throw Error.Type(s"Unknown binding ${ names.mkString }.", Trace(ctx))
     }
   }
 

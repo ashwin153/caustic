@@ -6,8 +6,9 @@ import caustic.grammar._
 import scala.collection.JavaConverters._
 
 /**
+ * Generates a Scala program from a program.
  *
- * @param universe
+ * @param universe Type universe.
  */
 case class Gen(universe: Universe) extends CausticBaseVisitor[String] {
 

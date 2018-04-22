@@ -35,8 +35,8 @@ x := floor(y)
 ```
 
 ## Records
-In addition to these primitive types, the standard library also allows a ```Reference``` to be made
-to a user-defined type. References use [Shapeless][1] to materialize compiler macros that permit the 
+In addition to these primitive types, the standard library also supports ```Reference``` to 
+user-defined types. References use [Shapeless][1] to materialize compiler macros that permit the 
 fields of an object to be statically manipulated and iterated. A current limitation is that objects 
 cannot be self-referential; an object cannot have a field of its own type.
 
@@ -66,6 +66,26 @@ x.delete(recursive = true)
 val y = Reference[Foo](Variable.Local("y"))
 // Copies x to y.
 y := x
+```
+
+## Collections
+The runtime has no native support for collections of key-value pairs. The standard library
+provides implementations of three fundamental data structures: ```List```, ```Set```, and ```Map```. 
+These collections are mutable and statically-typed. Collections take care of the messy details of 
+mapping structured data onto a flat namespace, and feature prefetched iteration. A current 
+limitation is that collections may only contain primitive types.
+
+```scala
+// Constructs a map from string to boolean.
+val x = Map[String, Boolean](Variable.Remote("y"))
+// Puts an entry in the map.
+x += "foo" -> true
+// Serializes x to a JSON string.
+x.asJson
+// Constructs a list of integers.
+val x = List[Int](Variable.Local("x"))
+// Increments each element in the list.
+x.foreach(_ + 1)
 ```
 
 ## Math
@@ -110,26 +130,6 @@ for all functions enumerated in the following table.
 | ```sinh(x)```            | Hyperbolic sine of ```x```.                                           |
 | ```sqrt(x)```            | Square root of ```x```.                                               | 
 | ```tan(x)```             | Tangent of ```x```.                                                   |
-
-## Collections
-The runtime has no native support for collections of key-value pairs. The standard library
-provides implementations of three fundamental data structures: ```List```, ```Set```, and ```Map```. 
-These collections are mutable and statically-typed. Collections take care of the messy details of 
-mapping structured data onto a flat namespace, and feature prefetched iteration. A current 
-limitation is that collections may only contain primitive types.
-
-```scala
-// Constructs a map from string to boolean.
-val x = Map[String, Boolean](Variable.Remote("y"))
-// Puts an entry in the map.
-x += "foo" -> true
-// Serializes x to a JSON string.
-x.asJson
-// Constructs a list of integers.
-val x = List[Int](Variable.Local("x"))
-// Increments each element in the list.
-x.foreach(_ + 1)
-```
 
 ## Control Flow
 The runtime natively supports control flow operations like ```branch```, ```cons```, and 

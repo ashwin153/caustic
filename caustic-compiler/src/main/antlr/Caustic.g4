@@ -18,6 +18,7 @@ constant
 
 name
     : Identifier ('.' Identifier)* // x, x.foo
+    | Identifier Ampersand? // Foo&
     ;
 
 funcall
@@ -243,7 +244,7 @@ Nondigit
     ;
 
 Identifier
-    : Nondigit (Nondigit | Digit)* Ampersand?
+    : Nondigit (Nondigit | Digit)*
     ;
 
 fragment

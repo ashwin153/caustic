@@ -1,7 +1,7 @@
 package caustic.runtime
 
 import caustic.{runtime => caustic}
-import java.util.concurrent.atomic.AtomicInteger
+
 import org.junit.runner.RunWith
 import org.mockito.Mockito._
 import org.mockito.internal.stubbing.answers.CallsRealMethods
@@ -11,10 +11,11 @@ import org.scalatest.junit.JUnitRunner
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.time._
+
 import java.util.concurrent.{CountDownLatch, TimeUnit}
+import java.util.concurrent.atomic.AtomicInteger
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.{Await, Future}
-import scala.concurrent.duration._
+import scala.concurrent.Future
 import scala.language.postfixOps
 import scala.util.Success
 
@@ -48,10 +49,9 @@ class RuntimeTest extends FunSuite with MockitoSugar with ScalaFutures with Matc
 
     // Concurrently execute the transaction and count the total successes.
     val total = new AtomicInteger(0)
-    val tasks = Seq.fill(8)(new Thread {
-      override def run(): Unit =
-        Seq.fill(10000)(runtime.execute(inc).foreach(_ => total.getAndIncrement()))
-    })
+    val tasks = Seq.fill(8)(new Thread(() =>
+      Seq.fill(10000)(runtime.execute(inc).foreach(_ => total.getAndIncrement()))
+    ))
 
     // Verify that the number of increments matches the number of successful transactions.
     tasks.foreach(_.start())

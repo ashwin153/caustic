@@ -1,7 +1,7 @@
 package caustic.compiler.util
 
 /**
- * An indentation preserving [[StringContext]]. Standard string interpolation does not preserve
+ * An indentation preserving string context. Standard string interpolation does not preserve
  * indentation; s"  $x" will indent only the first line of x and not subsequent lines. Indenters
  * apply the same indentation to all lines of x; i"  $x" will indent all lines of x by 2.
  *

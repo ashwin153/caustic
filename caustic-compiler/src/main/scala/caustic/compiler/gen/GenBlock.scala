@@ -7,7 +7,7 @@ import caustic.grammar._
 import scala.collection.JavaConverters._
 
 /**
- * Generates a statically typed [[Result]] from a block. Performs static type inference to determine
+ * Generates a statically typed result from a block. Performs static type inference to determine
  * and validate the types of the various statements in the block.
  *
  * @param universe Type universe.

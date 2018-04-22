@@ -1,6 +1,6 @@
 package caustic.compiler
 
-import caustic.compiler.error.{Error, Handler}
+import caustic.compiler.error._
 import caustic.compiler.gen._
 import caustic.compiler.reflect._
 import caustic.grammar.{CausticLexer, CausticParser}

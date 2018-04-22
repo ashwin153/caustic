@@ -3,13 +3,12 @@ package caustic.compiler.reflect
 /**
  * A compiler binding. Bindings store static type information that the compiler uses to perform type
  * inference. Caustic has a relatively simple static type system. A type is a binding that may
- * be the [[Result]] of an expression. A [[Simple]] type may be passed to or returned by a
- * function or be used as a field of a struct. A [[Record]] type may have fields. A [[BuiltIn]] type
- * is a compiler provided record and may represent either a [[Primitive]] value or a [[Collection]]
- * of values. Programs may define four kinds of bindings. A [[CVariable]] binds a name to a type. A
- * [[CStruct]] binds a name to a collection of fields. A [[CFunction]] binds a name to a list of
- * arguments and a return type all of [[Simple]] type. A [[CService]] binds a name to a collection
- * of functions.
+ * be the result of an expression. A simple type may be passed to or returned by a function or be
+ * used as a field of a struct. A record type may have fields. A built-in type is a compiler
+ * provided record and may represent either a primitive value or a collection of values. Programs
+ * may define four kinds of bindings. A variable binds a name to a type. A struct binds a name to a
+ * collection of fields. A function binds a name to a list of arguments and a return type all of
+ * simple type. A service binds a name to a collection of functions.
  */
 sealed trait Binding
 sealed trait Type extends Binding

@@ -1,15 +1,6 @@
 module caustic.example
 
 /**
- * A counter.
- *
- * @param value Current value.
- */
-struct Total {
-  value: Int
-}
-
-/**
  * A distributed counter.
  */
 service Counter {
@@ -17,12 +8,12 @@ service Counter {
   /**
    * Increments the total and returns its current value.
    *
-   * @param x Reference to total.
+   * @param x Counter.
    * @return Current value.
    */
-  def increment(x: Total&): Int = {
-    if (x.value != null) x.value += 1 else x.value = 1
-    x.value
+  def increment(x: Int&): Int = {
+    if (x != null) x += 1 else x = 1
+    x
   }
 
 }

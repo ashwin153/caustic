@@ -18,7 +18,13 @@ sealed trait BuiltIn extends Record
 sealed trait Primitive extends BuiltIn
 sealed trait Collection extends BuiltIn
 
-// Null
+// null
+case object CNull extends Primitive {
+  override def toString: String = "null"
+  override val fields: Map[String, Type] = Map.empty
+}
+
+// Unit
 case object CUnit extends Primitive {
   override def toString: String = "Unit"
   override val fields: Map[String, Type] = Map.empty

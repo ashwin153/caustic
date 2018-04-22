@@ -55,7 +55,7 @@ case class GenBlock(universe: Universe) extends CausticBaseVisitor[Result] {
     val rhs = visitExpression(ctx.expression())
     val lhs = visitName(ctx.name())
 
-    if (lub(lhs.of, rhs.of) != lhs.of)
+    if (!isAssignable(lhs.of, rhs.of))
       throw Error.Type(s"Expected ${ lhs.of }, but was ${ rhs.of }.", Trace(ctx))
     else if (ctx.Assign() != null)
       Result(lhs.of, s"${ lhs.value } := ${ rhs.value }")
@@ -122,9 +122,9 @@ case class GenBlock(universe: Universe) extends CausticBaseVisitor[Result] {
       val lhs = visitLogicalOrExpression(ctx.logicalOrExpression())
       val rhs = visitLogicalAndExpression(ctx.logicalAndExpression())
 
-      if (!isSubtype(lhs.of, CBoolean))
+      if (!isBoolean(lhs.of))
         throw Error.Type(s"Found type ${ lhs.of }, but expected Boolean.", Trace(ctx.logicalOrExpression()))
-      else if (!isSubtype(rhs.of, CBoolean))
+      else if (!isBoolean(rhs.of))
         throw Error.Type(s"Found type ${ rhs.of }, but expected Boolean.", Trace(ctx.logicalAndExpression()))
       else
         Result(lub(lhs.of, rhs.of), s"${ lhs.value } || ${ rhs.value }")
@@ -140,9 +140,9 @@ case class GenBlock(universe: Universe) extends CausticBaseVisitor[Result] {
       val lhs = visitLogicalAndExpression(ctx.logicalAndExpression())
       val rhs = visitEqualityExpression(ctx.equalityExpression())
 
-      if (!isSubtype(lhs.of, CBoolean))
+      if (!isBoolean(lhs.of))
         throw Error.Type(s"Found type ${ lhs.of }, but expected Boolean.", Trace(ctx.logicalAndExpression()))
-      else if (!isSubtype(rhs.of, CBoolean))
+      else if (!isBoolean(rhs.of))
         throw Error.Type(s"Found type ${ rhs.of }, but expected Boolean.", Trace(ctx.equalityExpression()))
       else
         Result(CBoolean, s"${ lhs.value } && ${ rhs.value }")
@@ -198,7 +198,7 @@ case class GenBlock(universe: Universe) extends CausticBaseVisitor[Result] {
       val lhs = visitAdditiveExpression(ctx.additiveExpression())
       val rhs = visitMultiplicativeExpression(ctx.multiplicativeExpression())
 
-      if (ctx.Add() != null && isSubtype(lhs.of, CString) && isSubtype(rhs.of, CString))
+      if (ctx.Add() != null && isPrimitive(lhs.of) && isPrimitive(rhs.of))
         Result(lub(lhs.of, rhs.of), s"${ lhs.value } + ${ rhs.value }")
       else if (ctx.Sub() != null && isNumeric(lhs.of) && isNumeric(rhs.of))
         Result(lub(lhs.of, rhs.of), s"${ lhs.value } - ${ rhs.value }")
@@ -262,7 +262,7 @@ case class GenBlock(universe: Universe) extends CausticBaseVisitor[Result] {
     val arguments = ctx.expression().asScala.map(visitExpression)
 
     visitName(ctx.name()) match {
-      case Result(CFunction(_, args, returns), function) if args == arguments.map(_.of) =>
+      case Result(CFunction(_, args, returns), function) if isPassable(args, arguments.map(_.of)) =>
         Result(returns, s"$function(${ arguments.map(_.value).mkString(", ") })")
       case Result(any, _) =>
         throw Error.Type(s"$any is not a function", Trace(ctx.name()))
@@ -277,10 +277,12 @@ case class GenBlock(universe: Universe) extends CausticBaseVisitor[Result] {
         Result(service.functions(names(1)), s"${ names.head }.${ service.functions(names(1)).name }")
       case Some(variable: CVariable) =>
         names.drop(1).foldLeft(Result(variable.of, names.head)) {
-          case (Result(CPointer(struct: Record), value), field) if struct.fields.contains(field) =>
+          case (Result(CPointer(struct: CStruct), value), field) if struct.fields.contains(field) =>
             Result(struct.fields(field), s"$value.get('$field)")
-          case (Result(defined: CStruct, value), field) if defined.fields.contains(field) =>
-            Result(defined.fields(field), s"$value.get('$field)")
+          case (Result(struct: CStruct, value), field) if struct.fields.contains(field) =>
+            Result(struct.fields(field), s"$value.get('$field)")
+          case (Result(CPointer(builtIn: BuiltIn), value), field) if builtIn.fields.contains(field) =>
+            Result(builtIn.fields(field), s"$value.$field")
           case (Result(builtIn: BuiltIn, value), field) if builtIn.fields.contains(field) =>
             Result(builtIn.fields(field), s"$value.$field")
           case (Result(any, _), field) =>
@@ -312,7 +314,7 @@ case class GenBlock(universe: Universe) extends CausticBaseVisitor[Result] {
     else if (ctx.String() != null)
       Result(CString, s"string(${ ctx.String().getText })")
     else if (ctx.Null() != null)
-      Result(CUnit, "Null")
+      Result(CNull, "Null")
     else
       throw Error.Parse(ctx)
   }

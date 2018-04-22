@@ -30,9 +30,9 @@ funcall
  * precedence.
  */
 primaryExpression
-    : name
-    | funcall
+    : funcall
     | constant
+    | name
     | '(' expression ')' // (2 + 5) * 3
     ;
 
@@ -137,7 +137,7 @@ block
  * object schemas that are persisted in the database and services consist of function definitions.
  */
 type
-    : Identifier ('[' (Identifier ',')* Identifier ']')?
+    : Identifier ('[' (Identifier ',')* Identifier ']')? Ampersand?
     ;
 
 parameter

@@ -1,0 +1,48 @@
+module caustic.example
+
+/**
+ * A distributed message queue.
+ */
+service Queue {
+
+  /**
+   * Adds the message to the end of the queue.
+   *
+   * @param queue Queue.
+   * @param message Message.
+   */
+  def push(queue: List[String]&, message: String): Unit =
+    queue.set(queue.size, message)
+
+  /**
+   * Returns the message at the front of the queue.
+   *
+   * @param queue Queue.
+   * @return Head.
+   */
+  def peek(queue: List[String]&): String =
+    queue.get(0)
+
+  /**
+   * Removes and returns the message at the front of the queue.
+   *
+   * @param queue Queue.
+   * @return Head.
+   */
+  def pop(queue: List[String]&): String = {
+    var head = peek(queue)
+    queue.set(0, null)
+    head
+  }
+
+  /**
+   * Returns the number of messages in the queue.
+   *
+   * @param queue Queue.
+   * @return Length.
+   */
+  def size(queue: List[String]&): Int =
+    queue.size
+
+}
+

@@ -83,6 +83,8 @@ case class GenInternal(universe: Universe) extends CausticBaseVisitor[String] {
 
   override def visitType(ctx: CausticParser.TypeContext): String =
     this.universe.find(ctx.getText.replaceAll("\\s", "")) match {
+      case Some(CPointer(_: Primitive)) => s"Variable[${ ctx.getText.dropRight(1) }]"
+      case Some(CPointer(_: Collection)) => s"${ ctx.getText.dropRight(1) }"
       case Some(_: CPointer) => s"Reference[${ ctx.getText.dropRight(1) }$$Internal]"
       case Some(_: CStruct) => s"Reference[${ ctx.getText }$$Internal]"
       case Some(CList(x)) => s"List[$x]"

@@ -1,0 +1,68 @@
+module caustic.example
+
+/**
+ * A read-write lock.
+ */
+struct Lock {
+  readers: Int,
+  writers: Int
+}
+
+/**
+ * An access permit.
+ */
+struct Permit {
+  forRead: Boolean,
+  forWrite: Boolean
+}
+
+/**
+ * A distributed lock service.
+ */
+service LockService {
+
+  /**
+   * Attempts to acquire exclusive access to the lock.
+   *
+   * @param lock Lock.
+   * @return Read-write permit.
+   */
+  def exclusive(lock: Lock&): Permit = {
+    if (lock.writers > 0 || lock.readers > 0) {
+      Permit(false, false)
+    } else {
+      lock.writers += 1
+      Permit(false, true)
+    }
+  }
+
+  /**
+   * Attempts to acquire shared access to the lock.
+   *
+   * @param lock Lock.
+   * @return Read-only permit.
+   */
+  def shared(lock: Lock&): Permit = {
+    if (lock.writers > 0) {
+      Permit(false, false)
+    } else {
+      lock.readers += 1
+      Permit(true, false)
+    }
+  }
+
+  /**
+   * Revoke the permit's access to the lock.
+   *
+   * @param lock Lock.
+   * @param permit Permit.
+   */
+  def release(lock: Lock&, permit: Permit): Unit = {
+    if (permit.forRead) {
+      lock.readers -= 1
+    } elif (permit.forWrite) {
+      lock.writers -= 1
+    }
+  }
+
+}

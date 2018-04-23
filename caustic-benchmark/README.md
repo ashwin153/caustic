@@ -11,14 +11,14 @@ recommend setting the minimum heap size to at least 2 GB.
 ```
 
 ## Latency
-![Latency](https://git.io/vpsyg)
+![Latency](https://raw.githubusercontent.com/ashwin153/caustic/master/caustic-assets/images/runtime-latency.png)
 
 In this benchmark, we generate programs consisting of the specified number of read expressions and
 measure the time it takes for the program to commit. We see that latency grows linearly with program
 size. In other words, *each additional expression has a constant overhead*. 
 
 ## Throughput
-![Throughput](https://git.io/vpsyM)
+![Throughput](https://raw.githubusercontent.com/ashwin153/caustic/master/caustic-assets/images/runtime-throughput.png)
 
 In this benchmark, the specified number of threads simultaneously execute a series of programs that
 each read and write the specified percentages of the key-space. Note that the larger the percentages

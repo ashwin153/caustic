@@ -40,7 +40,7 @@ object Volume {
   class Memory(underlying: concurrent.Map[Key, Revision]) extends Volume {
 
     override def get(keys: Set[Key]): Try[Map[Key, Revision]] = {
-      Try(this.underlying.filterKeys(keys).toMap)
+      Try(keys.map(k => k -> this.underlying.getOrElse(k, Revision.defaultInstance)).toMap)
     }
 
     override def cas(depends: Map[Key, Version], changes: Map[Key, Value]): Try[Unit] = synchronized {

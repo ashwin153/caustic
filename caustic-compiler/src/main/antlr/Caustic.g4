@@ -17,8 +17,7 @@ constant
     ;
 
 name
-    : Identifier ('.' Identifier)* // x, x.foo
-    | Identifier Ampersand? // Foo&
+    : Identifier ('.' Identifier)* Ampersand? // x, x.foo
     ;
 
 funcall

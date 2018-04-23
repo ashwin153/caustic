@@ -2,6 +2,9 @@ module caustic.example
 
 /**
  * A read-write lock.
+ *
+ * @param readers Number of readers.
+ * @param writers Number of writers.
  */
 struct Lock {
   readers: Int,
@@ -10,6 +13,9 @@ struct Lock {
 
 /**
  * An access permit.
+ *
+ * @param forRead Read access.
+ * @param forWrite Write access.
  */
 struct Permit {
   forRead: Boolean,

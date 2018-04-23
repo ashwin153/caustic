@@ -271,7 +271,7 @@ case class GenBlock(universe: Universe) extends CausticBaseVisitor[Result] {
 
   override def visitName(ctx: CausticParser.NameContext): Result = {
     val names = ctx.Identifier().asScala.map(_.getText)
-    
+
     this.universe.find(s"${ names.head }${ if (ctx.Ampersand() != null) "&" else "" }") match {
       case Some(service: CService) if names.size == 2 && service.functions.contains(names(1)) =>
         Result(service.functions(names(1)), s"${ names.head }.${ service.functions(names(1)).name }")

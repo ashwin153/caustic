@@ -39,20 +39,20 @@ object Literal {
    * @return Literal.
    */
   def apply(binary: String): Literal = binary match {
-    case x if x(0) == '0' => Null
-    case x if x(0) == '1' => if (x(1) == '1') flag(true) else flag(false)
-    case x if x(0) == '2' => Real(x.substring(1).toDouble)
-    case x if x(0) == '3' => Text(x.substring(1))
+    case x if x.isEmpty => Null
+    case x if x(0) == 'f' => if (x(1) == '1') flag(true) else flag(false)
+    case x if x(0) == 'r' => Real(x.substring(1).toDouble)
+    case x if x(0) == 't' => Text(x.substring(1))
   }
 
   // Implicit Operations.
   implicit class SerializationOps(x: Literal) {
 
     def asBinary: String = x match {
-      case Null => "0"
-      case Flag(t) => if (t) "11" else "10"
-      case Real(t) => "2" + t
-      case Text(t) => "3" + t
+      case Null => ""
+      case Flag(t) => if (t) "f1" else "f0"
+      case Real(t) => "r" + t
+      case Text(t) => "t" + t
     }
 
     def asString: String = x match {

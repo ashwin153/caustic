@@ -14,10 +14,12 @@ struct Lock {
 /**
  * An access permit.
  *
+ * @param lock Underlying lock.
  * @param forRead Read access.
  * @param forWrite Write access.
  */
 struct Permit {
+  lock: Lock&,
   forRead: Boolean,
   forWrite: Boolean
 }
@@ -35,10 +37,10 @@ service LockService {
    */
   def exclusive(lock: Lock&): Permit = {
     if (lock.writers > 0 || lock.readers > 0) {
-      Permit(false, false)
+      Permit(lock, false, false)
     } else {
       lock.writers += 1
-      Permit(false, true)
+      Permit(lock, true, true)
     }
   }
 
@@ -50,24 +52,23 @@ service LockService {
    */
   def shared(lock: Lock&): Permit = {
     if (lock.writers > 0) {
-      Permit(false, false)
+      Permit(lock, false, false)
     } else {
       lock.readers += 1
-      Permit(true, false)
+      Permit(lock, true, false)
     }
   }
 
   /**
-   * Revoke the permit's access to the lock.
+   * Revoke the permit's access.
    *
-   * @param lock Lock.
    * @param permit Permit.
    */
-  def release(lock: Lock&, permit: Permit): Unit = {
-    if (permit.forRead) {
-      lock.readers -= 1
-    } elif (permit.forWrite) {
-      lock.writers -= 1
+  def release(permit: Permit): Unit = {
+    if (permit.forWrite) {
+      permit.lock.writers -= 1
+    } elif (permit.forRead) {
+      permit.lock.readers -= 1
     }
   }
 

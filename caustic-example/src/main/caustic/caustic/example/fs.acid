@@ -28,7 +28,7 @@ service FileSystem {
    * @param path File path.
    * @return Whether or not the file exists.
    */
-  def exists(path: File&): String = path.contents != null
+  def exists(path: File&): Boolean = path.contents != null
 
   /**
    * Updates the contents of the specified path.

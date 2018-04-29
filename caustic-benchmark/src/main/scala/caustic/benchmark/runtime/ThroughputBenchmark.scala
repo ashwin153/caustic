@@ -12,21 +12,21 @@ import scala.util.Random
  */
 object ThroughputBenchmark extends App {
 
-  val keys     = 1000       // Total number of keys.
-  val reads    = 0.01       // Percentage of keys read in each program.
-  val writes   = 0.00       // Percentage of keys written in each program.
-  val attempts = 1000       // Number of attempts per thread.
+  val keys     = 1000                     // Total number of keys.
+  val reads    = 0.01                     // Percentage of keys read in each program.
+  val writes   = 0.00                     // Percentage of keys written in each program.
+  val attempts = 10000                    // Number of attempts per thread.
+  val runtime  = Runtime(Volume.Memory()) // In-memory runtime.
 
-  val threads  = java.lang.Runtime.getRuntime.availableProcessors()
-  val runtime  = Runtime(Volume.Memory())
-
-  println {
-    // Construct the specified number of threads and concurrent generate and execute programs.
-    val program = Seq.fill(this.threads)(Seq.fill(attempts)(gen))
-    val current = System.nanoTime()
-    val success = program.par.map(_.map(runtime.execute).count(_.isSuccess)).sum
-    val elapsed = System.nanoTime() - current
-    1E9 * success / elapsed
+  (1 to 8) foreach { threads =>
+    println {
+      // Construct the specified number of threads and concurrent generate and execute programs.
+      val program = Seq.fill(threads)(Seq.fill(attempts)(gen))
+      val current = System.nanoTime()
+      val success = program.par.map(_.map(runtime.execute).count(_.isSuccess)).sum
+      val elapsed = System.nanoTime() - current
+      1E9 * success / elapsed
+    }
   }
 
   /**

@@ -1,6 +1,7 @@
 import shutil
 import subprocess
 
+from pants.backend.jvm.tasks.nailgun_task import NailgunTask
 from pants.base.exceptions import TaskError
 from pants.base.workunit import WorkUnitLabel
 from pants.task.simple_codegen_task import SimpleCodegenTask
@@ -8,7 +9,7 @@ from pants.task.simple_codegen_task import SimpleCodegenTask
 from caustic.targets.caustic_library import CausticLibrary
 
 
-class CausticGen(SimpleCodegenTask):
+class CausticGen(SimpleCodegenTask, NailgunTask):
     """
     Generates Scala source code from Caustic *.acid files.
     """
@@ -16,6 +17,7 @@ class CausticGen(SimpleCodegenTask):
     @classmethod
     def register_options(cls, register):
         super(CausticGen, cls).register_options(register)
+        cls.register_jvm_tool(register, 'causticc')
 
     def is_gentarget(self, target):
         return isinstance(target, CausticLibrary)
@@ -25,26 +27,20 @@ class CausticGen(SimpleCodegenTask):
 
     def synthetic_target_extra_dependencies(self, target, target_workdir):
         return self.resolve_deps([
-                'caustic-library/src/main/scala',
-                'caustic-runtime/src/main/scala',
-                '3rdparty/jvm:spray-json',
-            ])
+            'caustic-library/src/main/scala',
+            'caustic-runtime/src/main/scala',
+            '3rdparty/jvm:spray-json',
+        ])
 
     def execute_codegen(self, target, target_workdir):
+        # Generate Scala code using the Caustic compiler.
         sources = target.target_base
-        cmd = './pants run caustic-compiler/src/main/scala:bin --no-lock -- {}'.format(sources)
+        main = "caustic.compiler.Causticc"
+        classpath = self.tool_classpath('causticc')
+        result = self.runjava(classpath=classpath, main=main, args=sources, workunit_name='caustic-gen')
 
-        # Execute the compiler on all the source files in the target.
-        with self.context.new_workunit(name='caustic', labels=[WorkUnitLabel.TOOL], cmd=cmd) as work:
-            result = subprocess.call(
-                cmd,
-                stdout=work.output('stdout'),
-                stderr=work.output('stderr'),
-                shell=True,
-            )
-
-            if result != 0:
-                raise TaskError('Caustic Compiler ... exited non-zero ({})'.format(result))
+        if result != 0:
+            raise TaskError('Causticc ... exited non-zero ({})'.format(result))
 
         # Move all the generated sources to the target_workdir.
         for src in target.sources_relative_to_buildroot():

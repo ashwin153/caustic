@@ -3,7 +3,7 @@ python_library(
   sources=rglobs('*.py'),
   provides=setup_py(
     name='caustic.pants',
-    version='1.0.0',
+    version='1.0.2',
     description='Caustic plugin for Pants',
     url='https://github.com/ashwin153/caustic',
     author='Ashwin Madavan',

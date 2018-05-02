@@ -14,4 +14,4 @@ def build_file_aliases():
 
 
 def register_goals():
-    task(name='caustic', action=CausticGen).install('gen')
+    task(name='caustic-gen', action=CausticGen).install('gen')

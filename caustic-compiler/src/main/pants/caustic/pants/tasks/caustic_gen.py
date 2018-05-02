@@ -30,17 +30,17 @@ class CausticGen(SimpleCodegenTask, NailgunTask):
 
     def synthetic_target_extra_dependencies(self, target, target_workdir):
         return self.resolve_deps([
-                'caustic-library/src/main/scala',
-                'caustic-runtime/src/main/scala',
-                '3rdparty/jvm:spray-json',
-            ])
+            'caustic-library/src/main/scala',
+            'caustic-runtime/src/main/scala',
+            '3rdparty/jvm:spray-json',
+        ])
 
     def execute_codegen(self, target, target_workdir):
         # Generate Scala code using the Caustic compiler.
         sources = target.target_base
         main = "caustic.compiler.Causticc"
         classpath = self.tool_classpath('causticc')
-        result = self.runjava(classpath=classpath, main=main, args=sources, workunit_name='caustic')
+        result = self.runjava(classpath=classpath, main=main, args=sources, workunit_name='compile')
 
         if result != 0:
             raise TaskError('Causticc ... exited non-zero ({})'.format(result))

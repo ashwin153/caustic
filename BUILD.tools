@@ -8,7 +8,7 @@ target(name='antlr-4', dependencies=['3rdparty/jvm:antlr'])
 #                                             Caustic                                              #
 #                               https://github.com/ashwin153/caustic                               #
 ####################################################################################################
-target(name='causticc', dependencies=['caustic-compiler/src/main/scala'])
+target(name='causticc', dependencies=['3rdparty/jvm:caustic-compiler'])
 
 ####################################################################################################
 #                                              Scala                                               #

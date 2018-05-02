@@ -35,6 +35,11 @@ jar_library(name='antlr', jars=[
     jar(org='org.antlr', name='antlr4-runtime', rev='4.7'),
 ])
 
+# Causticc
+jar_library(name='caustic-compiler', jars=[
+    jar(org='com.madavan', name='caustic-compiler_2.12', rev='2.0.3'),
+])
+
 # Scalac
 jar_library(name='scala-compiler', dependencies=[':scala-library', ':scala-reflect'], jars=[
     jar(org='org.scala-lang', name='scala-compiler', rev='2.12.3'),

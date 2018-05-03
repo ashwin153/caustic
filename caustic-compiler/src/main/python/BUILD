@@ -1,5 +1,5 @@
 python_library(
-  name='pants',
+  name='python',
   sources=rglobs('*.py'),
   provides=setup_py(
     name='caustic.pants',

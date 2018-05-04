@@ -19,7 +19,7 @@ trait Builder {
    * @return Any.
    */
   def add(x: Program, y: Program): Program = (x, y) match {
-    case (Null, Null) => Null
+    case (Null, _) | (_, Null) => Null
     case (Text(a), b: Literal) => a + b.asString
     case (a: Literal, Text(b)) => a.asString + b
     case (a: Literal, b: Literal) => a.asDouble + b.asDouble
@@ -110,18 +110,6 @@ trait Builder {
   def either(x: Program, y: Program): Program = (x, y) match {
     case (a: Literal, b: Literal) => a.asBoolean || b.asBoolean
     case _ => Expression(Either, x :: y :: Nil)
-  }
-
-  /**
-   * Evaluates x and y at the same time.
-   *
-   * @param x Any.
-   * @param y Any.
-   * @return Any.
-   */
-  def eval(x: Program, y: Program): Program = (x, y) match {
-    case (_: Literal, _: Literal) => y
-    case _ => Expression(Eval, x :: y :: Nil)
   }
 
   /**
@@ -301,7 +289,7 @@ trait Builder {
     case (a: Literal, b: Literal, c: Literal) =>
       (0 until b.asInt)
         .map(i => Function.chain(Seq.fill(c.asInt)(read _))(a.asString + "/" + i))
-        .foldLeft[Program](Null)(eval)
+        .foldLeft[Program](Null)(cons)
     case _ => Expression(Prefetch, key :: size :: refs :: Nil)
   }
 
@@ -312,8 +300,7 @@ trait Builder {
    * @return Any.
    */
   def read(key: Program): Program = key match {
-    case _: Text => Expression(Read, key :: Nil)
-    case a: Literal => Expression(Read, a.asString :: Nil)
+    case a: Literal => Expression(Read, a :: Nil)
     case _ => Expression(Read, key :: Nil)
   }
 

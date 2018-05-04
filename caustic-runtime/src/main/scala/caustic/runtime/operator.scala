@@ -13,7 +13,6 @@ case object Cos       extends Operator  // Returns the cosine of (1) in radians.
 case object Div       extends Operator  // Returns (1) divided by (2).
 case object Either    extends Operator  // Returns (1) || (2).
 case object Equal     extends Operator  // Returns whether (1) equals (2).
-case object Eval      extends Operator  // Evaluate (1) and (2) at the same time.
 case object Floor     extends Operator  // Returns the floor of (1).
 case object IndexOf   extends Operator  // Returns the index of (2) in (1).
 case object Length    extends Operator  // Returns the string length of (1).

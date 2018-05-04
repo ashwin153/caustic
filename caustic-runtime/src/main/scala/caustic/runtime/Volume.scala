@@ -35,19 +35,19 @@ object Volume {
   /**
    * An in-memory, thread-safe database. Useful for testing.
    *
-   * @param underlying Underlying map.
+   * @param map Underlying map.
    */
-  class Memory(underlying: concurrent.Map[Key, Revision]) extends Volume {
+  class Memory(map: concurrent.Map[Key, Revision]) extends Volume {
 
     override def get(keys: Set[Key]): Try[Map[Key, Revision]] = {
-      Try(keys.map(k => k -> this.underlying.getOrElse(k, Revision.defaultInstance)).toMap)
+      Try(keys.map(k => k -> this.map.getOrElse(k, Revision.defaultInstance)).toMap)
     }
 
     override def cas(depends: Map[Key, Version], changes: Map[Key, Value]): Try[Unit] = synchronized {
-      get(depends.keySet)
+      Try(depends.keySet.map(k => k -> this.map.getOrElse(k, Revision.defaultInstance)).toMap)
         .filter(_ forall { case (k, v) => depends(k) >= v.version })
         .map(_ => changes map { case (k, v) => k -> Revision(depends(k) + 1, v) })
-        .map(this.underlying ++= _)
+        .map(this.map ++= _)
     }
 
   }

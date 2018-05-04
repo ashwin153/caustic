@@ -1,5 +1,6 @@
 package caustic.runtime
 
+import beaker.server.protobuf.Revision
 import caustic.{runtime => caustic}
 
 import org.junit.runner.RunWith
@@ -74,8 +75,8 @@ class RuntimeTest extends FunSuite with MockitoSugar with ScalaFutures with Matc
   test("Execute detects conflicts.") {
     // Spy the underlying database to insert latches inside its put method that will enable
     // deterministic injection of race conditions into transaction execution.
-    val fake = spy(Volume.Memory())
-    val runtime = Runtime(fake)
+    val volume = spy(Volume.Memory())
+    val runtime = Runtime(volume)
     val ready = new CountDownLatch(1)
     val block = new CountDownLatch(1)
 
@@ -85,7 +86,7 @@ class RuntimeTest extends FunSuite with MockitoSugar with ScalaFutures with Matc
         assert(block.await(1, TimeUnit.SECONDS))
         super.answer(invocation)
       }
-    }).when(fake).cas(Map("x" -> 0L), Map.empty)
+    }).when(volume).cas(Map("x" -> 0L), Map.empty)
 
     // Construct a read-only transaction and wait for it to reach the faked 'put' method. Then
     // construct a second transaction that updates the value of the field and unblocks the first
@@ -99,6 +100,26 @@ class RuntimeTest extends FunSuite with MockitoSugar with ScalaFutures with Matc
     // Verify that the first transaction fails, but the second succeeds.
     whenReady(exec.failed)(_ shouldBe an [Exception])
     runtime.execute(read("x")) shouldBe Success(text("foo"))
+  }
+
+  test("Execute performs prefetching.") {
+    val volume = spy(Volume.Memory(Map("x" -> Revision(1L, text("a").asBinary))))
+    val runtime = Runtime(volume)
+
+    runtime execute {
+      cons(
+        // Branch prediction.
+        branch(less(read("x"), "aa"), write("y", 1), read("z")),
+        // Prefetched reads.
+        read(add("a", read("x")))
+      )
+    }
+
+    // Verify that prefetching works correctly.
+    verify(volume).get(Set("x", "y", "z"))
+    verify(volume).get(Set("aa"))
+    verify(volume).cas(Map("x" -> 1L, "y" -> 0L, "aa" -> 0L), Map("y" -> real(1).asBinary))
+    verifyNoMoreInteractions(volume)
   }
 
 }

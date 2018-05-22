@@ -108,10 +108,14 @@ class RuntimeTest extends FunSuite with MockitoSugar with ScalaFutures with Matc
 
     runtime execute {
       cons(
-        // Branch prediction.
-        branch(less(read("x"), "aa"), write("y", 1), read("z")),
-        // Prefetched reads.
-        read(add("a", read("x")))
+        // Delay execution by three iterations.
+        read(read(read("y"))),
+        cons(
+          // Branch prediction.
+          branch(less(read("x"), "aa"), write("y", 1), read("z")),
+          // Prefetched reads.
+          read(add("a", read("x")))
+        )
       )
     }
 

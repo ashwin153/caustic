@@ -59,6 +59,18 @@ object Variable {
     override def set(that: Value[T])(implicit context: Context): Unit = context += write(key, that)
   }
 
+  /**
+   * A watched variable.
+   *
+   * @param x Variable.
+   * @param onSet Callback.
+   */
+  case class Watched[T <: Primitive](x: Variable[T], onSet: Value[T] => Unit) extends Variable[T] {
+    override def key: Value[String] = x.key
+    override def get: Program = x.get
+    override def set(that: Value[T])(implicit context: Context): Unit = { x.set(that); onSet(that) }
+  }
+
   // Implicit Operations.
   implicit class AssignmentOps[X <: Primitive](x: Variable[X]) {
     def :=[Y <: X](y: Value[Y])(implicit context: Context): Unit = x.set(y)

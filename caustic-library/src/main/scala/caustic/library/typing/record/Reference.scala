@@ -3,7 +3,7 @@ package typing
 package record
 
 import caustic.library.typing.Value._
-
+import caustic.runtime.Program
 import shapeless._
 import shapeless.ops.hlist.LeftFolder
 import shapeless.ops.record.{Keys, Selector}

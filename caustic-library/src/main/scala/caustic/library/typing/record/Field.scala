@@ -9,9 +9,27 @@ import shapeless._
  * An attribute extractor.
  */
 trait Field[Type] {
+
+  //
   type Container
+
+  /**
+   *
+   * @param key
+   * @param field
+   * @return
+   */
   def apply(key: Variable[String], field: Value[String]): Container
+
+  /**
+   *
+   * @param ref
+   * @param field
+   * @tparam T
+   * @return
+   */
   def apply[T](ref: Reference[T], field: Value[String]): Container = apply(ref.pointer, field)
+
 }
 
 object Field {

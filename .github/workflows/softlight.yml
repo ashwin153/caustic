@@ -1,0 +1,21 @@
+name: Softlight
+
+on:
+  pull_request:
+    types: [opened, ready_for_review, reopened, synchronize, labeled, unlabeled]
+
+jobs:
+  design-doctor:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Design Doctor
+        run: |
+          curl --fail-with-body -sS -L \
+            --json '{
+              "repository_owner": "${{ github.repository_owner }}",
+              "repository_name": "${{ github.event.repository.name }}",
+              "pull_request_number": ${{ github.event.pull_request.number }},
+              "expected_head_sha": "${{ github.event.pull_request.head.sha }}",
+              "trigger_contract_version": "design-doctor-trigger-v1"
+            }' \
+            https://design-doctor.orianna.ai/api/v1/review
